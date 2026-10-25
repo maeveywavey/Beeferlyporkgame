@@ -1,0 +1,1418 @@
+extends Node3D
+## Real-time 3D battle: spawns both sides from GS.pending_battle, runs combat,
+## and reports casualties back to the world.
+
+const Unit = preload("res://scripts/battle/unit.gd")
+const Projectile = preload("res://scripts/battle/projectile.gd")
+const Bending = preload("res://scripts/battle/bending.gd")
+const UI = preload("res://scripts/ui/ui.gd")
+const MB = preload("res://scripts/world/map_builder.gd")
+const Roster = preload("res://scripts/core/roster.gd")
+const SettingsWindow = preload("res://scripts/ui/settings_window.gd")
+
+const HALF := 80.0
+const GRID := 161
+const SPAWN_Z := 55.0
+
+static var autotest := false
+
+var fire_mult := 1.0
+var water_mult := 1.0
+var biome := "grass"
+var hour := 12.0
+var units: Array = []
+var team_units: Array = [[], []]
+var reserves: Array = [[], []]
+var active_cap: Array = [40, 40]
+var player_unit = null
+var player_controlled := true
+var player_ranged_mode := false
+var casualties := {}
+var companions_down: Array = []
+var player_downed := false
+var battle_over := false
+var winner := -1
+var obstacles: Array = []
+var walls: Array = []
+var siege := ""
+var wall_z := 0.0
+var breach_half := 6.0
+var heights := PackedFloat32Array()
+var player_kills := 0
+var _reinforce_t := 2.0
+var _sep_t := 0.0
+var _finished := false
+var _autotest_t := 0.0
+
+# Camera
+var cam: Camera3D
+var cam_yaw := 0.0
+var cam_pitch := -0.25
+var cam_dist := 4.2
+var cam_far := false
+var mouse_accum := Vector2.ZERO
+var spectate_target = null
+
+# HUD
+var hud: CanvasLayer
+var hp_bar: ProgressBar
+var chi_bar: ProgressBar
+var mount_bar: ProgressBar
+var info_label: Label
+var count_label: Label
+var feed: VBoxContainer
+var big_label: Label
+var note_label: Label
+var pause_panel: Control
+var crosshair: Control
+var _note_t := 0.0
+var paused := false
+
+# ---------------------------------------------------------------------------
+# Setup
+# ---------------------------------------------------------------------------
+func _ready() -> void:
+	Engine.time_scale = 1.0
+	if GS.pending_battle.is_empty():
+		_debug_setup()
+	var b: Dictionary = GS.pending_battle
+	fire_mult = b.get("fire_mult", 1.0)
+	water_mult = b.get("water_mult", 1.0)
+	biome = b.get("biome", "grass")
+	if biome in ["ocean", "beach"]:
+		biome = "beach"
+	hour = b.get("hour", 12.0)
+	siege = b.get("siege", "")
+	if siege != "":
+		wall_z = 28.0 if b.player_attacking else -28.0
+	_build_heights()
+	_build_environment()
+	_build_ground()
+	_build_props()
+	if siege != "":
+		_build_siege_walls()
+	_build_hud()
+	cam = Camera3D.new()
+	cam.fov = 70.0
+	cam.far = 600.0
+	add_child(cam)
+	_prepare_sides(b)
+	_initial_spawn()
+	if not autotest:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	else:
+		player_controlled = false
+		Engine.time_scale = 4.0
+	Sfx.play("horn", -6.0)
+	var msg := "The battle begins!"
+	if fire_mult == 0.0:
+		msg += " The sun is dark — firebenders are powerless!"
+	elif fire_mult > 2.0:
+		msg += " Sozin's Comet burns overhead — firebending is at its peak!"
+	elif water_mult > 1.4:
+		msg += " The full moon empowers waterbenders."
+	feed_msg(msg, Color(1, 0.9, 0.5))
+
+func _debug_setup() -> void:
+	if not GS.game_active:
+		var p := GS.create_player("Tester", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
+		GS.new_game(p)
+		Roster.add(GS.player_party().roster, "ek_soldier", 10)
+		Roster.add(GS.player_party().roster, "ek_archer", 5)
+		Roster.add(GS.player_party().roster, "ek_earthbender", 4)
+	var e := GS.make_party("", "Test Enemies", "bandit", "fire_nation", GS.player_party().pos)
+	Roster.add(e.roster, "fn_soldier", 10)
+	Roster.add(e.roster, "fn_firebender", 6)
+	Roster.add(e.roster, "fn_archer", 4)
+	Roster.add(e.roster, "fn_rhino_rider", 3)
+	GS.pending_battle = {"enemies": [e.id], "allies": [], "siege": "", "player_attacking": true, "biome": "grass",
+		"hour": 14.0, "fire_mult": 1.15, "water_mult": 0.95, "enemy_garrison": false, "ally_garrison": false}
+
+# ---------------------------------------------------------------------------
+# Terrain
+# ---------------------------------------------------------------------------
+func _build_heights() -> void:
+	heights.resize(GRID * GRID)
+	var n := FastNoiseLite.new()
+	n.seed = randi()
+	n.frequency = 0.015
+	n.fractal_octaves = 3
+	var amp := 2.0
+	match biome:
+		"mountain": amp = 5.0
+		"highland": amp = 3.5
+		"desert": amp = 3.0
+		"volcanic": amp = 3.0
+		"swamp", "beach": amp = 0.6
+		"snow": amp = 1.8
+		"forest": amp = 1.6
+	for gz in GRID:
+		for gx in GRID:
+			var x := gx - HALF
+			var z := gz - HALF
+			var h := n.get_noise_2d(x, z) * amp
+			# keep spawn areas smoother
+			var edge := clampf((absf(z) - 40.0) / 20.0, 0.0, 1.0)
+			h *= 1.0 - edge * 0.5
+			# slope up near the field border so it feels enclosed
+			var border := maxf(absf(x), absf(z))
+			if border > 70.0:
+				h += (border - 70.0) * 0.6
+			if siege != "":
+				var dz := (z - wall_z) * signf(wall_z)
+				if dz > 1.0 and dz < 5.0:
+					h = 2.6
+				elif dz >= 5.0 and dz < 8.0:
+					h = lerpf(2.6, h, (dz - 5.0) / 3.0)
+				elif absf(dz) <= 1.0:
+					h = maxf(h, 0.0)
+			heights[gz * GRID + gx] = h
+
+func ground_height(x: float, z: float) -> float:
+	var fx := clampf(x + HALF, 0.0, GRID - 1.001)
+	var fz := clampf(z + HALF, 0.0, GRID - 1.001)
+	var x0 := int(fx)
+	var z0 := int(fz)
+	var tx := fx - x0
+	var tz := fz - z0
+	var a := heights[z0 * GRID + x0]
+	var b := heights[z0 * GRID + x0 + 1]
+	var c := heights[(z0 + 1) * GRID + x0]
+	var d := heights[(z0 + 1) * GRID + x0 + 1]
+	return lerpf(lerpf(a, b, tx), lerpf(c, d, tx), tz)
+
+func _biome_ground_color() -> Color:
+	match biome:
+		"snow": return Color(0.9, 0.93, 0.97)
+		"desert": return Color(0.85, 0.74, 0.5)
+		"forest": return Color(0.3, 0.45, 0.2)
+		"swamp": return Color(0.3, 0.36, 0.22)
+		"volcanic": return Color(0.33, 0.27, 0.24)
+		"mountain": return Color(0.48, 0.45, 0.4)
+		"beach": return Color(0.82, 0.76, 0.56)
+		"highland": return Color(0.45, 0.52, 0.32)
+	return Color(0.4, 0.55, 0.26)
+
+func _build_ground() -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var base := _biome_ground_color()
+	var cn := FastNoiseLite.new()
+	cn.seed = 5
+	cn.frequency = 0.06
+	var step := 2
+	var cols := []
+	var verts := []
+	var n := int((GRID - 1) / step) + 1
+	for iz in n:
+		for ix in n:
+			var gx := ix * step
+			var gz := iz * step
+			var h := heights[gz * GRID + gx]
+			verts.append(Vector3(gx - HALF, h, gz - HALF))
+			var v := cn.get_noise_2d(gx, gz) * 0.12
+			var c := Color(clampf(base.r + v, 0, 1), clampf(base.g + v, 0, 1), clampf(base.b + v * 0.6, 0, 1))
+			if siege != "" and absf(gz - HALF - wall_z) < 9.0:
+				c = c.lerp(Color(0.5, 0.45, 0.38), 0.5)
+			cols.append(c)
+	for iz in n - 1:
+		for ix in n - 1:
+			var i0 := iz * n + ix
+			for idx in [i0, i0 + 1, i0 + n, i0 + 1, i0 + n + 1, i0 + n]:
+				st.set_color(cols[idx])
+				st.add_vertex(verts[idx])
+	st.generate_normals()
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	var m := StandardMaterial3D.new()
+	m.vertex_color_use_as_albedo = true
+	m.roughness = 1.0
+	mi.material_override = m
+	add_child(mi)
+	# Distant backdrop ring
+	var far := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(900, 900)
+	far.mesh = pm
+	far.position = Vector3(0, 10.0, 0)
+	far.material_override = MB.mat(base.darkened(0.15))
+	add_child(far)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	for i in 22:
+		var a := TAU * i / 22.0 + rng.randf() * 0.2
+		var r := rng.randf_range(150, 260)
+		var h := rng.randf_range(25, 70)
+		var cone := CylinderMesh.new()
+		cone.top_radius = rng.randf_range(0, 8)
+		cone.bottom_radius = rng.randf_range(35, 60)
+		cone.height = h
+		cone.radial_segments = 8
+		var mm := MeshInstance3D.new()
+		mm.mesh = cone
+		mm.position = Vector3(cos(a) * r, h / 2.0 + 5.0, sin(a) * r)
+		var mc := base.darkened(0.3) if biome != "snow" else Color(0.85, 0.88, 0.95)
+		mm.material_override = MB.mat(mc)
+		add_child(mm)
+
+func _build_environment() -> void:
+	var we := WorldEnvironment.new()
+	var env := Environment.new()
+	var sky := Sky.new()
+	var sm := ProceduralSkyMaterial.new()
+	var daylight := clampf(sin((hour - 6.0) / 13.0 * PI), 0.0, 1.0)
+	if fire_mult == 0.0:
+		daylight = 0.12
+	sm.sky_top_color = Color(0.08, 0.1, 0.22).lerp(Color(0.3, 0.5, 0.85), daylight)
+	sm.sky_horizon_color = Color(0.2, 0.2, 0.3).lerp(Color(0.75, 0.8, 0.9), daylight)
+	sm.ground_horizon_color = sm.sky_horizon_color
+	sm.ground_bottom_color = Color(0.2, 0.18, 0.15)
+	if fire_mult > 2.0:
+		sm.sky_top_color = sm.sky_top_color.lerp(Color(0.7, 0.15, 0.05), 0.6)
+		sm.sky_horizon_color = sm.sky_horizon_color.lerp(Color(1.0, 0.45, 0.2), 0.6)
+	sky.sky_material = sm
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.5, 0.55, 0.75).lerp(Color(0.8, 0.8, 0.8), daylight)
+	env.ambient_light_energy = 0.45 + daylight * 0.35
+	env.fog_enabled = true
+	env.fog_light_color = sm.sky_horizon_color
+	env.fog_density = 0.004 if biome != "swamp" else 0.02
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	we.environment = env
+	add_child(we)
+	var sun := DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-20.0 - daylight * 45.0, 30.0 + hour * 5.0, 0)
+	sun.light_energy = 0.25 + daylight * 1.0
+	sun.light_color = Color(0.65, 0.72, 1.0) if daylight < 0.05 else Color(1, 0.95, 0.88)
+	if fire_mult > 2.0:
+		sun.light_color = Color(1.0, 0.6, 0.4)
+	sun.shadow_enabled = true
+	sun.directional_shadow_max_distance = 60.0
+	add_child(sun)
+
+func _build_props() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var count := 30
+	match biome:
+		"forest": count = 90
+		"swamp": count = 60
+		"grass": count = 25
+		"desert", "beach": count = 12
+		"snow": count = 18
+		"mountain", "highland", "volcanic": count = 35
+	for i in count:
+		var p := Vector2(rng.randf_range(-70, 70), rng.randf_range(-42, 42))
+		if siege != "" and absf(p.y - wall_z) < 12.0:
+			continue
+		var h := ground_height(p.x, p.y)
+		var node := Node3D.new()
+		node.position = Vector3(p.x, h, p.y)
+		add_child(node)
+		match biome:
+			"forest", "grass", "swamp", "highland":
+				var trunk := MB.cyl(0.25, 0.35, 3.0, Color(0.35, 0.24, 0.14), Vector3(0, 1.5, 0), 6)
+				node.add_child(trunk)
+				var leaf_c := Color(0.18, 0.38, 0.16) if biome != "swamp" else Color(0.25, 0.3, 0.15)
+				if rng.randf() < 0.5:
+					node.add_child(MB.cyl(0.0, 2.2, 4.5, leaf_c, Vector3(0, 4.5, 0), 7))
+				else:
+					node.add_child(MB.sphere(2.0, leaf_c, Vector3(0, 4.2, 0)))
+				obstacles.append({"p": p, "r": 0.5})
+			"snow":
+				var ice := MB.cyl(0.0, rng.randf_range(0.8, 1.6), rng.randf_range(1.5, 3.5), Color(0.8, 0.9, 1.0), Vector3(0, 1.0, 0), 5)
+				node.add_child(ice)
+				obstacles.append({"p": p, "r": 1.0})
+			_:
+				var s := rng.randf_range(0.8, 2.0)
+				var rock := MB.sphere(s, Color(0.45, 0.42, 0.38) if biome != "desert" else Color(0.7, 0.6, 0.42), Vector3(0, s * 0.3, 0))
+				rock.scale = Vector3(1, 0.7, 1.2)
+				node.add_child(rock)
+				obstacles.append({"p": p, "r": s * 0.9})
+
+func _build_siege_walls() -> void:
+	var culture: String = Data.settlements[siege].culture
+	var pal := MB.culture_palette(culture)
+	var wc: Color = pal.wall
+	var thick := 1.6
+	var h := 5.0
+	for side in [-1, 1]:
+		var x0 = breach_half * side
+		var x1 = (HALF - 2.0) * side
+		var cx = (x0 + x1) / 2.0
+		var length := absf(x1 - x0)
+		var seg := MB.box(Vector3(length, h, thick), wc, Vector3(cx, h / 2.0 - 1.0, wall_z))
+		add_child(seg)
+		var n := int(length / 2.0)
+		for i in n:
+			if i % 2 == 0:
+				add_child(MB.box(Vector3(1.0, 0.8, thick * 0.6), wc, Vector3(x0 + side * (i * 2.0 + 1.0), h - 0.6, wall_z - signf(wall_z) * thick * 0.2)))
+		walls.append({"c": Vector2(cx, wall_z), "axis": Vector2(1, 0), "hl": length / 2.0, "ht": thick / 2.0, "h": h - 1.0, "until": INF, "node": seg})
+		# tower at the breach
+		var tower := MB.box(Vector3(3.5, h + 2.5, 3.5), wc.darkened(0.1), Vector3(x0 + side * 1.8, (h + 2.5) / 2.0 - 1.0, wall_z))
+		add_child(tower)
+		walls.append({"c": Vector2(x0 + side * 1.8, wall_z), "axis": Vector2(1, 0), "hl": 1.75, "ht": 1.75, "h": h + 1.5, "until": INF, "node": tower})
+	# Rubble in the breach
+	for i in 5:
+		add_child(MB.sphere(randf_range(0.4, 0.8), wc.darkened(0.2), Vector3(randf_range(-breach_half + 1.5, breach_half - 1.5), ground_height(0, wall_z), wall_z + randf_range(-1.5, 1.5))))
+
+# ---------------------------------------------------------------------------
+# Sides
+# ---------------------------------------------------------------------------
+func _entries_for_party(pid: String) -> Array:
+	var out := []
+	if not GS.parties.has(pid):
+		return out
+	var p: Dictionary = GS.parties[pid]
+	if p.lord != "":
+		out.append({"kind": "lord", "id": p.lord, "key": pid})
+	var troops := []
+	for s in p.roster:
+		for i in s.n - s.w:
+			troops.append({"kind": "troop", "id": s.id, "key": pid})
+	troops.shuffle()
+	out.append_array(troops)
+	return out
+
+func _entries_for_garrison(sid: String) -> Array:
+	var out := []
+	for s in GS.settlements[sid].garrison:
+		for i in s.n - s.w:
+			out.append({"kind": "troop", "id": s.id, "key": "garrison:" + sid})
+	out.shuffle()
+	return out
+
+func _prepare_sides(b: Dictionary) -> void:
+	var mine := []
+	mine.append({"kind": "player", "id": "player", "key": "player"})
+	for cid in GS.player.companions:
+		if not GS.companion_state(cid).wounded:
+			mine.append({"kind": "companion", "id": cid, "key": "player"})
+	var my_troops := _entries_for_party("player")
+	var allies := []
+	for aid in b.get("allies", []):
+		allies.append_array(_entries_for_party(aid))
+	if b.get("ally_garrison", false):
+		allies.append_array(_entries_for_garrison(b.siege))
+	mine.append_array(my_troops)
+	# interleave allies so reinforcements mix
+	mine.append_array(allies)
+	var theirs := []
+	for eid in b.get("enemies", []):
+		theirs.append_array(_entries_for_party(eid))
+	if b.get("enemy_garrison", false):
+		theirs.append_array(_entries_for_garrison(b.siege))
+	# Heroes first in each list
+	theirs.sort_custom(func(x, y): return x.kind == "lord" and y.kind != "lord")
+	reserves = [mine, theirs]
+	var total := maxf(1.0, mine.size() + theirs.size())
+	var bs := float(GS.settings.battle_size)
+	var share := clampf(mine.size() / total, 0.3, 0.7)
+	active_cap = [maxi(4, int(bs * share)), maxi(4, int(bs * (1.0 - share)))]
+
+func _spawn_entry(e: Dictionary, team: int, pos: Vector3, face: float):
+	var u = Unit.new()
+	u.battle = self
+	match e.kind:
+		"player": u.setup_player(team)
+		"companion": u.setup_companion(e.id, team)
+		"lord": u.setup_lord(e.id, team, e.key)
+		_: u.setup_troop(e.id, team, e.key)
+	add_child(u)
+	u.position = Vector3(pos.x, ground_height(pos.x, pos.z), pos.z)
+	u.facing = face
+	u.rotation.y = face
+	u.hold_pos = u.position
+	units.append(u)
+	team_units[team].append(u)
+	if e.kind == "player":
+		player_unit = u
+		cam_yaw = face
+	elif team == 0:
+		u.add_ally_marker()
+	# Archers of the defending side start on the ramparts
+	if siege != "" and u.use_ranged:
+		var defending_team := 1 if GS.pending_battle.player_attacking else 0
+		if team == defending_team:
+			u.order = "hold"
+			u.hold_pos = Vector3(u.position.x, 0, wall_z + signf(wall_z) * 3.0)
+	return u
+
+func _spawn_z(team: int) -> float:
+	var z := -SPAWN_Z if team == 0 else SPAWN_Z
+	if siege != "":
+		var defending_team := 1 if GS.pending_battle.player_attacking else 0
+		if team == defending_team:
+			z = wall_z + signf(wall_z) * 14.0
+	return z
+
+func _spawn_wave(team: int, count: int) -> void:
+	var z := _spawn_z(team)
+	var face := 0.0 if team == 0 else PI
+	var dirz := 1.0 if team == 0 else -1.0
+	var inf := []
+	var rng_units := []
+	var cav := []
+	var heroes := []
+	for i in count:
+		if reserves[team].is_empty():
+			break
+		var e: Dictionary = reserves[team].pop_front()
+		match e.kind:
+			"player", "companion", "lord": heroes.append(e)
+			_:
+				var t: Dictionary = Data.troop(e.id)
+				if t.mount != "":
+					cav.append(e)
+				elif t.ranged != "":
+					rng_units.append(e)
+				else:
+					inf.append(e)
+	var spacing := 1.6
+	# heroes and infantry in the front lines
+	var front := heroes + inf
+	var per_row := 20
+	for i in front.size():
+		var row := int(i / per_row)
+		var col := i % per_row
+		var n_in_row := mini(per_row, front.size() - row * per_row)
+		var x := (col - (n_in_row - 1) / 2.0) * spacing
+		var pos := Vector3(x, 0, z + dirz * (6.0 - row * 1.8))
+		if front[i].kind == "player":
+			pos = Vector3(0, 0, z + dirz * 2.0)
+		_spawn_entry(front[i], team, pos, face)
+	for i in rng_units.size():
+		var row2 := int(i / per_row)
+		var col2 := i % per_row
+		var n2 := mini(per_row, rng_units.size() - row2 * per_row)
+		var x2 := (col2 - (n2 - 1) / 2.0) * spacing * 1.3
+		_spawn_entry(rng_units[i], team, Vector3(x2, 0, z - dirz * (2.0 + row2 * 1.8)), face)
+	for i in cav.size():
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var x3 := side * (22.0 + int(i / 2) * 2.5)
+		_spawn_entry(cav[i], team, Vector3(x3, 0, z + dirz * 2.0), face)
+
+func _initial_spawn() -> void:
+	for t in 2:
+		_spawn_wave(t, active_cap[t])
+	if player_unit == null:
+		player_controlled = false
+
+func _check_reinforcements(delta: float) -> void:
+	_reinforce_t -= delta
+	if _reinforce_t > 0.0:
+		return
+	_reinforce_t = 3.0
+	for t in 2:
+		var alive: int = team_units[t].size()
+		if alive < active_cap[t] * 0.55 and not reserves[t].is_empty():
+			var n: int = active_cap[t] - alive
+			_spawn_wave(t, n)
+			feed_msg("Reinforcements have arrived for %s!" % ("your side" if t == 0 else "the enemy"), Color(0.8, 0.9, 1))
+
+# ---------------------------------------------------------------------------
+# Main loop
+# ---------------------------------------------------------------------------
+func _physics_process(delta: float) -> void:
+	if paused:
+		return
+	for u in units:
+		u.tick(delta)
+	_separate()
+	_update_walls()
+	if not battle_over:
+		_check_reinforcements(delta)
+	if autotest:
+		_autotest_t += delta
+		if battle_over or _autotest_t > 240.0:
+			if not _finished:
+				_finish(false)
+
+func _process(delta: float) -> void:
+	_update_camera(delta)
+	_update_hud(delta)
+	if player_unit != null and player_controlled and player_unit.alive and not paused:
+		player_unit.facing = cam_yaw
+		mouse_accum = mouse_accum.lerp(Vector2.ZERO, minf(1.0, delta * 6.0))
+
+func _separate() -> void:
+	var cell := {}
+	for u in units:
+		if not u.alive:
+			continue
+		var k := Vector2i(int(floor(u.position.x / 2.0)), int(floor(u.position.z / 2.0)))
+		if not cell.has(k):
+			cell[k] = []
+		cell[k].append(u)
+	for u in units:
+		if not u.alive:
+			continue
+		var k := Vector2i(int(floor(u.position.x / 2.0)), int(floor(u.position.z / 2.0)))
+		for dx in range(-1, 2):
+			for dz in range(-1, 2):
+				var kk := k + Vector2i(dx, dz)
+				if not cell.has(kk):
+					continue
+				for o in cell[kk]:
+					if o == u or o.get_instance_id() < u.get_instance_id():
+						continue
+					var d := Vector2(o.position.x - u.position.x, o.position.z - u.position.z)
+					var min_d: float = u.radius + o.radius
+					var l := d.length()
+					if l < min_d and l > 0.0001:
+						var push := d / l * (min_d - l)
+						var wu := 0.5
+						if u.mounted() and not o.mounted():
+							wu = 0.15
+						elif o.mounted() and not u.mounted():
+							wu = 0.85
+						u.position.x -= push.x * wu
+						u.position.z -= push.y * wu
+						o.position.x += push.x * (1.0 - wu)
+						o.position.z += push.y * (1.0 - wu)
+						# Cavalry trampling
+						if u.mounted() and not o.mounted() and u.team != o.team and u.vel.length() > 6.0:
+							_trample(u, o)
+						elif o.mounted() and not u.mounted() and u.team != o.team and o.vel.length() > 6.0:
+							_trample(o, u)
+
+func _trample(rider, victim) -> void:
+	if victim.get_meta("trampled_until", 0.0) > Time.get_ticks_msec() / 1000.0:
+		return
+	victim.set_meta("trampled_until", Time.get_ticks_msec() / 1000.0 + 1.0)
+	var dir: Vector3 = rider.vel.normalized()
+	victim.apply_damage(rider.vel.length() * 2.2, rider, "blunt", dir, 6.0)
+
+func _update_walls() -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	for w in walls.duplicate():
+		if w.until < now:
+			walls.erase(w)
+			if is_instance_valid(w.node):
+				var n: Node3D = w.node
+				var tw := n.create_tween()
+				tw.tween_property(n, "position:y", n.position.y - 3.0, 0.6)
+				tw.tween_callback(n.queue_free)
+
+# ---------------------------------------------------------------------------
+# Spatial queries used by units and projectiles
+# ---------------------------------------------------------------------------
+func resolve_obstacles(p: Vector2, r: float) -> Vector2:
+	for o in obstacles:
+		var d: Vector2 = p - o.p
+		var min_d: float = o.r + r
+		var l := d.length()
+		if l < min_d and l > 0.0001:
+			p = o.p + d / l * min_d
+	for w in walls:
+		var axis: Vector2 = w.axis
+		var normal := Vector2(-axis.y, axis.x)
+		var rel: Vector2 = p - w.c
+		var a := rel.dot(axis)
+		var b := rel.dot(normal)
+		var hl: float = w.hl + r
+		var ht: float = w.ht + r
+		if absf(a) < hl and absf(b) < ht:
+			var pen_a := hl - absf(a)
+			var pen_b := ht - absf(b)
+			if pen_b < pen_a:
+				p += normal * signf(b if b != 0.0 else 1.0) * pen_b
+			else:
+				p += axis * signf(a if a != 0.0 else 1.0) * pen_a
+	return p
+
+func point_in_wall(p: Vector3) -> bool:
+	for w in walls:
+		var axis: Vector2 = w.axis
+		var normal := Vector2(-axis.y, axis.x)
+		var rel: Vector2 = Vector2(p.x, p.z) - w.c
+		if absf(rel.dot(axis)) < w.hl and absf(rel.dot(normal)) < w.ht:
+			if p.y < ground_height(w.c.x, w.c.y) + w.h:
+				return true
+	return false
+
+func unit_hit_by_point(p: Vector3, r: float, team: int, exclude: Array):
+	for t in 2:
+		if t == team:
+			continue
+		for u in team_units[t]:
+			if exclude.has(u):
+				continue
+			var d := Vector2(u.position.x - p.x, u.position.z - p.z).length()
+			if d < r + u.radius:
+				var bottom: float = u.position.y + 0.05
+				var top: float = u.position.y + 1.95 + float(u.parts.seat)
+				if p.y > bottom and p.y < top:
+					return u
+	return null
+
+func find_target(u):
+	var best = null
+	var bd := INF
+	var enemies: Array = team_units[1 - u.team]
+	for e in enemies:
+		var d: float = Vector2(e.position.x - u.position.x, e.position.z - u.position.z).length()
+		d += e.engaged_by * 1.5
+		if e.is_player:
+			d -= 2.0
+		if d < bd:
+			bd = d
+			best = e
+	if u.target != null and is_instance_valid(u.target):
+		u.target.engaged_by = maxi(0, u.target.engaged_by - 1)
+	if best != null:
+		best.engaged_by += 1
+	return best
+
+func hurt_ally_near(u, r: float):
+	for a in team_units[u.team]:
+		if a.hp < a.max_hp * 0.6 and u.dist_to(a) < r:
+			return a
+	return null
+
+func enemies_near(u, r: float) -> int:
+	var c := 0
+	for e in team_units[1 - u.team]:
+		if u.dist_to(e) < r:
+			c += 1
+	return c
+
+func lead_point(shooter, target, proj_speed: float) -> Vector3:
+	var p: Vector3 = target.chest()
+	var t: float = shooter.chest().distance_to(p) / maxf(1.0, proj_speed)
+	return p + Vector3(target.vel.x, 0, target.vel.z) * t
+
+func path_point(from: Vector3, to: Vector3) -> Vector3:
+	if siege == "":
+		return to
+	var sf := signf(from.z - wall_z)
+	var st := signf(to.z - wall_z)
+	if sf == st or sf == 0.0:
+		return to
+	if absf(from.x) < breach_half - 1.0 and absf(from.z - wall_z) < 3.5:
+		return to
+	return Vector3(clampf(from.x, -breach_half + 1.5, breach_half - 1.5), 0, wall_z + sf * 2.5)
+
+# ---------------------------------------------------------------------------
+# Combat resolution
+# ---------------------------------------------------------------------------
+func on_attack_started(att, windup: float) -> void:
+	var victim = att.target
+	if att.is_player:
+		victim = _nearest_in_front(att, att.melee_reach() + 1.5, 70.0)
+	if victim != null and is_instance_valid(victim) and victim.alive:
+		victim.incoming_attack(att, windup)
+
+func _nearest_in_front(att, reach: float, half_angle_deg: float):
+	var best = null
+	var bd := INF
+	var fwd: Vector3 = att.forward()
+	for e in team_units[1 - att.team]:
+		var d3: Vector3 = e.position - att.position
+		d3.y = 0
+		var d := d3.length()
+		if d > reach + e.radius:
+			continue
+		if d > 0.01 and rad_to_deg(fwd.angle_to(d3 / d)) > half_angle_deg:
+			continue
+		if d < bd:
+			bd = d
+			best = e
+	return best
+
+func melee_strike(att) -> void:
+	if not att.alive:
+		return
+	var half_angle := 30.0 if att.attack_dir == "thrust" else 60.0
+	var victim = _nearest_in_front(att, att.melee_reach(), half_angle)
+	if victim == null:
+		return
+	var w: Dictionary = att.weapon
+	var dmg: float = float(w.get("dmg", 8)) * att.dmg_mult * randf_range(0.9, 1.1)
+	if att.attack_dir == "overhead":
+		dmg *= 1.1
+	if att.mounted():
+		dmg += Vector2(att.vel.x, att.vel.z).length() * 1.4
+	var landed: bool = victim.receive_melee(att, dmg, w.get("dtype", "cut"), att.attack_dir)
+	if landed:
+		spawn_spark(victim.chest(), Color(0.7, 0.1, 0.1))
+		if att.is_player:
+			hud_note("Hit %s for %d" % [victim.display_name, int(maxf(dmg * 0.2, dmg - victim.armor * 0.55))])
+
+func spawn_projectile(p: Dictionary, from: Vector3) -> void:
+	var pr = Projectile.new()
+	p.battle = self
+	add_child(pr)
+	pr.position = from
+	pr.setup(p)
+
+func projectile_hit(pr, u) -> void:
+	var from_dir: Vector3 = -pr.vel.normalized()
+	from_dir.y = 0
+	if u.shield and not u.mounted() and u.forward().dot(from_dir.normalized()) > 0.4 and randf() < 0.75 and pr.fx in ["arrow", "knife", "boomerang"]:
+		Sfx.play_at("block", u.position, -8.0)
+		return
+	var push: Vector3 = pr.vel.normalized()
+	push.y = 0
+	u.apply_damage(pr.dmg, pr.owner_unit, pr.dtype, push.normalized(), pr.knock)
+	match pr.effect:
+		"burn":
+			u.burn_t = 2.0
+			u.burn_dps = pr.dmg * 0.12
+		"slow":
+			u.slow_t = 2.5
+		"blind":
+			u.blind_t = 3.0
+	if is_instance_valid(pr.owner_unit) and pr.owner_unit.is_player:
+		hud_note("Hit %s" % u.display_name)
+
+func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
+	var mult: float = caster.bend_power * caster.bend_mult()
+	if caster.is_player:
+		mult *= 1.0 + caster.bend_skill * 0.05
+	var dmg: float = a.get("dmg", 0.0) * mult
+	var fwd: Vector3 = caster.forward()
+	var from: Vector3 = caster.chest() + fwd * 0.7
+	Sfx.play_at(a.get("sfx", "air"), caster.position, -3.0)
+	match a.kind:
+		"projectile":
+			var dir := (point - from).normalized()
+			if dir.length() < 0.5:
+				dir = fwd
+			var spd: float = a.speed
+			var grav: float = a.get("gravity", 0.0)
+			if grav > 0.0:
+				var t := from.distance_to(point) / spd
+				dir.y += grav * t * 0.5 / spd
+				dir = dir.normalized()
+			spawn_projectile({"owner_unit": caster, "team": caster.team, "vel": dir * spd, "gravity": grav,
+				"dmg": dmg, "dtype": "blunt" if a.fx in ["rock", "air", "water"] else "fire", "radius": a.radius,
+				"knock": a.knock, "effect": a.get("effect", ""), "fx": a.fx, "life": a.range / spd + 0.3,
+				"pierce": a.get("pierce", false)}, from)
+		"volley":
+			var base := (point - from).normalized()
+			for i in a.count:
+				var ang := deg_to_rad(lerpf(-a.spread, a.spread, float(i) / maxf(1.0, a.count - 1)))
+				var d := base.rotated(Vector3.UP, ang)
+				spawn_projectile({"owner_unit": caster, "team": caster.team, "vel": d * a.speed, "gravity": 0.0,
+					"dmg": dmg, "dtype": "pierce", "radius": a.radius, "knock": a.knock, "effect": a.get("effect", ""),
+					"fx": a.fx, "life": a.range / a.speed}, from)
+		"cone":
+			for e in team_units[1 - caster.team].duplicate():
+				var d3: Vector3 = e.position - caster.position
+				d3.y = 0
+				if d3.length() < a.range + e.radius and d3.length() > 0.01 and rad_to_deg(fwd.angle_to(d3.normalized())) < a.angle:
+					e.apply_damage(dmg, caster, "fire" if a.fx in ["fire", "blue_fire"] else "blunt", d3.normalized(), a.knock)
+					if a.get("effect", "") == "burn":
+						e.burn_t = 2.0
+						e.burn_dps = dmg * 0.1
+					elif a.get("effect", "") == "blind":
+						e.blind_t = 3.0
+			_cone_fx(caster, a)
+		"wall":
+			var center: Vector3 = caster.position + fwd * a.dist
+			var axis := Vector2(fwd.z, -fwd.x).normalized()
+			var gh := ground_height(center.x, center.z)
+			var col := Color(0.45, 0.36, 0.25) if a.fx == "rock" else Color(0.85, 0.75, 0.5)
+			var node := MB.box(Vector3(a.width, a.height, 0.8), col, Vector3(center.x, gh - a.height, center.z))
+			node.rotation.y = caster.facing
+			add_child(node)
+			var tw := node.create_tween()
+			tw.tween_property(node, "position:y", gh + a.height / 2.0 - 0.2, 0.25)
+			walls.append({"c": Vector2(center.x, center.z), "axis": axis, "hl": a.width / 2.0, "ht": 0.4, "h": a.height,
+				"until": Time.get_ticks_msec() / 1000.0 + a.life, "node": node})
+			# shove anyone standing there
+			for t in 2:
+				for u in team_units[t]:
+					if Vector2(u.position.x - center.x, u.position.z - center.z).length() < a.width / 2.0:
+						u.knock += fwd * 5.0
+			spawn_burst(center, col, 1.5)
+		"heal":
+			var healed := 0
+			for ally in team_units[caster.team]:
+				if ally.dist_to(caster) < a.range:
+					ally.heal(ally.max_hp * a.amount * (1.0 if ally == caster else 0.7))
+					spawn_burst(ally.chest(), Color(0.4, 0.75, 1.0), 0.8)
+					healed += 1
+			if caster.is_player:
+				hud_note("Healing water mends %d wounds" % healed)
+		"quake":
+			for e in team_units[1 - caster.team].duplicate():
+				var d4: Vector3 = e.position - caster.position
+				d4.y = 0
+				if d4.length() < a.range:
+					e.apply_damage(dmg, caster, "blunt", d4.normalized(), a.knock)
+					if e.alive and not e.mounted():
+						e._set_action("stagger", a.stun)
+						if not e.airborne:
+							e.airborne = true
+							e.y_vel = 4.0
+			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx))
+		"lightning":
+			var dir2 := (point - from).normalized()
+			var hit = null
+			var hit_d: float = a.range
+			for e in team_units[1 - caster.team]:
+				var rel: Vector3 = e.chest() - from
+				var along := rel.dot(dir2)
+				if along < 0.0 or along > a.range:
+					continue
+				var perp := (rel - dir2 * along).length()
+				if perp < 0.9 and along < hit_d:
+					hit_d = along
+					hit = e
+			var end: Vector3 = from + dir2 * hit_d
+			if hit != null:
+				hit.apply_damage(dmg, caster, "fire", dir2, a.knock)
+			_lightning_fx(from, end)
+
+func _cone_fx(caster, a: Dictionary) -> void:
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.emitting = true
+	p.amount = 60
+	p.lifetime = 0.5
+	p.explosiveness = 0.9
+	p.direction = Vector3(0, 0, 1)
+	p.spread = a.angle * 0.6
+	p.initial_velocity_min = a.range * 1.5
+	p.initial_velocity_max = a.range * 2.5
+	p.gravity = Vector3(0, 1, 0)
+	p.damping_min = 4.0
+	p.damping_max = 6.0
+	var sm := SphereMesh.new()
+	sm.radius = 0.25
+	sm.height = 0.5
+	sm.radial_segments = 6
+	sm.rings = 3
+	p.mesh = sm
+	var c := Bending.fx_color(a.fx)
+	p.material_override = MB.mat(c, 0.5, a.fx in ["fire", "blue_fire"])
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1, 1, 1, 1))
+	grad.set_color(1, Color(1, 1, 1, 0))
+	p.color_ramp = grad
+	add_child(p)
+	p.global_position = caster.chest()
+	p.rotation.y = caster.facing
+	get_tree().create_timer(1.2).timeout.connect(p.queue_free)
+
+func _ring_fx(center: Vector3, r: float, c: Color) -> void:
+	var ring := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 0.3
+	tm.outer_radius = 0.8
+	ring.mesh = tm
+	ring.material_override = MB.mat(c, 0.8)
+	add_child(ring)
+	ring.position = center + Vector3(0, 0.3, 0)
+	var tw := ring.create_tween()
+	tw.tween_property(ring, "scale", Vector3(r, 1, r), 0.4)
+	tw.tween_callback(ring.queue_free)
+	spawn_burst(center, c, 2.0)
+
+func _lightning_fx(a: Vector3, b: Vector3) -> void:
+	var root := Node3D.new()
+	add_child(root)
+	var pts := [a]
+	var segs := 8
+	for i in range(1, segs):
+		pts.append(a.lerp(b, float(i) / segs) + Vector3(randf_range(-0.5, 0.5), randf_range(-0.5, 0.5), randf_range(-0.5, 0.5)))
+	pts.append(b)
+	for i in segs:
+		var p0: Vector3 = pts[i]
+		var p1: Vector3 = pts[i + 1]
+		var seg := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.08, 0.08, p0.distance_to(p1))
+		seg.mesh = bm
+		seg.material_override = MB.mat(Color(0.75, 0.9, 1.0), 0.2, true)
+		root.add_child(seg)
+		seg.position = (p0 + p1) / 2.0
+		if not p0.is_equal_approx(p1):
+			seg.look_at(p1, Vector3.UP if absf((p1 - p0).normalized().y) < 0.99 else Vector3.RIGHT)
+	var light := OmniLight3D.new()
+	light.light_color = Color(0.7, 0.85, 1.0)
+	light.light_energy = 6.0
+	light.omni_range = 20.0
+	root.add_child(light)
+	light.position = b
+	get_tree().create_timer(0.18).timeout.connect(root.queue_free)
+
+func spawn_burst(pos: Vector3, c: Color, size: float = 1.0) -> void:
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.emitting = true
+	p.amount = 16
+	p.lifetime = 0.5
+	p.explosiveness = 1.0
+	p.direction = Vector3.UP
+	p.spread = 180.0
+	p.initial_velocity_min = 2.0 * size
+	p.initial_velocity_max = 5.0 * size
+	p.gravity = Vector3(0, -6, 0)
+	var sm := SphereMesh.new()
+	sm.radius = 0.12 * size
+	sm.height = 0.24 * size
+	sm.radial_segments = 6
+	sm.rings = 3
+	p.mesh = sm
+	p.material_override = MB.mat(Color(c, 1.0), 0.6, true)
+	add_child(p)
+	p.global_position = pos
+	get_tree().create_timer(1.0).timeout.connect(p.queue_free)
+
+func spawn_spark(pos: Vector3, c: Color = Color(1, 0.9, 0.5)) -> void:
+	spawn_burst(pos, c, 0.4)
+
+func leave_debris(pos: Vector3) -> void:
+	var r := MB.sphere(0.35, Color(0.45, 0.36, 0.25), Vector3(pos.x, ground_height(pos.x, pos.z) + 0.1, pos.z))
+	r.scale = Vector3(1, 0.6, 1)
+	add_child(r)
+	get_tree().create_timer(20.0).timeout.connect(r.queue_free)
+
+# ---------------------------------------------------------------------------
+# Casualties and battle end
+# ---------------------------------------------------------------------------
+func on_unit_down(u, killer, dtype: String) -> void:
+	team_units[u.team].erase(u)
+	var kname: String = killer.display_name if killer != null and is_instance_valid(killer) else "fire"
+	var wounded := false
+	if u.is_player:
+		player_downed = true
+		player_controlled = false
+		spectate_target = null
+		feed_msg("You have been knocked unconscious! (Tab: fast-forward the battle)", Color(1, 0.4, 0.3))
+	elif u.companion_id != "":
+		companions_down.append(u.companion_id)
+		feed_msg("%s has been knocked out by %s." % [u.display_name, kname], Color(1, 0.6, 0.4))
+	elif u.lord_id != "":
+		feed_msg("%s has been defeated!" % u.display_name, Color(1, 0.85, 0.4))
+	else:
+		var chance := 0.5 if u.team == 0 else 0.4
+		if dtype == "blunt":
+			chance = 0.9
+		wounded = randf() < chance
+		if not casualties.has(u.party_key):
+			casualties[u.party_key] = {}
+		var c: Dictionary = casualties[u.party_key]
+		if not c.has(u.troop_id):
+			c[u.troop_id] = {"killed": 0, "wounded": 0}
+		c[u.troop_id]["wounded" if wounded else "killed"] += 1
+		if killer != null and is_instance_valid(killer) and (killer.is_player or u.team == 0 or killer.is_hero):
+			feed_msg("%s %s %s." % [kname, "knocked out" if wounded else "killed", u.display_name],
+				Color(0.7, 1, 0.7) if u.team == 1 else Color(1, 0.7, 0.6))
+	if killer != null and is_instance_valid(killer) and killer.is_player:
+		player_kills += 1
+	_check_end()
+
+func _check_end() -> void:
+	if battle_over:
+		return
+	var a0: int = team_units[0].size() + reserves[0].size()
+	var a1: int = team_units[1].size() + reserves[1].size()
+	if a1 == 0:
+		battle_over = true
+		winner = 0
+		big_label.text = "VICTORY!\nPress Tab to leave the field"
+		Sfx.play("horn", -4.0)
+	elif a0 == 0:
+		battle_over = true
+		winner = 1
+		big_label.text = "DEFEAT\nPress Tab to continue"
+	if battle_over:
+		Engine.time_scale = 1.0 if not autotest else Engine.time_scale
+
+func _finish(retreat: bool) -> void:
+	if _finished:
+		return
+	_finished = true
+	Engine.time_scale = 1.0
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if player_unit != null and player_unit.alive:
+		GS.player.hp = int(maxf(1.0, player_unit.hp))
+	if autotest:
+		print("BATTLE RESULT winner=", winner, " casualties=", casualties, " player_downed=", player_downed)
+	if retreat:
+		GS.retreat_battle(casualties, companions_down)
+	else:
+		GS.finish_battle(winner == 0, casualties, player_downed, companions_down)
+	if autotest:
+		get_tree().quit()
+		return
+	get_tree().change_scene_to_file("res://scenes/world_map.tscn")
+
+# ---------------------------------------------------------------------------
+# Player input & camera
+# ---------------------------------------------------------------------------
+func player_move_vector() -> Vector3:
+	var v := Vector3.ZERO
+	if Input.is_action_pressed("move_forward"):
+		v.z += 1
+	if Input.is_action_pressed("move_back"):
+		v.z -= 1
+	if Input.is_action_pressed("move_left"):
+		v.x += 1
+	if Input.is_action_pressed("move_right"):
+		v.x -= 1
+	if v == Vector3.ZERO:
+		return v
+	v = v.normalized().rotated(Vector3.UP, cam_yaw)
+	if Input.is_action_pressed("walk"):
+		v *= 0.5
+	return v
+
+func aim_point() -> Vector3:
+	var vp := get_viewport().get_visible_rect().size
+	var center := vp / 2.0
+	var from := cam.project_ray_origin(center)
+	var dir := cam.project_ray_normal(center)
+	# Units first
+	var best_t := INF
+	for t in 2:
+		for u in team_units[t]:
+			if u == player_unit:
+				continue
+			var c: Vector3 = u.chest() - Vector3(0, 0.3, 0)
+			var rel := c - from
+			var along := rel.dot(dir)
+			if along < 1.0 or along > 120.0:
+				continue
+			if (rel - dir * along).length() < 0.7 and along < best_t:
+				best_t = along
+	if best_t < INF:
+		return from + dir * best_t
+	var p := from
+	for i in 240:
+		p += dir * 0.5
+		if p.y <= ground_height(p.x, p.z) or point_in_wall(p):
+			return p
+	return from + dir * 120.0
+
+func _mouse_dir() -> String:
+	var m := mouse_accum
+	if m.length() < 2.0:
+		return ["left", "right", "overhead", "thrust"].pick_random() if not GS.settings.auto_block else "right"
+	if absf(m.x) > absf(m.y):
+		return "right" if m.x > 0 else "left"
+	return "overhead" if m.y < 0 else "thrust"
+
+func _unhandled_input(event: InputEvent) -> void:
+	if autotest:
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		var k := event as InputEventKey
+		if k.physical_keycode == KEY_ESCAPE:
+			_toggle_pause()
+			return
+		if paused:
+			return
+		match k.physical_keycode:
+			KEY_TAB:
+				if battle_over:
+					_finish(false)
+				elif player_downed:
+					Engine.time_scale = 4.0 if Engine.time_scale < 2.0 else 1.0
+			KEY_V:
+				cam_far = not cam_far
+			KEY_F1:
+				_order("hold")
+			KEY_F2:
+				_order("follow")
+			KEY_F3:
+				_order("charge")
+	if paused or player_unit == null or not player_controlled or not player_unit.alive:
+		if event is InputEventMouseMotion and not paused:
+			cam_yaw -= event.relative.x * GS.settings.mouse_sens * 0.01
+		return
+	var pu = player_unit
+	if event is InputEventMouseMotion:
+		var mm := event as InputEventMouseMotion
+		var sens: float = GS.settings.mouse_sens * 0.01
+		cam_yaw -= mm.relative.x * sens
+		var dy := mm.relative.y * sens * (-1.0 if GS.settings.invert_y else 1.0)
+		cam_pitch = clampf(cam_pitch - dy, -1.1, 0.7)
+		mouse_accum += mm.relative
+	elif event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			if mb.pressed:
+				if player_ranged_mode:
+					if not pu.start_aim():
+						hud_note("Out of ammunition!" if pu.ammo <= 0 else "")
+				else:
+					pu.start_attack(_mouse_dir())
+			else:
+				if player_ranged_mode:
+					pu.release_aim(aim_point())
+		elif mb.button_index == MOUSE_BUTTON_RIGHT:
+			if mb.pressed:
+				pu.start_block(_mouse_dir())
+			else:
+				pu.stop_block()
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
+			cam_dist = maxf(2.0, cam_dist - 0.5)
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
+			cam_dist = minf(12.0, cam_dist + 0.5)
+	elif event is InputEventKey and event.pressed and not event.echo:
+		var k2 := event as InputEventKey
+		match k2.physical_keycode:
+			KEY_SPACE:
+				pu.jump()
+			KEY_1:
+				player_ranged_mode = false
+			KEY_2:
+				if pu.ranged_id != "":
+					player_ranged_mode = true
+				else:
+					hud_note("You have no ranged weapon.")
+			KEY_Q:
+				_player_cast("q")
+			KEY_E:
+				_player_cast("e")
+			KEY_R:
+				_player_cast("r")
+
+func _player_cast(slot: String) -> void:
+	var pu = player_unit
+	if pu.bend == "":
+		hud_note("You are not a bender.")
+		return
+	var a := Bending.ability(pu.bend, slot)
+	if a.is_empty():
+		return
+	if pu.bend_block_t > 0.0:
+		hud_note("Your chi is blocked!")
+		return
+	if pu.bend_mult() <= 0.01:
+		hud_note("The eclipse has taken your bending!")
+		return
+	if a.get("min_skill", 0) > pu.bend_skill:
+		hud_note("%s requires Bending skill %d." % [a.name, a.min_skill])
+		return
+	if pu.chi < a.cost:
+		hud_note("Not enough chi.")
+		return
+	if pu.cooldowns.get(slot, 0.0) > 0.0:
+		return
+	pu.cast(slot, aim_point())
+
+func _order(o: String) -> void:
+	var i := 0
+	for u in team_units[0]:
+		if u.is_player:
+			continue
+		u.order = o
+		var row := int(i / 12)
+		var col := i % 12
+		var fwd := Vector3(sin(cam_yaw), 0, cos(cam_yaw))
+		var right := Vector3(-fwd.z, 0, fwd.x)
+		u.formation_offset = right * (col - 5.5) * 1.6 - fwd * (2.5 + row * 1.8)
+		if o == "hold" and player_unit != null:
+			u.hold_pos = player_unit.position + u.formation_offset
+		i += 1
+	var names := {"hold": "Hold this position!", "follow": "Follow me!", "charge": "Charge!"}
+	feed_msg("You order: " + names[o], Color(0.9, 0.9, 1))
+	Sfx.play("horn", -14.0, 1.4)
+
+func _update_camera(delta: float) -> void:
+	var focus = player_unit
+	if focus == null or not focus.alive:
+		if spectate_target == null or not is_instance_valid(spectate_target) or not spectate_target.alive:
+			spectate_target = team_units[0][0] if not team_units[0].is_empty() else (team_units[1][0] if not team_units[1].is_empty() else null)
+		focus = spectate_target
+	if focus == null:
+		return
+	var dist := cam_dist * (1.8 if cam_far else 1.0)
+	if focus.mounted():
+		dist *= 1.3
+	var head: Vector3 = focus.position + Vector3(0, 1.7 + float(focus.parts.seat), 0)
+	var fwd := Vector3(sin(cam_yaw), 0, cos(cam_yaw))
+	var right := Vector3(-fwd.z, 0, fwd.x)
+	var back := -fwd * cos(cam_pitch) * dist + Vector3(0, -sin(cam_pitch) * dist, 0)
+	var target_pos := head + back + right * 0.6
+	var gh := ground_height(target_pos.x, target_pos.z) + 0.4
+	target_pos.y = maxf(target_pos.y, gh)
+	cam.position = cam.position.lerp(target_pos, minf(1.0, delta * 20.0)) if cam.position != Vector3.ZERO else target_pos
+	var look := head + fwd * 6.0 + Vector3(0, sin(cam_pitch) * 6.0, 0) + right * 0.6
+	if not look.is_equal_approx(cam.position):
+		cam.look_at(look, Vector3.UP)
+
+func _toggle_pause() -> void:
+	paused = not paused
+	pause_panel.visible = paused
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED
+	if paused:
+		_build_pause_menu()
+
+# ---------------------------------------------------------------------------
+# HUD
+# ---------------------------------------------------------------------------
+func _build_hud() -> void:
+	hud = CanvasLayer.new()
+	add_child(hud)
+	var root := Control.new()
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.theme = UI.theme()
+	hud.add_child(root)
+	crosshair = Control.new()
+	crosshair.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	crosshair.draw.connect(func():
+		var c := crosshair.size / 2.0
+		var col := Color(1, 1, 1, 0.8)
+		crosshair.draw_line(c - Vector2(9, 0), c - Vector2(3, 0), col, 2.0)
+		crosshair.draw_line(c + Vector2(3, 0), c + Vector2(9, 0), col, 2.0)
+		crosshair.draw_line(c - Vector2(0, 9), c - Vector2(0, 3), col, 2.0)
+		crosshair.draw_line(c + Vector2(0, 3), c + Vector2(0, 9), col, 2.0))
+	root.add_child(crosshair)
+	var bl := PanelContainer.new()
+	bl.anchor_top = 1.0
+	bl.anchor_bottom = 1.0
+	bl.offset_left = 12
+	bl.offset_top = -170
+	bl.offset_right = 430
+	bl.offset_bottom = -12
+	root.add_child(bl)
+	var v := UI.vbox(4)
+	bl.add_child(v)
+	hp_bar = UI.bar(100, 100, Color(0.75, 0.15, 0.1), 380, 16)
+	v.add_child(hp_bar)
+	chi_bar = UI.bar(100, 100, Color(0.2, 0.55, 0.95), 380, 12)
+	v.add_child(chi_bar)
+	mount_bar = UI.bar(100, 100, Color(0.6, 0.45, 0.25), 380, 10)
+	v.add_child(mount_bar)
+	info_label = UI.label("", 14)
+	v.add_child(info_label)
+	var br := PanelContainer.new()
+	br.anchor_left = 1.0
+	br.anchor_right = 1.0
+	br.anchor_top = 1.0
+	br.anchor_bottom = 1.0
+	br.offset_left = -360
+	br.offset_top = -100
+	br.offset_right = -12
+	br.offset_bottom = -12
+	root.add_child(br)
+	count_label = UI.label("", 15)
+	br.add_child(count_label)
+	feed = UI.vbox(2)
+	feed.position = Vector2(14, 12)
+	feed.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(feed)
+	big_label = UI.label("", 40, Color(1, 0.92, 0.6))
+	big_label.add_theme_color_override("font_outline_color", Color(0.1, 0.05, 0))
+	big_label.add_theme_constant_override("outline_size", 8)
+	big_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	big_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	big_label.offset_top = 120
+	big_label.offset_left = -400
+	big_label.offset_right = 400
+	root.add_child(big_label)
+	note_label = UI.label("", 20, Color(1, 1, 1))
+	note_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	note_label.add_theme_constant_override("outline_size", 6)
+	note_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note_label.set_anchors_preset(Control.PRESET_CENTER)
+	note_label.offset_top = 40
+	note_label.offset_left = -300
+	note_label.offset_right = 300
+	root.add_child(note_label)
+	pause_panel = Control.new()
+	pause_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pause_panel.visible = false
+	root.add_child(pause_panel)
+
+func _build_pause_menu() -> void:
+	UI.clear(pause_panel)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.5)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pause_panel.add_child(dim)
+	var cc := CenterContainer.new()
+	cc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pause_panel.add_child(cc)
+	var p := PanelContainer.new()
+	p.custom_minimum_size = Vector2(560, 420)
+	cc.add_child(p)
+	var v := UI.vbox(8)
+	p.add_child(v)
+	v.add_child(UI.title("Battle Paused"))
+	v.add_child(UI.rich("[b]Controls[/b]\nWASD move · Mouse look · LMB attack (direction follows your last mouse movement) · RMB block · Space jump · Shift walk\n1 melee · 2 ranged (hold LMB to draw, release to shoot)\nQ / E / R bending abilities · V camera distance\nF1 hold position · F2 follow me · F3 charge · Tab leave when the battle is over", 520))
+	v.add_child(UI.option("Resume", _toggle_pause))
+	v.add_child(UI.option("Settings", func():
+		var sw = SettingsWindow.new()
+		pause_panel.add_child(sw)))
+	if not battle_over:
+		v.add_child(UI.option("Retreat from the battle (your fallen stay fallen)", func():
+			paused = false
+			_finish(true)))
+	else:
+		v.add_child(UI.option("Leave the battlefield", func():
+			paused = false
+			_finish(false)))
+
+func feed_msg(text: String, c: Color = Color(1, 1, 1)) -> void:
+	if feed == null:
+		return
+	var l := UI.label(text, 15, c)
+	l.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	l.add_theme_constant_override("outline_size", 4)
+	feed.add_child(l)
+	while feed.get_child_count() > 7:
+		var o := feed.get_child(0)
+		feed.remove_child(o)
+		o.queue_free()
+	var tw := l.create_tween()
+	tw.tween_interval(6.0)
+	tw.tween_property(l, "modulate:a", 0.0, 1.0)
+	tw.tween_callback(func():
+		if is_instance_valid(l):
+			l.queue_free())
+
+func hud_note(text: String) -> void:
+	if note_label == null or text == "":
+		return
+	note_label.text = text
+	_note_t = 1.5
+
+func _update_hud(delta: float) -> void:
+	_note_t -= delta
+	if _note_t <= 0.0 and note_label:
+		note_label.text = ""
+	var pu = player_unit
+	if pu != null:
+		hp_bar.max_value = pu.max_hp
+		hp_bar.value = maxf(0.0, pu.hp)
+		chi_bar.visible = pu.bend != ""
+		chi_bar.max_value = pu.max_chi
+		chi_bar.value = pu.chi
+		mount_bar.visible = pu.mount_id != ""
+		mount_bar.max_value = maxf(1.0, pu.mount_max)
+		mount_bar.value = maxf(0.0, pu.mount_hp)
+		var txt := "HP %d/%d" % [int(maxf(0, pu.hp)), int(pu.max_hp)]
+		txt += "   Weapon: %s" % (Data.item(pu.ranged_id).name + " (%d)" % pu.ammo if player_ranged_mode else Data.item(pu.weapon_id).name)
+		if pu.bend != "":
+			var parts := []
+			for slot in ["q", "e", "r"]:
+				var a := Bending.ability(pu.bend, slot)
+				if a.is_empty():
+					continue
+				var st := "ready"
+				if a.get("min_skill", 0) > pu.bend_skill:
+					st = "locked"
+				elif pu.cooldowns.get(slot, 0.0) > 0.0:
+					st = "%.1fs" % pu.cooldowns[slot]
+				elif pu.chi < a.cost:
+					st = "chi"
+				parts.append("%s %s [%s]" % [slot.to_upper(), a.name, st])
+			txt += "\n" + "   ".join(parts)
+		info_label.text = txt
+		crosshair.visible = pu.alive and not paused
+	var a0: int = team_units[0].size()
+	var a1: int = team_units[1].size()
+	count_label.text = "Your side: %d  (+%d reserves)\nEnemy: %d  (+%d reserves)\nF1 Hold · F2 Follow · F3 Charge · Esc menu" % [a0, reserves[0].size(), a1, reserves[1].size()]
