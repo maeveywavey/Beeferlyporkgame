@@ -87,6 +87,15 @@ func build() -> void:
 		row2.add_child(l2)
 		row2.add_child(UI.button("Recruit", _recruit_prisoner.bind(s.id), 80, GS.party_size() < GS.party_limit()))
 		plist.add_child(row2)
+	for lid in GS.player.get("captive_lords", []):
+		var lrow := UI.hbox()
+		var ll := UI.label("%s (noble captive)" % Data.lords[lid].name, 15, UI.RED)
+		ll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lrow.add_child(ll)
+		lrow.add_child(UI.button("Release", func():
+			GS.release_lord(lid, false)
+			refresh(), 80))
+		plist.add_child(lrow)
 	right.add_child(UI.button("Release all prisoners (+honour)", func():
 		if not pp.prisoners.is_empty():
 			GS.player.honor = GS.player.get("honor", 0) + 1

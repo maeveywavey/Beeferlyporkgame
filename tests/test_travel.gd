@@ -6,6 +6,7 @@ func _ready() -> void:
 		return
 	var p := GS.create_player("Tester", "ek_refugee", "", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 	GS.new_game(p)
+	GS.flags.seen_help = true
 	get_tree().change_scene_to_file("res://scenes/world_map.tscn")
 	await get_tree().create_timer(0.5).timeout
 	var map = get_tree().current_scene

@@ -28,6 +28,8 @@ func build() -> void:
 		else:
 			note = "No saved game found."
 			refresh(), GS.has_save()))
+	content.add_child(UI.option("How to play", func():
+		map.open_window(load("res://scripts/ui/help_window.gd").new())))
 	content.add_child(UI.option("Settings", func():
 		var sw = SettingsWindow.new()
 		map.open_window(sw)))

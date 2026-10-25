@@ -160,7 +160,8 @@ func _build_neutral(p: Dictionary) -> void:
 		content.add_child(UI.option("Speak with %s" % ld.name, func():
 			page = "talk"
 			refresh()))
-		content.add_child(UI.option("Attack them! (this means war with the %s)" % Data.factions[p.faction].name, _confirm_attack.bind(p)))
+		if p.faction != GS.player_faction():
+			content.add_child(UI.option("Attack them! (this means war with the %s)" % Data.factions[p.faction].name, _confirm_attack.bind(p)))
 		content.add_child(UI.option("Leave", _leave.bind(p)))
 		return
 	var desc := ""
@@ -206,6 +207,24 @@ func _build_lord_talk(p: Dictionary) -> void:
 		content.add_child(UI.rich("[i]%s greets you as a fellow servant of the %s.[/i]" % [ld.name, Data.factions[faction].name], 700))
 		if pl.status == "vassal" and GS.is_king(lid):
 			content.add_child(UI.option("My liege, I request a fief.", _request_fief.bind(lid)))
+	if not GS.at_war(GS.player_faction(), faction) and lr.relation >= -10:
+		content.add_child(UI.option("Do you have any tasks for me?", func():
+			var q: Dictionary = load("res://scripts/core/quests.gd").generate_lord(lid)
+			if q.is_empty():
+				note = "\"Not at the moment.\""
+				page = "talk"
+				refresh()
+				return
+			UI.clear(content)
+			content.add_child(UI.rich("[b]%s[/b]\n\n%s" % [q.title, q.desc], 700))
+			content.add_child(UI.option("I accept.", func():
+				load("res://scripts/core/quests.gd").accept(q)
+				note = "\"Good. Don't disappoint me.\""
+				page = "talk"
+				refresh()))
+			content.add_child(UI.option("Not now.", func():
+				page = "talk"
+				refresh()))))
 	content.add_child(UI.option("What news of the war?", func():
 		note = Data.rumors.pick_random()
 		page = "talk"

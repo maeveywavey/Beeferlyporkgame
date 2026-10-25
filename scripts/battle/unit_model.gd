@@ -52,7 +52,7 @@ static func build(look: Dictionary, weapon: String, ranged: String, shield: bool
 		parts.mount = mount_node
 		parts.mount_legs = []
 		if Data.item(mount).get("look", "") == "rhino":
-			seat = 1.6
+			seat = 1.15
 			var body := _sph(1.0, Color(0.42, 0.38, 0.32), Vector3(0, 1.25, 0), mount_node)
 			body.scale = Vector3(0.95, 0.75, 1.6)
 			_sph(0.5, Color(0.42, 0.38, 0.32), Vector3(0, 1.3, 1.65), mount_node)
@@ -65,7 +65,7 @@ static func build(look: Dictionary, weapon: String, ranged: String, shield: bool
 				_box(Vector3(0.3, 0.9, 0.3), Color(0.38, 0.34, 0.28), Vector3(0, -0.45, 0), leg)
 				parts.mount_legs.append(leg)
 		else:
-			seat = 1.45
+			seat = 0.98
 			var body2 := _sph(0.6, Color(0.75, 0.6, 0.35), Vector3(0, 1.35, 0), mount_node)
 			body2.scale = Vector3(0.8, 0.8, 1.3)
 			_cyl(0.12, 0.16, 1.0, Color(0.75, 0.6, 0.35), Vector3(0, 1.95, 0.75), mount_node, Vector3(30, 0, 0))
@@ -108,6 +108,8 @@ static func build(look: Dictionary, weapon: String, ranged: String, shield: bool
 	torso.add_child(head)
 	parts.head = head
 	_sph(0.17, skin, Vector3(0, 0.08, 0), head)
+	_box(Vector3(0.045, 0.03, 0.02), Color(0.08, 0.06, 0.05), Vector3(0.06, 0.1, 0.158), head)
+	_box(Vector3(0.045, 0.03, 0.02), Color(0.08, 0.06, 0.05), Vector3(-0.06, 0.1, 0.158), head)
 	_helmet(look.get("helmet", "none"), head, hair, body_c, trim_c)
 	# Arms
 	var arm_r := Node3D.new()
@@ -131,18 +133,22 @@ static func build(look: Dictionary, weapon: String, ranged: String, shield: bool
 	arm_l.add_child(hand_l)
 	parts.hand_l = hand_l
 	# Weapon in right hand (pointing forward when arm is raised)
+	# Weapons extend along the arm (out of the fist) so poses read naturally.
 	var wnode := Node3D.new()
 	hand_r.add_child(wnode)
+	wnode.rotation_degrees = Vector3(90, 0, 0)
 	parts.weapon = wnode
 	_weapon(Data.item(weapon).get("model", "none"), wnode, trim_c)
 	if Data.item(weapon).get("model", "") in ["fans", "dual_dao", "hooks"]:
 		var w2 := Node3D.new()
 		hand_l.add_child(w2)
+		w2.rotation_degrees = Vector3(90, 0, 0)
 		_weapon(Data.item(weapon).model, w2, trim_c)
 	# Ranged weapon (hidden until used)
 	if ranged != "":
 		var rnode := Node3D.new()
 		hand_l.add_child(rnode)
+		rnode.rotation_degrees = Vector3(90, 0, 0)
 		rnode.visible = false
 		parts.ranged = rnode
 		_weapon(Data.item(ranged).get("model", "bow"), rnode, trim_c)
@@ -150,8 +156,8 @@ static func build(look: Dictionary, weapon: String, ranged: String, shield: bool
 		var sh := Node3D.new()
 		arm_l.add_child(sh)
 		sh.position = Vector3(0.12, -0.35, 0.12)
-		_cyl(0.32, 0.32, 0.06, trim_c.darkened(0.1), Vector3.ZERO, sh, Vector3(90, 0, 0), 10)
-		_cyl(0.1, 0.1, 0.08, body_c, Vector3(0, 0, 0.03), sh, Vector3(90, 0, 0), 8)
+		_cyl(0.32, 0.32, 0.06, trim_c.darkened(0.1), Vector3.ZERO, sh, Vector3(135, 0, 0), 10)
+		_cyl(0.1, 0.1, 0.08, body_c, Vector3(0, -0.02, 0.02), sh, Vector3(135, 0, 0), 8)
 		parts.shield = sh
 	return parts
 

@@ -15,6 +15,7 @@ const GRID := 161
 const SPAWN_Z := 55.0
 
 static var autotest := false
+static var autotest_return := false
 
 var fire_mult := 1.0
 var water_mult := 1.0
@@ -1157,7 +1158,7 @@ func _finish(retreat: bool) -> void:
 		GS.retreat_battle(casualties, companions_down)
 	else:
 		GS.finish_battle(winner == 0, casualties, player_downed, companions_down)
-	if autotest:
+	if autotest and not autotest_return:
 		get_tree().quit()
 		return
 	get_tree().change_scene_to_file("res://scenes/world_map.tscn")

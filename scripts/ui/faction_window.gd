@@ -54,7 +54,7 @@ func build() -> void:
 	sc.add_child(ll)
 	for lid in GS.faction_lords(selected):
 		var lr: Dictionary = GS.lords[lid]
-		var where := "recovering from defeat"
+		var where := "your prisoner" if lr.get("held", false) else "recovering from defeat"
 		var troops := 0
 		if lr.party != "" and GS.parties.has(lr.party):
 			var p: Dictionary = GS.parties[lr.party]

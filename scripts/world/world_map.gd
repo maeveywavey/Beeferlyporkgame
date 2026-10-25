@@ -72,6 +72,9 @@ func _ready() -> void:
 	GS.player_arrived.connect(_on_player_arrived)
 	for l in GS.log_lines.slice(-6):
 		_add_log_line(l.t, l.c)
+	if not GS.flags.has("seen_help"):
+		GS.flags.seen_help = true
+		open_window(load("res://scripts/ui/help_window.gd").new())
 	if not GS.last_battle_result.is_empty():
 		var rw = ResultWindow.new()
 		rw.result = GS.last_battle_result

@@ -714,8 +714,9 @@ func _animate(delta: float) -> void:
 			parts.mount_legs[i].rotation_degrees.x = sin(anim_t * 12.0 + i * 1.6) * 35.0 * gallop
 		parts.mount.position.y = absf(sin(anim_t * 12.0)) * 0.12 * gallop
 		parts.rider.position.y = float(parts.seat) + absf(sin(anim_t * 12.0)) * 0.12 * gallop
-	var r_target := Vector3(sin(anim_t * 9.0) * -20.0 * walk, 0, 0)
-	var l_target := Vector3(sin(anim_t * 9.0) * 20.0 * walk, 0, 0)
+	var idle_r := -70.0 if float(weapon.get("reach", 1.0)) >= 2.0 else (-30.0 if weapon_id != "fists" else -10.0)
+	var r_target := Vector3(idle_r + sin(anim_t * 9.0) * -15.0 * walk, 0, 0)
+	var l_target := Vector3((-30.0 if shield else 0.0) + sin(anim_t * 9.0) * 20.0 * walk, 0, 0)
 	var torso_y := 0.0
 	match action:
 		"windup":
@@ -736,7 +737,7 @@ func _animate(delta: float) -> void:
 			torso_y = (-20.0 if attack_dir == "right" else (20.0 if attack_dir == "left" else 0.0))
 		"block":
 			r_target = Vector3(-75, 0, 30)
-			l_target = Vector3(-80, 0, -15) if shield else Vector3(-60, 0, -20)
+			l_target = Vector3(-55, 0, -25) if shield else Vector3(-60, 0, -20)
 		"aim":
 			l_target = Vector3(-90, 0, 0)
 			r_target = Vector3(-90, 0, -25)

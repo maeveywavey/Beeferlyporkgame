@@ -200,6 +200,7 @@ func _raid() -> void:
 	if Data.lords.has(s.owner):
 		GS.change_lord_rel(s.owner, -15)
 	GS.log_msg("You raided %s, taking %d gold and supplies." % [d.name, gold], Color(1, 0.6, 0.3))
+	Quests.on_raid(sid)
 	note = "Your men loot the village. Smoke rises behind you."
 	refresh()
 
@@ -343,6 +344,11 @@ func _build_tavern(o: VBoxContainer) -> void:
 			pr.clear()
 			note = UI.color_text("Sold your prisoners for %d gold." % value, UI.GREEN)
 			refresh(), value > 0))
+	if t.get("ransom", false):
+		for lid in GS.player.get("captive_lords", []).duplicate():
+			o.add_child(UI.option("Ransom %s back to their family (%d gold)" % [Data.lords[lid].name, GS.lord_ransom(lid)], func():
+				GS.release_lord(lid, true)
+				refresh()))
 	o.add_child(UI.option("Buy a round of drinks for everyone (40 gold)", func():
 		if GS.player.gold >= 40:
 			GS.add_gold(-40)

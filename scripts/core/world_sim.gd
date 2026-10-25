@@ -168,6 +168,9 @@ func _check_encounters() -> void:
 			if a.id == "player" or b.id == "player":
 				if not player_free:
 					continue
+				var inside: String = GS.player.get("inside", "")
+				if inside != "" and not GS.at_war(GS.settlements[inside].faction, GS.player_faction()):
+					continue
 				var other: Dictionary = b if a.id == "player" else a
 				var hunting_player: bool = other.target_party == "player" and GS.parties_hostile(pp, other)
 				if pp.target_party == other.id or hunting_player:
@@ -276,7 +279,7 @@ func _hourly() -> void:
 	# Lords respawn
 	for lid in GS.lords:
 		var lr: Dictionary = GS.lords[lid]
-		if lr.party == "" and GS.hours >= lr.respawn_at:
+		if lr.party == "" and GS.hours >= lr.respawn_at and not lr.get("held", false):
 			spawn_lord(lid, 0.35)
 	_update_sieges()
 	# Player hit points recover slowly

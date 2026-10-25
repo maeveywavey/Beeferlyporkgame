@@ -555,6 +555,29 @@ func player_armor() -> int:
 			a += int(Data.item(id).get("armor", 0))
 	return a
 
+## A defeated lord kept in your party until ransomed or released.
+func capture_lord(lid: String) -> void:
+	if not player.has("captive_lords"):
+		player.captive_lords = []
+	if not player.captive_lords.has(lid):
+		player.captive_lords.append(lid)
+	lords[lid].held = true
+
+func release_lord(lid: String, ransomed: bool) -> void:
+	player.captive_lords.erase(lid)
+	lords[lid].held = false
+	lords[lid].respawn_at = hours + 48.0
+	if ransomed:
+		add_gold(lord_ransom(lid))
+		log_msg("%s has been ransomed for %d gold." % [Data.lords[lid].name, lord_ransom(lid)], Color(0.9, 0.85, 0.4))
+	else:
+		change_lord_rel(lid, 15)
+		player.honor = player.get("honor", 0) + 2
+		log_msg("You released %s. They will remember your mercy." % Data.lords[lid].name, Color(0.6, 1, 0.6))
+
+func lord_ransom(lid: String) -> int:
+	return 400 + int(Data.lords[lid].troops * 6)
+
 func companion_state(id: String) -> Dictionary:
 	if not player.companion_state.has(id):
 		player.companion_state[id] = {"wounded": false}
@@ -640,6 +663,10 @@ func finish_battle(won: bool, casualties: Dictionary, player_downed: bool, compa
 		# Take prisoners from wounded enemies, gather loot, defeat parties
 		var xp_total := int(enemy_power_lost * 12.0) + 20
 		var renown_gain := int(clampf(enemy_power_lost / 6.0, 1.0, 40.0))
+		var defeated_lords := []
+		for pid in b.enemies:
+			if parties.has(pid) and parties[pid].lord != "":
+				defeated_lords.append(parties[pid].lord)
 		for pid in b.enemies:
 			if not parties.has(pid):
 				continue
@@ -666,10 +693,14 @@ func finish_battle(won: bool, casualties: Dictionary, player_downed: bool, compa
 					cand = cand.filter(func(x): return x != "" and x != "fists")
 					if not cand.is_empty():
 						result.items.append(cand.pick_random())
+			if ep.lord != "" and randf() < 0.6:
+				capture_lord(ep.lord)
+				result.lines.append("%s has been taken prisoner!" % Data.lords[ep.lord].name)
 			sim.on_party_defeated(pid, "player")
 		# Siege won
 		if b.siege != "" and b.player_attacking:
 			sim.capture_settlement(b.siege, player_faction(), "player")
+			result.lines.append("%s is yours! Its walls stand empty — leave troops there with \"Manage the garrison\"." % Data.settlements[b.siege].name)
 		elif b.siege != "" and not b.player_attacking:
 			settlements[b.siege].siege = {}
 			change_faction_rel(settlements[b.siege].faction, 5)
@@ -682,8 +713,12 @@ func finish_battle(won: bool, casualties: Dictionary, player_downed: bool, compa
 		give_player_xp(xp_total)
 		add_renown(renown_gain)
 		Roster.give_xp(player_party().roster, int(xp_total / 6))
+		for aid in b.get("allies", []):
+			if parties.has(aid) and parties[aid].lord != "":
+				change_lord_rel(parties[aid].lord, 4)
+				result.lines.append("%s is grateful for your help." % Data.lords[parties[aid].lord].name)
 		result.lines.push_front("Victory! +%d gold, +%d renown, +%d experience." % [result.loot_gold, renown_gain, xp_total])
-		Quests.on_battle_won(b.enemies)
+		Quests.on_battle_won(b.enemies, defeated_lords)
 	else:
 		result.lines.append("You have been defeated.")
 		_player_defeated(b)
@@ -730,7 +765,9 @@ func _player_defeated(b: Dictionary) -> void:
 	pp.prisoners.clear()
 	player.hp = maxi(1, int(max_hp() * 0.2))
 	add_renown(-5)
-	if b.siege != "" and not b.player_attacking:
+	if b.get("siege", "") != "" and b.get("player_attacking", false):
+		settlements[b.siege].siege = {}
+	if b.get("siege", "") != "" and not b.get("player_attacking", false):
 		var att: Array = b.enemies
 		if not att.is_empty() and parties.has(att[0]):
 			sim.capture_settlement(b.siege, parties[att[0]].faction, parties[att[0]].lord)

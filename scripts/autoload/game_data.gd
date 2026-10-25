@@ -567,6 +567,7 @@ var biome_regions := [
 	[965, 650, 55, 40, "swamp"],
 	[330, 540, 200, 170, "volcanic"],
 	[520, 330, 90, 65, "highland"],
+	[600, 985, 70, 50, "mountain"],
 ]
 
 # Bandit spawn points: [pos, troop pool, faction, label]

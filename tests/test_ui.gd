@@ -13,6 +13,7 @@ func _ready() -> void:
 		return
 	var p := GS.create_player("Tester", "merchant", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 	GS.new_game(p)
+	GS.flags.seen_help = true
 	GS.player.gold = 50000
 	Roster.add(GS.player_party().roster, "ek_soldier", 20)
 	Roster.add(GS.player_party().roster, "ek_veteran", 10)
