@@ -11,7 +11,9 @@ void vertex() {
 	vec4 view_pos = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
 	float d = -view_pos.z;
 	float w = width * clamp(d * 0.12, 0.6, 2.2) * step(d, max_distance);
-	VERTEX += normalize(NORMAL) * w;
+	// compensate for node scale so imported models with odd units keep a fine line
+	float sc = max(length(MODEL_MATRIX[0].xyz), 1e-4);
+	VERTEX += normalize(NORMAL) * w / sc;
 }
 
 void fragment() {

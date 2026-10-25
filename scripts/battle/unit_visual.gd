@@ -7,6 +7,7 @@ const Actor = preload("res://scripts/actors/actor.gd")
 const Acc = preload("res://scripts/actors/accessories.gd")
 const CB = preload("res://scripts/actors/character_builder.gd")
 const UnitModel = preload("res://scripts/battle/unit_model.gd")
+const Mount = preload("res://scripts/actors/mount.gd")
 
 const Looks = preload("res://scripts/actors/looks.gd")
 
@@ -174,12 +175,12 @@ static func build(unit, look: Dictionary) -> Dictionary:
 		Acc.bind(p, "lowerarm_l", sh)
 	var seat := 0.0
 	if unit.mount_id != "":
-		var mp: Dictionary = UnitModel.build_mount_only(unit.mount_id)
-		unit.add_child(mp.mount)
-		p.mount = mp.mount
-		p.mount_legs = mp.legs
+		var mp: Dictionary = Mount.build(Mount.kind_for_item(unit.mount_id))
+		unit.add_child(mp.root)
+		p.mount = mp.root
+		p.mount_rig = mp
 		seat = mp.seat
-		actor.position.y = seat + 0.4
+		actor.position.y = seat - RIDE_HIP
 		actor.set_stance("ride")
 	p.seat = seat
 	p.actor = actor
@@ -205,6 +206,9 @@ static func build(unit, look: Dictionary) -> Dictionary:
 # ---------------------------------------------------------------------------
 # Animation mapping
 # ---------------------------------------------------------------------------
+## Height of the hips above the floor in the sitting pose used for riding.
+const RIDE_HIP := 0.48
+
 const MELEE_ANIMS := {
 	"blade": {"left": "ual2/Sword_Regular_B", "right": "ual2/Sword_Regular_A", "overhead": "ual2/Sword_Regular_C", "thrust": "ual1/Sword_Attack"},
 	"pole": {"left": "ual2/Sword_Regular_B", "right": "ual2/Sword_Regular_A", "overhead": "ual2/Sword_Heavy_Combo", "thrust": "ual1/Sword_Attack"},
@@ -285,10 +289,9 @@ static func animate(unit, delta: float) -> void:
 	if unit.parts.has("glow"):
 		unit.parts.glow.visible = unit.cast_anim > 0.0
 	# mount gallop
-	if unit.parts.has("mount") and unit.mount_hp > 0.0 and unit.parts.has("mount_legs"):
+	if unit.parts.has("mount") and unit.mount_hp > 0.0 and unit.parts.has("mount_rig"):
 		var gallop := clampf(spd / maxf(1.0, unit.mount_speed), 0.0, 1.0)
 		unit.anim_t += delta
-		for i in unit.parts.mount_legs.size():
-			unit.parts.mount_legs[i].rotation_degrees.x = sin(unit.anim_t * 12.0 + i * 1.6) * 35.0 * gallop
-		unit.parts.mount.position.y = absf(sin(unit.anim_t * 12.0)) * 0.12 * gallop
-		a.position.y = unit.parts.seat + 0.4 + absf(sin(unit.anim_t * 12.0)) * 0.1 * gallop
+		Mount.animate(unit.parts.mount_rig, spd)
+		# the rider rises and settles with the stride
+		a.position.y = unit.parts.seat - RIDE_HIP + absf(sin(unit.anim_t * 9.0)) * 0.07 * gallop

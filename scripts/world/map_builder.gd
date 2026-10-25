@@ -345,19 +345,21 @@ static func build_party(p: Dictionary) -> Node3D:
 	var fc: Color = Data.factions.get(p.faction, Data.factions.neutral).color
 	var trim: Color = Data.factions.get(p.faction, Data.factions.neutral).trim
 	if p.kind == "pilgrim":
-		# A sky bison carrying Air Nomad pilgrims
+		# A sky bison carrying Air Nomad pilgrims (rigged animal, legs paddling the air)
 		var bison := Node3D.new()
 		bison.name = "Body"
 		bison.position.y = 7.0
-		var body := sphere(1.0, Color(0.95, 0.93, 0.88))
-		body.scale = Vector3(1.6, 1.0, 2.6)
-		bison.add_child(body)
-		var stripe := box(Vector3(0.6, 0.1, 3.2), Color(0.45, 0.3, 0.15), Vector3(0, 1.0, 0))
-		bison.add_child(stripe)
-		bison.add_child(sphere(0.7, Color(0.95, 0.93, 0.88), Vector3(0, 0.4, 2.6)))
-		bison.add_child(box(Vector3(0.15, 0.6, 0.15), Color(0.9, 0.8, 0.5), Vector3(0.4, 1.0, 2.7)))
-		bison.add_child(box(Vector3(0.15, 0.6, 0.15), Color(0.9, 0.8, 0.5), Vector3(-0.4, 1.0, 2.7)))
-		bison.add_child(box(Vector3(1.6, 0.25, 1.4), Color(0.55, 0.3, 0.15), Vector3(0, 1.1, 0)))
+		var m: Dictionary = load("res://scripts/actors/mount.gd").build("bison")
+		m.root.scale = Vector3.ONE * 0.9
+		bison.add_child(m.root)
+		load("res://scripts/actors/mount.gd").animate(m, 2.0)
+		# two monks riding in the saddle
+		for i in 2:
+			var monk = Actor.new()
+			monk.setup(Looks.troop_look("an_monk", RandomNumberGenerator.new()))
+			monk.set_stance("ride")
+			monk.position = Vector3((i - 0.5) * 0.7, m.seat * 0.9 - 0.4, -0.3 + i * 0.5)
+			bison.add_child(monk)
 		root.add_child(bison)
 		return root
 	var body_node := Node3D.new()

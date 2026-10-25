@@ -526,9 +526,16 @@ func _dismount() -> void:
 	radius = 0.4
 	if parts.has("mount"):
 		var m: Node3D = parts.mount
-		var tw := m.create_tween()
-		tw.tween_property(m, "rotation_degrees:z", 90.0, 0.5)
-		tw.tween_property(m, "position:y", -0.6, 0.6)
+		var anim: AnimationPlayer = parts.mount_rig.anim if parts.has("mount_rig") else null
+		var dn: String = load("res://scripts/actors/mount.gd").death_anim(parts.mount_rig) if parts.has("mount_rig") else ""
+		if anim != null and anim.has_animation(dn):
+			anim.get_animation(dn).loop_mode = Animation.LOOP_NONE
+			anim.play(dn, 0.15)
+			anim.speed_scale = 1.0
+			parts.erase("mount_rig")
+		else:
+			var tw := m.create_tween()
+			tw.tween_property(m, "rotation_degrees:z", 90.0, 0.5)
 	parts.seat = 0.0
 	parts.actor.position.y = 0.0
 	parts.actor.set_stance("unarmed")

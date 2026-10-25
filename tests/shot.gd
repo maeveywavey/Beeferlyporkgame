@@ -40,6 +40,44 @@ func _ready() -> void:
 				t.player.position = Vector3(float(xz[0]), 0, float(xz[1]))
 			t.cam_dist = 7.0
 			t._update_camera(1.0))
+	if mode == "mounts":
+		var pm := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
+		GS.new_game(pm)
+		var sc := Node3D.new()
+		var we := WorldEnvironment.new()
+		var env := Environment.new()
+		env.background_mode = Environment.BG_COLOR
+		env.background_color = Color(0.6, 0.72, 0.85)
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		env.ambient_light_color = Color(0.85, 0.85, 0.85)
+		env.ambient_light_energy = 0.6
+		we.environment = env
+		sc.add_child(we)
+		var sun := DirectionalLight3D.new()
+		sun.rotation_degrees = Vector3(-40, 40, 0)
+		sc.add_child(sun)
+		var cam := Camera3D.new()
+		cam.fov = 40
+		cam.transform = Transform3D(Basis(), Vector3(4.0, 3.0, 13.0)).looking_at(Vector3(1.0, 1.5, 0), Vector3.UP)
+		sc.add_child(cam)
+		var Mount = load("res://scripts/actors/mount.gd")
+		var ActorS = load("res://scripts/actors/actor.gd")
+		var Looks = load("res://scripts/actors/looks.gd")
+		var UV = load("res://scripts/battle/unit_visual.gd")
+		var x := -5.0
+		for k in ["ostrich", "rhino", "bison"]:
+			var m: Dictionary = Mount.build(k)
+			m.root.position = Vector3(x, 0, 0)
+			m.root.rotation.y = PI * 0.5
+			sc.add_child(m.root)
+			if k != "bison":
+				var a = ActorS.new()
+				m.root.add_child(a)
+				a.setup(Looks.troop_look("ek_ostrich_rider" if k == "ostrich" else "fn_rhino_rider", RandomNumberGenerator.new()))
+				a.set_stance("ride")
+				a.position.y = m.seat - UV.RIDE_HIP
+			x += 5.0 if k == "ostrich" else 6.5
+		get_tree().root.add_child.call_deferred(sc)
 	if mode.begins_with("dlg:"):
 		var did := mode.substr(4)
 		var pd := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
