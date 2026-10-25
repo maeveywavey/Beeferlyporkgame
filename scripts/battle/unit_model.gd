@@ -36,6 +36,17 @@ static func _sph(r: float, color: Color, pos: Vector3, parent: Node3D, hemi: boo
 	s.rings = 6
 	return _part(s, color, pos, parent)
 
+## Only the mount (used under the rigged riders). Returns {mount, legs, seat}.
+static func build_mount_only(mount: String) -> Dictionary:
+	var root := Node3D.new()
+	var tmp := build({}, "fists", "", false, mount, Color.WHITE, Color.BLACK)
+	var m: Node3D = tmp.mount
+	m.get_parent().remove_child(m)
+	tmp.root.free()
+	for leg in tmp.mount_legs:
+		pass
+	return {"mount": m, "legs": tmp.mount_legs, "seat": tmp.seat}
+
 ## look: {body, trim, helmet}, weapon: item id, ranged: item id, shield: bool,
 ## mount: item id, skin/hair colors.
 static func build(look: Dictionary, weapon: String, ranged: String, shield: bool, mount: String, skin: Color, hair: Color) -> Dictionary:

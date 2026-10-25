@@ -3,6 +3,8 @@ extends RefCounted
 ## party models. Everything is made from primitives so no art assets are needed.
 
 const Terrain = preload("res://scripts/core/terrain.gd")
+const Actor = preload("res://scripts/actors/actor.gd")
+const Looks = preload("res://scripts/actors/looks.gd")
 
 static var _terrain_mesh: ArrayMesh
 static var _mats := {}
@@ -365,11 +367,12 @@ static func build_party(p: Dictionary) -> Node3D:
 		"lord": scale = 1.25
 		"player": scale = 1.25
 		"villager": scale = 0.85
-	var cap := CapsuleMesh.new()
-	cap.radius = 0.55 * scale
-	cap.height = 2.0 * scale
-	body_node.add_child(mesh_node(cap, fc, Vector3(0, 1.0 * scale, 0)))
-	body_node.add_child(sphere(0.38 * scale, Color(0.85, 0.7, 0.55), Vector3(0, 2.35 * scale, 0)))
+	# A rigged character stands in for the party (1.4x scale so it reads at map distance)
+	var actor = Actor.new()
+	actor.name = "Actor"
+	actor.setup(Looks.party_look(p))
+	actor.scale = Vector3.ONE * 1.4 * scale
+	root.add_child(actor)
 	if p.kind == "caravan":
 		body_node.add_child(box(Vector3(1.6, 1.0, 2.4), Color(0.55, 0.4, 0.25), Vector3(1.4, 0.7, 0)))
 		body_node.add_child(cyl(0.45, 0.45, 0.2, Color(0.3, 0.2, 0.1), Vector3(1.4, 0.45, 1.1)))

@@ -398,8 +398,10 @@ func _update_parties(delta: float) -> void:
 		var body := node.get_node_or_null("Body")
 		if body and p.kind == "avatar":
 			body.position.y = 7.0 + sin(Time.get_ticks_msec() / 600.0) * 0.6
-		elif body and p.moving and visible_now:
-			body.position.y = absf(sin(Time.get_ticks_msec() / 120.0)) * 0.25
+		var actor = node.get_node_or_null("Actor")
+		if actor:
+			actor.speed = 1.4 if (p.moving and GS.hours >= p.get("wait_until", 0.0)) else 0.0
+			actor.set_process(visible_now)
 
 func _update_labels() -> void:
 	var vp := get_viewport().get_visible_rect().size

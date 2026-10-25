@@ -3,7 +3,8 @@ extends Node3D
 ## Movement and collisions are kinematic; the battle scene handles spatial
 ## queries, projectiles and bookkeeping.
 
-const UnitModel = preload("res://scripts/battle/unit_model.gd")
+const UnitVisual = preload("res://scripts/battle/unit_visual.gd")
+const Looks = preload("res://scripts/actors/looks.gd")
 const Bending = preload("res://scripts/battle/bending.gd")
 
 const DIRS := ["left", "right", "overhead", "thrust"]
@@ -102,7 +103,9 @@ func setup_troop(tid: String, p_team: int, key: String) -> void:
 	healer = t.healer
 	mount_id = t.mount
 	foot_speed = 4.2 + t.tier * 0.15
-	_finish_setup(t.look, Color(0.85, 0.68, 0.52).darkened(randf() * 0.3), Color(0.1, 0.07, 0.05))
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	_finish_setup(Looks.troop_look(tid, rng))
 
 func setup_lord(lid: String, p_team: int, key: String) -> void:
 	var l: Dictionary = Data.lords[lid]
@@ -120,13 +123,7 @@ func setup_lord(lid: String, p_team: int, key: String) -> void:
 	bend_power = l.power
 	mount_id = ""
 	foot_speed = 5.0
-	var fc: Color = Data.factions[l.faction].color
-	var look := {"body": fc.darkened(0.3), "trim": Data.factions[l.faction].trim, "helmet": "fn_officer" if l.faction == "fire_nation" else ("topknot" if bend != "" else "ek_helm")}
-	if lid in ["zuko", "iroh", "ozai", "azula", "bumi", "pakku", "long_feng"]:
-		look.helmet = "topknot"
-	if lid == "suki":
-		look = {"body": Color(0.15, 0.45, 0.25), "trim": Color(0.95, 0.8, 0.25), "helmet": "kyoshi"}
-	_finish_setup(look, Color(0.85, 0.68, 0.52), Color(0.1, 0.07, 0.05))
+	_finish_setup(Looks.lord_look(lid))
 
 func setup_arena(f: Dictionary, p_team: int) -> void:
 	team = p_team
@@ -141,7 +138,12 @@ func setup_arena(f: Dictionary, p_team: int) -> void:
 	bend = f.bend
 	bend_power = f.power
 	foot_speed = 4.8
-	_finish_setup(f.look, Color(0.85, 0.68, 0.52), Color(0.1, 0.07, 0.05))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(f.name)
+	var look := Looks.CB.random_look(f.get("culture", "earth"), rng)
+	look.merge(f.get("vlook", {}), true)
+	look.merge({"outfit": "peasant", "kit": "sash"}, false)
+	_finish_setup(look)
 
 func setup_companion(cid: String, p_team: int) -> void:
 	var c: Dictionary = Data.companions[cid]
@@ -162,7 +164,12 @@ func setup_companion(cid: String, p_team: int) -> void:
 	chi_blocker = c.get("chi_blocker", false)
 	mount_id = c.get("mount", "")
 	foot_speed = 5.0
-	_finish_setup(c.look, Color(0.85, 0.68, 0.52), Color(0.1, 0.07, 0.05))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(cid)
+	var look := Looks.CB.random_look(c.get("culture", "earth"), rng)
+	look.merge(c.get("vlook", {}), true)
+	look.merge({"outfit": "ranger", "kit": Looks.kit_for("", look.culture, 3)}, false)
+	_finish_setup(look)
 
 func setup_player(p_team: int) -> void:
 	var pl: Dictionary = GS.player
@@ -184,22 +191,13 @@ func setup_player(p_team: int) -> void:
 	bend_power = 1.0 + bend_skill * 0.08 + pl.attrs.int * 0.01
 	mount_id = pl.equip.get("mount", "")
 	foot_speed = 5.0 * (1.0 + pl.skills.athletics * 0.03)
-	var look := {"body": Color(0.45, 0.35, 0.3), "trim": Color(0.25, 0.2, 0.15), "helmet": "none"}
-	var armor_id: String = pl.equip.get("armor", "")
-	match armor_id:
-		"fn_armor", "fn_officer_armor": look = {"body": Color(0.5, 0.12, 0.1), "trim": Color(0.15, 0.1, 0.1)}
-		"ek_armor", "ek_royal": look = {"body": Color(0.25, 0.45, 0.2), "trim": Color(0.6, 0.5, 0.3)}
-		"kyoshi_armor": look = {"body": Color(0.2, 0.55, 0.3), "trim": Color(0.85, 0.7, 0.2)}
-		"water_parka", "fur_armor": look = {"body": Color(0.25, 0.4, 0.65), "trim": Color(0.9, 0.9, 0.9)}
-	var helm: String = pl.equip.get("helmet", "")
-	look.helmet = Data.item(helm).get("look", "none") if helm != "" else "none"
-	_finish_setup(look, pl.look.skin, pl.look.hair)
+	_finish_setup(Looks.player_look())
 	hp = clampf(float(pl.hp), max_hp * 0.25, max_hp)
 	max_chi = GS.max_chi()
 	chi = max_chi
 	chi_regen = 9.0 + bend_skill * 1.2
 
-func _finish_setup(look: Dictionary, skin: Color, hair: Color) -> void:
+func _finish_setup(look: Dictionary) -> void:
 	hp = max_hp
 	weapon = Data.item(weapon_id)
 	if ranged_id != "":
@@ -215,16 +213,7 @@ func _finish_setup(look: Dictionary, skin: Color, hair: Color) -> void:
 			mount_speed *= 1.0 + GS.player.skills.riding * 0.03
 		radius = 0.9
 	use_ranged = ranged_id != "" and not is_player
-	parts = UnitModel.build(look, weapon_id, ranged_id, shield, mount_id, skin, hair)
-	add_child(parts.root)
-	if bend != "":
-		var hand_glow := OmniLight3D.new()
-		hand_glow.visible = false
-		hand_glow.light_color = Data.element_color(bend)
-		hand_glow.omni_range = 3.0
-		hand_glow.light_energy = 2.0
-		parts.hand_r.add_child(hand_glow)
-		parts.glow = hand_glow
+	parts = UnitVisual.build(self, look)
 
 func add_ally_marker() -> void:
 	var m := MeshInstance3D.new()
@@ -359,6 +348,7 @@ func jump() -> void:
 	if not airborne and not mounted():
 		airborne = true
 		y_vel = 6.5
+		parts.actor.action("ual1/Jump_Start", 1.2, true)
 
 # ---------------------------------------------------------------------------
 # Actions
@@ -393,6 +383,7 @@ func start_attack(dir: String = "") -> bool:
 	attack_dir = dir
 	var windup := 0.42 / weapon_speed()
 	_set_action("windup", windup)
+	UnitVisual.attack(self, dir, windup + 0.38 / weapon_speed())
 	Sfx.play_at("swing", position, -10.0)
 	battle.on_attack_started(self, windup)
 	return true
@@ -402,6 +393,7 @@ func start_block(dir: String = "") -> void:
 		return
 	block_dir = dir if dir != "" else attack_dir
 	_set_action("block", 99.0)
+	parts.actor.action("ual2/Sword_Block", 1.2)
 
 func stop_block() -> void:
 	if action == "block":
@@ -414,6 +406,7 @@ func start_aim() -> bool:
 		return false
 	_set_action("aim", 99.0)
 	action_total = 0.0
+	parts.actor.action("ual1/Spell_Simple_Enter", 1.0)
 	return true
 
 ## Release a drawn ranged weapon towards a point. Returns true if fired.
@@ -448,6 +441,7 @@ func release_aim(point: Vector3) -> bool:
 		"knock": 1.0, "fx": "arrow" if ranged.model == "bow" else ranged.model, "life": 4.0,
 	}, from)
 	Sfx.play_at("bow", position, -6.0)
+	parts.actor.action("ual2/OverhandThrow" if ranged.model != "bow" else "ual1/Spell_Simple_Shoot", 1.6)
 	return true
 
 ## Use a bending ability towards a world point.
@@ -461,6 +455,7 @@ func cast(slot: String, point: Vector3) -> bool:
 	cooldowns[slot] = a.cd
 	_set_action("cast", 0.3)
 	cast_anim = 0.35
+	UnitVisual.cast(self, slot)
 	battle.execute_bending(self, a, point)
 	return true
 
@@ -520,6 +515,7 @@ func apply_damage(amount: float, attacker, dtype: String, push: Vector3, knockba
 			action = ""
 		if not mounted():
 			_set_action("stagger", 0.25)
+		UnitVisual.hit(self, knockback > 6.0)
 		Sfx.play_at("hit", position, -5.0)
 	if hp <= 0.0:
 		die(attacker, dtype)
@@ -536,11 +532,9 @@ func _dismount() -> void:
 		var tw := m.create_tween()
 		tw.tween_property(m, "rotation_degrees:z", 90.0, 0.5)
 		tw.tween_property(m, "position:y", -0.6, 0.6)
-	var r: Node3D = parts.rider
-	r.position.y = 0.0
-	for leg in parts.legs:
-		leg.rotation_degrees = Vector3.ZERO
 	parts.seat = 0.0
+	parts.actor.position.y = 0.0
+	parts.actor.set_stance("unarmed")
 	if is_player:
 		battle.hud_note("Your mount has fallen!")
 
@@ -555,18 +549,16 @@ func die(killer, dtype: String) -> void:
 		ally_marker.visible = false
 	if parts.has("glow"):
 		parts.glow.visible = false
+	parts.actor.die()
 	Sfx.play_at("death", position, -4.0)
 	battle.on_unit_down(self, killer, dtype)
 
 func _animate_death(delta: float) -> void:
 	if fall_t < 1.0:
 		fall_t = minf(1.0, fall_t + delta * 2.5)
-		var r: Node3D = parts.rider
-		r.rotation_degrees.x = lerpf(0.0, -88.0, fall_t)
-		r.position.y = lerpf(float(parts.seat), 0.15, fall_t)
-		r.position.z = lerpf(0.0, -0.4, fall_t)
 		if parts.has("mount") and mount_hp > 0.0:
 			parts.mount.rotation_degrees.z = lerpf(0.0, 85.0, fall_t)
+			parts.actor.position.y = lerpf(float(parts.seat) + 0.4, 0.0, fall_t)
 
 # ---------------------------------------------------------------------------
 # AI
@@ -698,60 +690,4 @@ func incoming_attack(attacker, windup: float) -> void:
 # Animation
 # ---------------------------------------------------------------------------
 func _animate(delta: float) -> void:
-	anim_t += delta
-	var spd := Vector2(vel.x, vel.z).length()
-	var walk := clampf(spd / maxf(1.0, foot_speed), 0.0, 1.5)
-	var k := minf(1.0, delta * 14.0)
-	var arm_r: Node3D = parts.arm_r
-	var arm_l: Node3D = parts.arm_l
-	var torso: Node3D = parts.torso
-	if not mounted():
-		var swing := sin(anim_t * 9.0) * 35.0 * walk
-		parts.legs[0].rotation_degrees.x = lerpf(parts.legs[0].rotation_degrees.x, swing, k)
-		parts.legs[1].rotation_degrees.x = lerpf(parts.legs[1].rotation_degrees.x, -swing, k)
-	elif parts.has("mount_legs"):
-		var gallop := clampf(spd / maxf(1.0, mount_speed), 0.0, 1.0)
-		for i in parts.mount_legs.size():
-			parts.mount_legs[i].rotation_degrees.x = sin(anim_t * 12.0 + i * 1.6) * 35.0 * gallop
-		parts.mount.position.y = absf(sin(anim_t * 12.0)) * 0.12 * gallop
-		parts.rider.position.y = float(parts.seat) + absf(sin(anim_t * 12.0)) * 0.12 * gallop
-	var idle_r := -70.0 if float(weapon.get("reach", 1.0)) >= 2.0 else (-30.0 if weapon_id != "fists" else -10.0)
-	var r_target := Vector3(idle_r + sin(anim_t * 9.0) * -15.0 * walk, 0, 0)
-	var l_target := Vector3((-30.0 if shield else 0.0) + sin(anim_t * 9.0) * 20.0 * walk, 0, 0)
-	var torso_y := 0.0
-	match action:
-		"windup":
-			var p := 1.0 - action_t / maxf(0.01, action_total)
-			match attack_dir:
-				"overhead": r_target = Vector3(lerpf(-40, -170, p), 0, 0)
-				"right": r_target = Vector3(-80, 0, lerpf(-20, -95, p))
-				"left": r_target = Vector3(-90, 0, lerpf(20, 70, p))
-				"thrust": r_target = Vector3(lerpf(-60, 10, p), 0, 0)
-			torso_y = (25.0 if attack_dir == "right" else (-25.0 if attack_dir == "left" else 0.0)) * p
-		"recover":
-			var p2 := 1.0 - action_t / maxf(0.01, action_total)
-			match attack_dir:
-				"overhead": r_target = Vector3(lerpf(-170, -40, minf(1.0, p2 * 3.0)), 0, 0)
-				"right": r_target = Vector3(-85, 0, lerpf(-95, 40, minf(1.0, p2 * 3.0)))
-				"left": r_target = Vector3(-90, 0, lerpf(70, -50, minf(1.0, p2 * 3.0)))
-				"thrust": r_target = Vector3(lerpf(10, -95, minf(1.0, p2 * 3.0)), 0, 0)
-			torso_y = (-20.0 if attack_dir == "right" else (20.0 if attack_dir == "left" else 0.0))
-		"block":
-			r_target = Vector3(-75, 0, 30)
-			l_target = Vector3(-55, 0, -25) if shield else Vector3(-60, 0, -20)
-		"aim":
-			l_target = Vector3(-90, 0, 0)
-			r_target = Vector3(-90, 0, -25)
-		"stagger":
-			r_target = Vector3(20, 0, -30)
-			torso_y = 10.0
-	if cast_anim > 0.0:
-		r_target = Vector3(-95, 0, 10)
-		l_target = Vector3(-95, 0, -10)
-	if parts.has("ranged"):
-		parts.ranged.visible = action == "aim" or (is_player and battle.player_ranged_mode)
-	arm_r.rotation_degrees = arm_r.rotation_degrees.lerp(r_target, k * (2.0 if action == "recover" else 1.0))
-	arm_l.rotation_degrees = arm_l.rotation_degrees.lerp(l_target, k)
-	torso.rotation_degrees.y = lerpf(torso.rotation_degrees.y, torso_y, k)
-	if parts.has("glow"):
-		parts.glow.visible = cast_anim > 0.0
+	UnitVisual.animate(self, delta)
