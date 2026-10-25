@@ -67,7 +67,7 @@ The top bar shows the date and moon phase, so you can time your attacks.
 * **Recruit** volunteers in villages; recruits match the local culture (Fire Nation, Earth Kingdom, Northern or Southern Water Tribe, Kyoshi Island or Foggy Swamp). Taverns in towns sell **mercenaries**, such as Earth Kingdom swordsmen, archers and the Rough Rhinos.
 * Troops gain experience in battle and can be **upgraded** in the Party screen (P), for example Peasant → Earthbender Recruit → Earthbender Soldier → Dai Li Agent, or Hunter → Waterbending Student → Waterbender → Waterbending Master or Healer.
 * **Companions** wait in taverns: Haru, Jet, Longshot, Smellerbee, Song, June, Pipsqueak, Chong and Ty Lee. Each adds a skill bonus to the party. Ty Lee's strikes also block an enemy bender's chi.
-* You pay wages every week. Food is consumed every day; one unit feeds five men for a day, and eating several kinds raises morale. Low morale causes desertion.
+* You pay wages every week. Food is consumed every day; one unit feeds ten men for a day, and eating several kinds raises morale. Low morale causes desertion.
 * Prisoners taken in battle can be sold to tavern ransom brokers or recruited into your party.
 
 ### Leveling

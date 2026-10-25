@@ -38,7 +38,7 @@ func build() -> void:
 		g.add_child(UI.button("Buy 5", _buy.bind(gid, 5), 70, GS.player.gold >= bp * 5))
 		g.add_child(UI.button("Sell", _sell.bind(gid, 1), 60, owned > 0))
 		# grid needs 7 columns: add the Sell all button on the next row only when owned
-	content.add_child(UI.rich("[i]* produced locally (cheaper here). Food keeps your party fed: 1 unit feeds 5 men for a day. Variety raises morale.[/i]", 800))
+	content.add_child(UI.rich("[i]* produced locally (cheaper here). Food keeps your party fed: 1 unit feeds 10 men for a day. Variety raises morale.[/i]", 800))
 	var row := UI.hbox()
 	content.add_child(row)
 	row.add_child(UI.button("Sell all non-food goods", _sell_all))

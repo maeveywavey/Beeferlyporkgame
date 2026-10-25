@@ -323,12 +323,12 @@ var culture_shop := {
 # Trade goods
 # ---------------------------------------------------------------------------
 var goods := {
-	"rice": {"name": "Rice", "price": 22, "food": true},
-	"fish": {"name": "Smoked Fish", "price": 20, "food": true},
-	"cabbages": {"name": "Cabbages", "price": 12, "food": true},
-	"seal_jerky": {"name": "Seal Jerky", "price": 32, "food": true},
-	"fire_flakes": {"name": "Fire Flakes", "price": 28, "food": true},
-	"sea_prunes": {"name": "Stewed Sea Prunes", "price": 18, "food": true},
+	"rice": {"name": "Rice", "price": 5, "food": true},
+	"fish": {"name": "Smoked Fish", "price": 5, "food": true},
+	"cabbages": {"name": "Cabbages", "price": 3, "food": true},
+	"seal_jerky": {"name": "Seal Jerky", "price": 7, "food": true},
+	"fire_flakes": {"name": "Fire Flakes", "price": 6, "food": true},
+	"sea_prunes": {"name": "Stewed Sea Prunes", "price": 4, "food": true},
 	"tea": {"name": "Jasmine Tea", "price": 70, "food": false},
 	"jade": {"name": "Jade", "price": 280, "food": false},
 	"iron": {"name": "Iron", "price": 110, "food": false},

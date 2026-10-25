@@ -154,9 +154,9 @@ const BACKGROUNDS := {
 		"troops": [["fn_conscript", 2]], "goods": {"fire_flakes": 6, "rice": 4},
 		"desc": "You served in the Fire Nation army until you could no longer stomach what it did. Now you wander, hoping no one recognises you."},
 	"swt_warrior": {"name": "Southern Water Tribe Warrior", "start": "southern_tribe", "bends": ["water", ""],
-		"attrs": {"str": 1, "agi": 1}, "skills": {"archery": 1, "pathfinding": 1}, "gold": 250,
+		"attrs": {"str": 1, "agi": 1}, "skills": {"archery": 1, "pathfinding": 1}, "gold": 450,
 		"equip": {"weapon": "war_club", "ranged": "boomerang", "armor": "water_parka", "helmet": "parka_hood"},
-		"troops": [["swt_villager", 4]], "goods": {"seal_jerky": 6, "sea_prunes": 4},
+		"troops": [["swt_villager", 5], ["swt_warrior", 2]], "goods": {"seal_jerky": 6, "sea_prunes": 4},
 		"desc": "The men of your tribe sailed to war years ago. You were left behind to guard the village — until now."},
 	"nwt_noble": {"name": "Northern Water Tribe Noble", "start": "agna_qela", "bends": ["water", ""],
 		"attrs": {"int": 1, "cha": 1}, "skills": {"leadership": 1, "healing": 1}, "gold": 700,
@@ -553,7 +553,7 @@ func food_units() -> int:
 	return c
 
 func food_days() -> float:
-	var per_day := maxf(1.0, ceil(party_size() / 5.0))
+	var per_day := maxf(1.0, ceil(party_size() / 10.0))
 	return food_units() / per_day
 
 func player_strength() -> float:
@@ -693,8 +693,11 @@ func finish_battle(won: bool, casualties: Dictionary, player_downed: bool, compa
 						result.prisoners.append([s.id, take])
 			# Free prisoners the enemy held (they join as captives you may recruit)
 			for s in ep.prisoners:
-				Roster.add(player_party().roster, s.id, s.n, s.w)
-				result.lines.append("Freed %d %s held by the enemy." % [s.n, Data.troop(s.id).name])
+				var room := party_limit() - party_size()
+				var n: int = mini(s.n, maxi(0, room))
+				if n > 0:
+					Roster.add(player_party().roster, s.id, n, mini(s.w, n))
+					result.lines.append("%d freed %s joined you." % [n, Data.troop(s.id).name])
 			result.loot_gold += int(ep.gold * 0.5) + int(enemy_power_lost * 3.0 * randf_range(0.6, 1.2) / maxf(1.0, b.enemies.size()))
 			if ep.kind == "caravan":
 				for i in 3:
@@ -768,12 +771,12 @@ func _roster_for_key(key: String) -> Array:
 
 func _player_defeated(b: Dictionary) -> void:
 	var pp := player_party()
-	var lost_gold := int(player.gold * 0.3)
+	var lost_gold := int(player.gold * 0.2)
 	add_gold(-lost_gold)
 	# Most healthy troops scatter; wounded are captured.
 	var lost := 0
 	for s in pp.roster.duplicate():
-		var gone: int = s.w + int((s.n - s.w) * 0.5)
+		var gone: int = s.w + int((s.n - s.w) * 0.3)
 		lost += Roster.remove(pp.roster, s.id, gone, true)
 	# Enemy takes back its prisoners
 	pp.prisoners.clear()

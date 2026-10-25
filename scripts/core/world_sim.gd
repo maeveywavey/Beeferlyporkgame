@@ -40,17 +40,18 @@ func party_speed(p: Dictionary) -> float:
 	var base := 9.0
 	var mounted := float(Roster.count_mounted(p.roster)) / float(n)
 	base *= 1.0 + 0.3 * mounted
-	base *= 1.0 - minf(0.35, n * 0.0018)
+	# Small parties travel fast; big armies are slow (as in Mount & Blade)
+	base *= 1.0 - minf(0.4, n * 0.005)
 	var wounded := float(Roster.wounded(p.roster)) / float(n)
 	base *= 1.0 - 0.2 * wounded
 	match p.kind:
 		"player":
-			base *= 1.0 + GS.skill("pathfinding") * 0.03
+			base *= 1.08 + GS.skill("pathfinding") * 0.03
 			if GS.player.equip.get("mount", "") != "":
 				base *= 1.05
 		"caravan": base *= 0.8
 		"villager": base *= 0.7
-		"bandit": base *= 1.05
+		"bandit": base *= 0.85
 		"avatar": return 26.0
 	base *= p.get("speed_mult", 1.0)
 	return base * Terrain.speed_mult(p.pos)
@@ -537,7 +538,7 @@ func _daily_player() -> void:
 	var pp: Dictionary = GS.player_party()
 	var pl: Dictionary = GS.player
 	# Food
-	var need := int(ceil(GS.party_size() / 5.0))
+	var need := int(ceil(GS.party_size() / 10.0))
 	var food_types := []
 	for g in pl.goods:
 		if Data.goods[g].food and pl.goods[g] > 0:
@@ -752,6 +753,14 @@ func _think_lord(p: Dictionary) -> void:
 		_go_to(p, Terrain.random_land_near(Data.settlements[sid].pos, 40.0))
 	p.state = "patrol"
 
+## Outlaws keep away from walled towns and castles.
+func _near_stronghold(pos: Vector2) -> bool:
+	for sid in Data.settlements:
+		var t: String = Data.settlements[sid].type
+		if (t == "town" or t == "castle") and Data.settlements[sid].pos.distance_to(pos) < 25.0:
+			return true
+	return false
+
 func _friendly_fief_near(p: Dictionary) -> String:
 	var best := ""
 	var bd := INF
@@ -810,14 +819,25 @@ func _ai_arrive_settlement(p: Dictionary, sid: String) -> void:
 				remove_party(p.id)
 
 func _think_bandit(p: Dictionary) -> void:
-	var scan := _scan(p)
+	var scan := _scan(p, 42.0)
 	if not scan[0].is_empty():
 		_flee(p, scan[0])
 		return
+	# Give up long chases
+	if p.state == "chase" and GS.hours > p.get("chase_until", 0.0):
+		p.target_party = ""
+		p.state = "wander"
+		p.next_think = GS.hours + 3.0
+		if GS.parties.has(p.get("last_prey", "")) and p.last_prey == "player":
+			p.ignore_player_until = GS.hours + 6.0
 	var prey: Dictionary = scan[1]
-	if not prey.is_empty() and prey.kind != "lord":
+	if not prey.is_empty() and prey.kind != "lord" and p.state != "chase" and not _near_stronghold(prey.pos):
 		_chase(p, prey.id)
 		p.state = "chase"
+		p.last_prey = prey.id
+		p.chase_until = GS.hours + 8.0
+		return
+	if p.state == "chase" and p.target_party != "":
 		return
 	if p.moving and p.pos.distance_to(p.target) > 4.0 and p.target_party == "":
 		return
@@ -1119,7 +1139,8 @@ func spawn_bandit(idx: int) -> void:
 	var p := GS.make_party("", sp.name, "bandit", sp.faction, Terrain.random_land_near(sp.pos, 40.0))
 	p.spawn = idx
 	p.anchor = sp.pos
-	var n := 6 + randi() % 14
+	# Outlaw bands start small and grow bolder as the war drags on
+	var n := 4 + randi() % 8 + mini(10, int(GS.day() / 12))
 	for i in n:
 		Roster.add(p.roster, sp.troops.pick_random(), 1)
 	p.gold = 50 + randi() % 150
