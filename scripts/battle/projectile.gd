@@ -45,15 +45,9 @@ func _build_visual() -> void:
 			add_child(m2)
 			spin = fx == "boomerang"
 		"rock":
-			var s := SphereMesh.new()
-			s.radius = radius
-			s.height = radius * 1.7
-			s.radial_segments = 7
-			s.rings = 4
-			var m3 := MeshInstance3D.new()
-			m3.mesh = s
-			m3.material_override = MB.mat(c)
-			add_child(m3)
+			# a real boulder torn from the ground (nature kit rock, painted)
+			var rk: Node3D = load("res://scripts/battle/set_dressing.gd").rock(radius * 0.9, Color(0.95, 0.88, 0.78))
+			add_child(rk)
 			spin = true
 		"ice":
 			var cn := CylinderMesh.new()

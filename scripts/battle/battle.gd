@@ -9,6 +9,10 @@ const UI = preload("res://scripts/ui/ui.gd")
 const MB = preload("res://scripts/world/map_builder.gd")
 const Roster = preload("res://scripts/core/roster.gd")
 const SettingsWindow = preload("res://scripts/ui/settings_window.gd")
+const Dress = preload("res://scripts/battle/set_dressing.gd")
+const Arch = preload("res://scripts/town/arch.gd")
+const ActorS = preload("res://scripts/actors/actor.gd")
+const LooksS = preload("res://scripts/actors/looks.gd")
 
 const HALF := 80.0
 const GRID := 161
@@ -243,13 +247,13 @@ func _build_ground() -> void:
 	st.generate_normals()
 	var mi := MeshInstance3D.new()
 	mi.mesh = st.commit()
-	var m := StandardMaterial3D.new()
-	m.vertex_color_use_as_albedo = true
-	m.roughness = 1.0
-	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	# the painted-ground material shared with the settlements
+	var m: ShaderMaterial = Arch.material(false).duplicate()
+	m.set_shader_parameter("brush_scale", 0.15)
+	m.set_shader_parameter("brush_strength", 0.1)
 	mi.material_override = m
 	add_child(mi)
-	# Distant backdrop ring
+	# Distant ground and painted mountains
 	var far := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(900, 900)
@@ -257,23 +261,7 @@ func _build_ground() -> void:
 	far.position = Vector3(0, -6.0, 0)
 	far.material_override = MB.mat(base.darkened(0.15))
 	add_child(far)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 11
-	for i in 22:
-		var a := TAU * i / 22.0 + rng.randf() * 0.2
-		var r := rng.randf_range(150, 260)
-		var h := rng.randf_range(25, 70)
-		var cone := CylinderMesh.new()
-		cone.top_radius = rng.randf_range(0, 8)
-		cone.bottom_radius = rng.randf_range(35, 60)
-		cone.height = h
-		cone.radial_segments = 8
-		var mm := MeshInstance3D.new()
-		mm.mesh = cone
-		mm.position = Vector3(cos(a) * r, h / 2.0 + 5.0, sin(a) * r)
-		var mc := base.darkened(0.3) if biome != "snow" else Color(0.85, 0.88, 0.95)
-		mm.material_override = MB.mat(mc)
-		add_child(mm)
+	add_child(Dress.mountains(base.lerp(Color(0.45, 0.48, 0.55), 0.5) if biome != "volcanic" else Color(0.3, 0.27, 0.27), biome in ["snow", "highland", "mountain"], 11))
 
 func _build_environment() -> void:
 	var we := WorldEnvironment.new()
@@ -361,61 +349,81 @@ func _build_weather() -> void:
 func _build_props() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	var count := 30
+	var pal: Dictionary = Dress.palette(biome)
+	var trees := 30
+	var rocks := 10
 	match biome:
-		"forest": count = 90
-		"swamp": count = 60
-		"grass": count = 25
-		"desert", "beach": count = 12
-		"snow": count = 18
-		"mountain", "highland", "volcanic": count = 35
-	for i in count:
+		"forest": trees = 80
+		"swamp": trees = 50
+		"grass": trees = 22
+		"desert", "beach":
+			trees = 5
+			rocks = 18
+		"snow":
+			trees = 14
+			rocks = 16
+		"mountain", "highland", "volcanic":
+			trees = 18
+			rocks = 26
+	for i in trees + rocks:
 		var p := Vector2(rng.randf_range(-70, 70), rng.randf_range(-42, 42))
 		if siege != "" and absf(p.y - wall_z) < 12.0:
 			continue
 		var h := ground_height(p.x, p.y)
-		var node := Node3D.new()
+		var node: Node3D
+		if i < trees and not pal.trees.is_empty():
+			node = Dress.nature(pal.trees[rng.randi() % pal.trees.size()], pal.get("tree_tint", Color.WHITE))
+			node.scale = Vector3.ONE * rng.randf_range(0.9, 1.5)
+			node.rotation.y = rng.randf() * TAU
+			obstacles.append({"p": p, "r": 0.5})
+		else:
+			var sc := rng.randf_range(0.6, 1.8)
+			node = Dress.rock(sc, pal.rocks)
+			obstacles.append({"p": p, "r": sc * 0.9})
 		node.position = Vector3(p.x, h, p.y)
 		add_child(node)
-		match biome:
-			"forest", "grass", "swamp", "highland":
-				var trunk := MB.cyl(0.25, 0.35, 3.0, Color(0.35, 0.24, 0.14), Vector3(0, 1.5, 0), 6)
-				node.add_child(trunk)
-				var leaf_c := Color(0.18, 0.38, 0.16) if biome != "swamp" else Color(0.25, 0.3, 0.15)
-				if rng.randf() < 0.5:
-					node.add_child(MB.cyl(0.0, 2.2, 4.5, leaf_c, Vector3(0, 4.5, 0), 7))
-				else:
-					node.add_child(MB.sphere(2.0, leaf_c, Vector3(0, 4.2, 0)))
-				obstacles.append({"p": p, "r": 0.5})
-			"snow":
-				var ice := MB.cyl(0.0, rng.randf_range(0.8, 1.6), rng.randf_range(1.5, 3.5), Color(0.8, 0.9, 1.0), Vector3(0, 1.0, 0), 5)
-				node.add_child(ice)
-				obstacles.append({"p": p, "r": 1.0})
-			_:
-				var s := rng.randf_range(0.8, 2.0)
-				var rock := MB.sphere(s, Color(0.45, 0.42, 0.38) if biome != "desert" else Color(0.7, 0.6, 0.42), Vector3(0, s * 0.3, 0))
-				rock.scale = Vector3(1, 0.7, 1.2)
-				node.add_child(rock)
-				obstacles.append({"p": p, "r": s * 0.9})
+	# undergrowth (no collision)
+	if not pal.small.is_empty():
+		for i in 120:
+			var q := Vector2(rng.randf_range(-75, 75), rng.randf_range(-45, 45))
+			var g := Dress.nature(pal.small[rng.randi() % pal.small.size()])
+			g.position = Vector3(q.x, ground_height(q.x, q.y), q.y)
+			g.rotation.y = rng.randf() * TAU
+			g.scale = Vector3.ONE * rng.randf_range(0.8, 1.4)
+			add_child(g)
 
 func _build_arena() -> void:
-	# A ring of stone with spectator stands
+	# A sunken ring of cut stone, wooden stands and a seated crowd
+	var b = Arch.Builder.new()
 	var segs := 28
 	for i in segs:
 		var a := TAU * i / segs
 		var p := Vector2(cos(a), sin(a)) * 16.5
 		obstacles.append({"p": p, "r": 1.9})
-		var rock := MB.box(Vector3(3.8, 1.4, 1.2), Color(0.5, 0.45, 0.38), Vector3(p.x, 0.5, p.y))
-		rock.rotation.y = -a + PI / 2.0
-		add_child(rock)
+		var rot := -a + PI / 2.0
+		b.box(Vector3(p.x, 0.35, p.y), Vector3(3.8, 0.7, 1.2), Color(0.55, 0.5, 0.42), rot)
+		b.box(Vector3(p.x, 1.0, p.y), Vector3(3.7, 0.6, 1.1), Color(0.6, 0.55, 0.46), rot)
 		for row in 3:
 			var sp := Vector2(cos(a), sin(a)) * (20.0 + row * 2.5)
-			var stand := MB.box(Vector3(5.0, 0.6, 2.2), Color(0.45, 0.32, 0.2), Vector3(sp.x, ground_height(sp.x, sp.y) + 0.3 + row * 0.9, sp.y))
-			stand.rotation.y = -a + PI / 2.0
-			add_child(stand)
-			if randf() < 0.8:
-				var fan := MB.sphere(0.35, Color(randf(), randf(), randf()).lerp(Color(0.6, 0.5, 0.4), 0.5), Vector3(sp.x, ground_height(sp.x, sp.y) + 1.2 + row * 0.9, sp.y))
-				add_child(fan)
+			var gy := ground_height(sp.x, sp.y)
+			b.box(Vector3(sp.x, gy + 0.3 + row * 0.9, sp.y), Vector3(5.0, 0.6, 2.2), Color(0.48, 0.34, 0.2), rot)
+	var mi := MeshInstance3D.new()
+	mi.mesh = b.commit()
+	mi.material_override = Arch.material(true)
+	add_child(mi)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	for i in 18:
+		var a2 := TAU * i / 18.0 + rng.randf() * 0.1
+		var row2 := rng.randi() % 3
+		var sp2 := Vector2(cos(a2), sin(a2)) * (20.0 + row2 * 2.5)
+		var fan = ActorS.new()
+		fan.position = Vector3(sp2.x, ground_height(sp2.x, sp2.y) + 0.6 + row2 * 0.9 - 0.45, sp2.y)
+		fan.rotation.y = atan2(-sp2.x, -sp2.y)
+		add_child(fan)
+		fan.setup(LooksS.troop_look(["ek_peasant", "om_militia", "fn_conscript", "merc_archer"][rng.randi() % 4], rng))
+		fan.call_deferred("loop", ["ual1/Sitting_Idle", "ual1/Sitting_Talking"][rng.randi() % 2])
+		fan.set_expression(["happy", "laugh", "surprised", "angry"][rng.randi() % 4])
 	for i in 6:
 		var lp := Vector2(cos(TAU * i / 6.0), sin(TAU * i / 6.0)) * 18.0
 		var light := OmniLight3D.new()
@@ -424,7 +432,10 @@ func _build_arena() -> void:
 		light.omni_range = 22.0
 		light.position = Vector3(lp.x, 6.0, lp.y)
 		add_child(light)
-		add_child(MB.cyl(0.2, 0.25, 6.0, Color(0.3, 0.2, 0.1), Vector3(lp.x, 3.0, lp.y), 6))
+		var torch := Arch.lantern(Color(1.0, 0.55, 0.2))
+		torch.scale = Vector3.ONE * 2.2
+		torch.position = Vector3(lp.x, 0, lp.y)
+		add_child(torch)
 
 func _spawn_arena() -> void:
 	reserves = [[], []]
@@ -944,7 +955,8 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 			var axis := Vector2(fwd.z, -fwd.x).normalized()
 			var gh := ground_height(center.x, center.z)
 			var col := Color(0.45, 0.36, 0.25) if a.fx == "rock" else Color(0.85, 0.75, 0.5)
-			var node := MB.box(Vector3(a.width, a.height, 0.8), col, Vector3(center.x, gh - a.height, center.z))
+			var node := Dress.earth_wall(a.width, a.height, col)
+			node.position = Vector3(center.x, gh - a.height, center.z)
 			node.rotation.y = caster.facing
 			add_child(node)
 			var tw := node.create_tween()
