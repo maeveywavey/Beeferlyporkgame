@@ -284,6 +284,14 @@ static func dress_body(parts: Dictionary, kit: String, sex: String, palette: Dic
 			bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, Color(0.75, 0.6, 0.2), at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
 		"sash":
 			bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, accent, at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1.1, 0.8))))
+		"civ_robe":
+			# ankle-length civilian robe: wrap skirt, broad sash, crossed collar
+			for side in ["l", "r"]:
+				var sx7 := 1.0 if side == "l" else -1.0
+				bind(parts, "thigh_" + side, panel(shell(0.15, 0.8, 175.0, 0.01, 12, 0.08), primary, at(Vector3(0.08 * sx7, hip_y + 0.05, 0.0))))
+				bind(parts, "thigh_" + side, panel(shell(0.15, 0.8, 175.0, 0.01, 12, 0.08), primary, at(Vector3(0.08 * sx7, hip_y + 0.05, 0.0), Vector3(0, 180, 0))))
+			bind(parts, "pelvis", torus(0.14 * w, 0.19 * w, secondary, at(Vector3(0, hip_y + 0.07, -0.03), Vector3.ZERO, Vector3(1, 1.6, 0.8))))
+			bind(parts, "spine_03", torus(0.13 * w, 0.16 * w, accent, at(Vector3(0.0, 1.42 if sex == "m" else 1.38, -0.02), Vector3(0, 0, 28), Vector3(1.0, 1.0, 0.75))))
 
 ## Older helmet style names from the troop data map onto head + body kits.
 static func build(_kind: String, _sex: String, _hair: Color) -> Node3D:

@@ -132,7 +132,7 @@ func tree(pos: Vector3) -> void:
 	var names: Array
 	match Data.settlements[sid].culture:
 		"north", "south": names = ["Pine_1", "Pine_3", "Pine_5"]
-		"fire": names = ["TwistedTree_1", "TwistedTree_3", "CommonTree_2"]
+		"fire": names = ["CommonTree_2", "CommonTree_5", "TwistedTree_3"] if Vector2(pos.x, pos.z).length() > bounds else ["CommonTree_2", "CommonTree_5"]
 		"swamp": names = ["TwistedTree_2", "TwistedTree_4", "DeadTree_2"]
 		"air": names = ["Pine_2", "Pine_4", "CommonTree_1"]
 		_: names = ["CommonTree_1", "CommonTree_3", "CommonTree_4", "Pine_2"]

@@ -228,6 +228,9 @@ static func build(look: Dictionary) -> Dictionary:
 			parts.meshes.append(mi)
 	# Culture garments and headwear
 	var palette: Dictionary = PALETTES.get(culture, PALETTES.earth)
+	if look.has("robe_color"):
+		palette = palette.duplicate()
+		palette.primary = look.robe_color
 	if look.get("accessory", "") != "":
 		Accessories.dress_head(parts, look.accessory, sex, hair_c, palette)
 	if look.get("kit", "") != "":

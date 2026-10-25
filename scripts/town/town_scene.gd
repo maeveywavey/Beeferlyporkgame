@@ -30,6 +30,13 @@ const DYES := {
 	"air": [Color(1, 1, 1), Color(1.05, 0.95, 0.85)],
 	"swamp": [Color(1, 1, 1), Color(0.85, 0.9, 0.75)],
 }
+const ROBES := {
+	"earth": [Color(0.3, 0.46, 0.25), Color(0.62, 0.55, 0.36), Color(0.45, 0.32, 0.2), Color(0.75, 0.7, 0.55), Color(0.25, 0.38, 0.32)],
+	"omashu": [Color(0.38, 0.48, 0.22), Color(0.45, 0.3, 0.52), Color(0.66, 0.58, 0.4)],
+	"fire": [Color(0.6, 0.12, 0.08), Color(0.25, 0.12, 0.1), Color(0.75, 0.55, 0.25), Color(0.45, 0.08, 0.08)],
+	"kyoshi": [Color(0.2, 0.45, 0.35), Color(0.7, 0.6, 0.35)],
+	"swamp": [Color(0.4, 0.42, 0.25), Color(0.45, 0.35, 0.2)],
+}
 const HATS := {"earth": ["straw_hat", "straw_hat", "bandana"], "omashu": ["straw_hat", "bandana"], "fire": ["topknot", "fn_cap"], "kyoshi": ["straw_hat"],
 	"water": ["parka"], "south": ["parka", "warpaint"]}
 
@@ -210,6 +217,11 @@ func _role_look(kind: String, rng: RandomNumberGenerator) -> Dictionary:
 	# Dyes vary from person to person; hats and hairstyles by culture
 	var dyes: Array = DYES.get(c, DYES.earth)
 	look.cloth_tint = dyes[rng.randi() % dyes.size()] * rng.randf_range(0.9, 1.08)
+	# many civilians, women especially, wear the long wrap robe of their people
+	if c != "air" and c != "water" and c != "south" and rng.randf() < (0.65 if look.sex == "f" else 0.25):
+		look.kit = "civ_robe"
+		var robes: Array = ROBES.get(c, ROBES.earth)
+		look.robe_color = robes[rng.randi() % robes.size()]
 	var hats: Array = HATS.get(c, [])
 	if not hats.is_empty() and rng.randf() < 0.4:
 		look.accessory = hats[rng.randi() % hats.size()]

@@ -78,6 +78,40 @@ func _ready() -> void:
 				a.position.y = m.seat - UV.RIDE_HIP
 			x += 5.0 if k == "ostrich" else 6.5
 		get_tree().root.add_child.call_deferred(sc)
+	if mode.begins_with("weapons"):
+		var pw2 := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
+		GS.new_game(pw2)
+		var sc2 := Node3D.new()
+		var we2 := WorldEnvironment.new()
+		var env2 := Environment.new()
+		env2.background_mode = Environment.BG_COLOR
+		env2.background_color = Color(0.6, 0.72, 0.85)
+		env2.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		env2.ambient_light_color = Color(0.85, 0.85, 0.85)
+		env2.ambient_light_energy = 0.6
+		we2.environment = env2
+		sc2.add_child(we2)
+		var sun2 := DirectionalLight3D.new()
+		sun2.rotation_degrees = Vector3(-40, 40, 0)
+		sc2.add_child(sun2)
+		var cam2 := Camera3D.new()
+		cam2.fov = 35
+		cam2.transform = Transform3D(Basis(), Vector3(1.0, 1.6, 9.5)).looking_at(Vector3(0, 1.1, 0), Vector3.UP)
+		sc2.add_child(cam2)
+		var UnitS = load("res://scripts/battle/unit.gd")
+		var tids := ["ek_veteran", "fn_veteran", "ek_royal_guard", "ky_warrior", "swt_veteran", "red_lantern_elder", "fn_archer", "an_monk"]
+		var anim_name := mode.substr(8) if mode.length() > 8 else ""
+		for i in tids.size():
+			var u = UnitS.new()
+			u.position = Vector3(-6.3 + i * 1.8, 0, 0)
+			u.rotation.y = 0.35
+			sc2.add_child(u)
+			u.setup_troop(tids[i], 0, "x")
+			u.set_physics_process(false)
+			u.set_process(false)
+			if anim_name != "":
+				u.parts.actor.call_deferred("loop", anim_name)
+		get_tree().root.add_child.call_deferred(sc2)
 	if mode.begins_with("dlg:"):
 		var did := mode.substr(4)
 		var pd := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
