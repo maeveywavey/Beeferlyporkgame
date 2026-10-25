@@ -224,6 +224,7 @@ static func culture_palette(culture: String) -> Dictionary:
 	match culture:
 		"fire": return {"wall": Color(0.35, 0.22, 0.18), "house": Color(0.75, 0.62, 0.5), "roof": Color(0.6, 0.12, 0.08), "accent": Color(0.85, 0.65, 0.2)}
 		"earth": return {"wall": Color(0.62, 0.56, 0.45), "house": Color(0.82, 0.76, 0.62), "roof": Color(0.2, 0.42, 0.2), "accent": Color(0.75, 0.62, 0.25)}
+		"omashu": return {"wall": Color(0.58, 0.55, 0.48), "house": Color(0.8, 0.74, 0.62), "roof": Color(0.3, 0.42, 0.18), "accent": Color(0.55, 0.38, 0.62)}
 		"kyoshi": return {"wall": Color(0.45, 0.35, 0.22), "house": Color(0.6, 0.45, 0.3), "roof": Color(0.25, 0.45, 0.25), "accent": Color(0.85, 0.7, 0.2)}
 		"north", "south": return {"wall": Color(0.85, 0.92, 0.98), "house": Color(0.9, 0.95, 1.0), "roof": Color(0.3, 0.5, 0.8), "accent": Color(0.2, 0.4, 0.75)}
 		"swamp": return {"wall": Color(0.3, 0.25, 0.15), "house": Color(0.4, 0.32, 0.2), "roof": Color(0.3, 0.38, 0.2), "accent": Color(0.4, 0.5, 0.3)}
@@ -296,8 +297,8 @@ static func build_settlement(sid: String) -> Node3D:
 				for i in 3:
 					var fp := Vector3(rng.randf_range(-6, 6), 0.05, rng.randf_range(-6, 6))
 					root.add_child(box(Vector3(3, 0.1, 2), Color(0.65, 0.6, 0.25), fp))
-		"ruin":
-			if sid.ends_with("air_temple"):
+		"temple", "ruin":
+			if d.type == "temple":
 				for i in 4:
 					var a4 := TAU * i / 4.0
 					var p2 := Vector3(cos(a4) * 2.5, 0, sin(a4) * 2.5)
@@ -309,7 +310,7 @@ static func build_settlement(sid: String) -> Node3D:
 			elif sid == "wan_shi_tong":
 				root.add_child(cyl(1.0, 1.4, 7.0, Color(0.45, 0.35, 0.25), Vector3(0, 3.5, 0), 8))
 				root.add_child(cyl(0.0, 2.0, 2.5, Color(0.3, 0.25, 0.2), Vector3(0, 8.2, 0), 8))
-			elif sid == "jets_hideout":
+			elif sid == "red_lantern_den":
 				for i in 5:
 					var tp := Vector3(rng.randf_range(-4, 4), 0, rng.randf_range(-4, 4))
 					root.add_child(cyl(0.4, 0.5, 7.0, Color(0.35, 0.25, 0.15), tp + Vector3(0, 3.5, 0), 6))
@@ -343,8 +344,8 @@ static func build_party(p: Dictionary) -> Node3D:
 	var root := Node3D.new()
 	var fc: Color = Data.factions.get(p.faction, Data.factions.neutral).color
 	var trim: Color = Data.factions.get(p.faction, Data.factions.neutral).trim
-	if p.kind == "avatar":
-		# Appa the sky bison
+	if p.kind == "pilgrim":
+		# A sky bison carrying Air Nomad pilgrims
 		var bison := Node3D.new()
 		bison.name = "Body"
 		bison.position.y = 7.0

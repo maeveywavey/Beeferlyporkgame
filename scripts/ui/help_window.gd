@@ -28,7 +28,7 @@ const PAGES := [
 • Earth: Rock Throw, Earth Wall, Earthquake
 • Water: Water Whip, Healing Water, Ice Spikes
 
-Firebenders are strongest by day, waterbenders at night and under a full moon. Remember the Day of Black Sun and Sozin's Comet."""],
+Firebenders are strongest by day, waterbenders at night and under a full moon. Solar eclipses take firebending away while the sun is dark; lunar eclipses do the same to waterbending. A passing comet makes fire burn hotter. The sages announce each one five days ahead — plan around them."""],
 	["Rising in the world", """[b]Renown[/b] grows with every victory. It enlarges your party and opens doors.
 
 • Talk to any lord to become a [b]mercenary[/b] for their nation, with weekly pay.
@@ -37,9 +37,10 @@ Firebenders are strongest by day, waterbenders at night and under a full moon. R
 • Garrison captured fiefs with troops from your party. Fiefs pay taxes every week.
 
 [b]Places of note[/b]
-• Gaoling's [b]Earth Rumble[/b] arena: five fights, ending with the Blind Bandit.
-• The Air Temples, Wan Shi Tong's Library and Taku hold one-time rewards for explorers.
-• Team Avatar flies the world on Appa. Find them and say hello."""],
+• Gaoling's [b]Stone Pit[/b]: five fights, ending with the champion they call the Quiet Mountain.
+• The four [b]Air Temples[/b] cannot be attacked. Rest there for free, and the monks tend your wounded.
+• Wan Shi Tong's Library and the Ruins of Taku hold one-time rewards for explorers.
+• Air Nomad pilgrims fly the world on sky bison. They never fight, and they will heal your wounded."""],
 ]
 
 func _init() -> void:

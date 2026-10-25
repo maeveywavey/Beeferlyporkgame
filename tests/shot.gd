@@ -120,5 +120,5 @@ static func _open(mode: String) -> void:
 			w.sid = "omashu"
 			map.open_window(w)
 		"encounter":
-			var lid: String = GS.lords["bumi"].party
+			var lid: String = GS.lords["feng_tao"].party
 			map._on_player_encounter(lid)

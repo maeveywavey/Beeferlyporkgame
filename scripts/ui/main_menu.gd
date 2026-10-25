@@ -58,7 +58,7 @@ func _build_title() -> void:
 	body.add_child(UI.spacer(10))
 	body.add_child(UI.title("AVATAR: MOUNT & BEND", 40))
 	body.add_child(UI.title("A tale of the Hundred Year War", 20))
-	var intro := UI.rich("[center][i]Water. Earth. Fire. Air. Long ago, the four nations lived together in harmony. Then everything changed when the Fire Nation attacked.\n\nRaise an army, master your element, serve a nation or carve out your own realm — before Sozin's Comet returns.[/i][/center]", 700)
+	var intro := UI.rich("[center][i]Water. Earth. Fire. Air. Eleven years ago, the Avatar drowned at sea on the way to a peace that never came. Somewhere a child is the next Avatar, and does not know it yet.\n\nUntil they do, the world must manage on its own. Raise an army, master your element, serve a nation or carve out your own realm in the Quiet Years.[/i][/center]", 700)
 	body.add_child(intro)
 	body.add_child(UI.spacer(10))
 	var col := UI.vbox(8)

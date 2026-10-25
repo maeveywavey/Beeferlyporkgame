@@ -23,7 +23,7 @@ func build() -> void:
 		header += " — [color=#2a6a2a]your fief[/color]"
 	elif Data.lords.has(s.owner):
 		header += " — held by %s" % Data.lords[s.owner].name
-	if d.type != "ruin":
+	if not d.type in ["ruin", "temple"]:
 		header += "\nProsperity: %d" % int(s.prosperity)
 		if d.type != "village":
 			header += "   Garrison: %d" % Roster.total(s.garrison)
@@ -70,6 +70,9 @@ func _build_main(o: VBoxContainer) -> void:
 	if d.type == "ruin":
 		_build_ruin(o)
 		return
+	if d.type == "temple":
+		_build_temple(o)
+		return
 	if s.siege.get("leader", "") == "player":
 		_build_player_siege(o)
 		return
@@ -103,7 +106,7 @@ func _build_main(o: VBoxContainer) -> void:
 			o.add_child(UI.option("Go to the lord's hall", func(): _go("hall")))
 			o.add_child(UI.option("Speak with the guild master (work)", _ask_work))
 			if sid == "gaoling":
-				o.add_child(UI.option("Visit the Earth Rumble arena", func(): _go("arena")))
+				o.add_child(UI.option("Visit the Stone Pit", func(): _go("arena")))
 		"castle":
 			o.add_child(UI.option("Go to the lord's hall", func(): _go("hall")))
 			o.add_child(UI.option("Speak with the castle steward (work)", _ask_work))
@@ -246,13 +249,13 @@ func _assault_auto() -> void:
 # ---------------------------------------------------------------------------
 func _build_ruin(o: VBoxContainer) -> void:
 	var s: Dictionary = GS.settlements[sid]
-	if sid == "jets_hideout":
-		o.add_child(UI.rich("Wooden platforms creak high above you. Someone is watching from the trees.", 740))
-		if not GS.at_war("freedom_fighters", GS.player_faction()) and not GS.player.companions.has("jet"):
-			o.add_child(UI.option("Call out to the Freedom Fighters", func():
-				note = "[b]Jet:[/b] \"Anyone who fights the Fire Nation is a friend of ours. Kill some firebenders for me.\""
-				if GS.player.get("faction", "") == "fire_nation":
-					note = "[b]Jet:[/b] \"You serve the Fire Nation? Get out of my forest.\""
+	if sid == "red_lantern_den":
+		o.add_child(UI.rich("Red paper lanterns sway over the reeds. A boat that was not there a moment ago drifts across your path.", 740))
+		if not GS.at_war("red_lanterns", GS.player_faction()):
+			o.add_child(UI.option("Ask to speak with the Brotherhood", func():
+				note = "[b]Elder Sister Lan:[/b] \"The tax barges carry rice from starving villages to the Upper Ring's granaries. We carry it back down. If you think that makes us thieves, you have never been hungry in Ba Sing Se.\""
+				if GS.player.get("faction", "") == "earth_kingdom":
+					note = "[b]Elder Sister Lan:[/b] \"You wear the Queen's colours. Leave while the reeds still like you.\""
 				refresh()))
 		o.add_child(UI.option("Leave", close))
 		return
@@ -262,32 +265,40 @@ func _build_ruin(o: VBoxContainer) -> void:
 		o.add_child(UI.rich("You have already explored this place.", 740))
 	o.add_child(UI.option("Leave", close))
 
+func _build_temple(o: VBoxContainer) -> void:
+	var d: Dictionary = Data.settlements[sid]
+	o.add_child(UI.rich("Wind-chimes sound from every balcony. Novices race sky bison calves across a terrace while refugees from three wars queue for soup. %s greets you at the gate with a bow and no questions." % d.get("abbot", "The abbot"), 740))
+	o.add_child(UI.option("Rest in the temple (free; the monks tend your wounded)", func():
+		Roster.heal_fraction(GS.player_party().roster, 0.5)
+		GS.player.hp = GS.max_hp()
+		_rest(24.0)))
+	o.add_child(UI.option("Buy supplies from the temple stores", func(): _open(_mk("res://scripts/ui/trade_window.gd"))))
+	o.add_child(UI.option("Donate to the refugees (100 gold)", func():
+		GS.add_gold(-100)
+		GS.change_faction_rel("air_nomads", 3)
+		GS.player.honor = int(GS.player.get("honor", 0)) + 1
+		GS.add_renown(2)
+		note = "The abbot accepts the gold for the refugees' kitchens, and thanks you without making a speech about it. (+1 honour)"
+		refresh(), GS.player.gold >= 100))
+	o.add_child(UI.option("Ask %s about the Avatar" % d.get("abbot", "the abbot"), func():
+		note = "[b]%s:[/b] \"%s\"" % [d.get("abbot", "The abbot"), [
+			"The Avatar who drowned stayed here once, the winter before the talks. They laughed at our novices' jokes even when the jokes were bad. That is what I remember. Not the Avatar. The laugh.",
+			"Somewhere a child is the next Avatar. The sages of that child's nation will find them, and in five years they will be told. Until then, this world belongs to the rest of us. I find that frightening and also rather hopeful.",
+			"People ask us who killed the Avatar as if we must know. We know the sea was rough and men were afraid. Usually that is enough to explain anything."].pick_random()]
+		refresh()))
+	o.add_child(UI.option("Leave", close))
+
 func _explore() -> void:
 	var s: Dictionary = GS.settlements[sid]
 	s.explored = true
 	var txt := ""
 	match sid:
-		"southern_air_temple":
-			txt = "Among the bones of fallen Fire Nation soldiers you find the sanctuary of the Avatars. Gazing at the statues of Roku, Kyoshi and Kuruk, you feel wiser. (+1 Intelligence, +500 xp)"
-			GS.player.attrs.int += 1
-			GS.give_player_xp(500)
-		"northern_air_temple":
-			txt = "The Mechanist's refugees greet you warmly. In return for news from outside, the Mechanist gives you a pouch of coin and a clever folding bow. (+300 gold, Short Bow)"
-			GS.add_gold(300)
-			GS.player.items.append("short_bow")
-		"eastern_air_temple":
-			txt = "An old guru teaches you to open your chakras. You feel the energy flow freely through you. (+2 skill points)"
-			GS.player.skill_points += 2
-		"western_air_temple":
-			txt = "Hanging beneath the cliff, the temple holds old Air Nomad training grounds. Leaping between the platforms hones your agility. (+1 Agility, +300 xp)"
-			GS.player.attrs.agi += 1
-			GS.give_player_xp(300)
 		"wan_shi_tong":
-			txt = "Inside the sunken library you find a star chart showing the day the sun will go dark. Knowledge is power. (+1 Tactics, +400 xp)"
+			txt = "A great owl watches you from the shadows while you read. You find a star chart of every eclipse for a hundred years, and a treatise on the art of war annotated in four hands. (+1 Tactics, +400 xp)"
 			GS.player.skills.tactics += 1
 			GS.give_player_xp(400)
 		"taku":
-			txt = "Digging through the rubble of Taku you uncover a hidden strongbox. (+600 gold)"
+			txt = "Under a collapsed bathhouse you find a merchant's strongbox, two centuries old and still locked. The lock is not as strong as it used to be. (+600 gold)"
 			GS.add_gold(600)
 		_:
 			txt = "You find nothing of interest."
@@ -362,9 +373,9 @@ func _build_tavern(o: VBoxContainer) -> void:
 func _build_arena(o: VBoxContainer) -> void:
 	var r: int = GS.flags.get("arena_round", 0)
 	var f: Dictionary = Data.arena_fighters[r]
-	o.add_child(UI.rich("Torches blaze around a ring of stone. Xin Fu, the promoter, bellows at the crowd: [i]\"Welcome to EARTH RUMBLE!\"[/i]", 740))
+	o.add_child(UI.rich("Torches blaze around a ring of stone sunk into the earth. Madam Gu, the promoter, works the crowd from a balcony: [i]\"Gaoling! Who wants to see someone get THROWN?\"[/i]", 740))
 	if GS.flags.get("arena_champion", false):
-		o.add_child(UI.rich("[b]You are a former Earth Rumble champion.[/b]", 740))
+		o.add_child(UI.rich("[b]You are a former champion of the Stone Pit.[/b]", 740))
 	o.add_child(UI.rich("Round %d of %d — your opponent: [b]%s[/b] (%s). Prize: %d gold." % [r + 1, Data.arena_fighters.size(), f.name, Data.element_name(f.bend), f.prize], 740))
 	o.add_child(UI.rich("[i]You fight alone. Lose, and you start again from the first round.[/i]", 740))
 	o.add_child(UI.option("Step into the ring (entry fee 20 gold)", func():

@@ -25,7 +25,7 @@ func _ready() -> void:
 	match set_name:
 		"a": ids = ["fn_conscript", "fn_soldier", "fn_veteran", "fn_yuyan", "fn_firebender", "fn_imperial_fb", "fn_rhino_rider", "ek_peasant", "ek_soldier", "ek_veteran", "ek_ostrich_rider", "ek_royal_guard"]
 		"b": ids = ["ek_earthbender", "ek_dai_li", "ky_warrior", "ky_elite", "nwt_hunter", "nwt_guard", "nwt_waterbender", "nwt_healer", "swt_warrior", "swt_wolf", "swt_boomerang", "sw_swampbender"]
-		"c": ids = ["sand_raider", "pirate", "pirate_captain", "fn_deserter", "freedom_fighter", "mountain_bandit", "rough_rhino", "aang", "katara", "sokka", "toph", "merc_swordsman"]
+		"c": ids = ["sand_raider", "pirate", "pirate_captain", "fn_deserter", "red_lantern", "mountain_bandit", "rough_rhino", "an_master", "an_monk", "om_royal_guard", "nwt_moon_guard", "merc_swordsman"]
 	for i in ids.size():
 		var t: Dictionary = Data.troop(ids[i])
 		var parts := UnitModel.build(t.look, t.weapon, t.ranged, t.shield, t.mount, Color(0.85, 0.68, 0.52), Color(0.1, 0.07, 0.05))

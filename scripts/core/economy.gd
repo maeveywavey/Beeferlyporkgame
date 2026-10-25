@@ -65,6 +65,13 @@ static func market_goods(sid: String) -> Array:
 		if d.culture in ["north", "south"] and not out.has("seal_jerky"):
 			out.append("seal_jerky")
 		return out
+	if d.type == "temple":
+		# The Nomads are vegetarian: no fish, no jerky
+		var tg: Array = d.produces.duplicate()
+		for g in ["rice", "cabbages", "sea_prunes"]:
+			if not tg.has(g):
+				tg.append(g)
+		return tg
 	return []
 
 static func buy_price(sid: String, good: String) -> int:
@@ -127,7 +134,7 @@ static func refresh_tavern(sid: String) -> void:
 		return
 	var t := {}
 	if randf() < 0.75:
-		var merc: String = ["merc_swordsman", "merc_archer", "rough_rhino", "merc_swordsman", "freedom_fighter"].pick_random()
+		var merc: String = ["merc_swordsman", "merc_archer", "rough_rhino", "merc_swordsman", "red_lantern"].pick_random()
 		var n := 3 + randi() % 8
 		if merc == "rough_rhino":
 			n = 2 + randi() % 4

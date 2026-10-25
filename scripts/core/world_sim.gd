@@ -52,7 +52,7 @@ func party_speed(p: Dictionary) -> float:
 		"caravan": base *= 0.8
 		"villager": base *= 0.7
 		"bandit": base *= 0.85
-		"avatar": return 26.0
+		"pilgrim": return 24.0
 	base *= p.get("speed_mult", 1.0)
 	return base * Terrain.speed_mult(p.pos)
 
@@ -182,25 +182,10 @@ func _check_encounters() -> void:
 					GS.player_encounter.emit(other.id)
 					return
 				continue
-			if a.kind == "avatar" or b.kind == "avatar":
-				_avatar_contact(a, b)
+			if a.kind == "pilgrim" or b.kind == "pilgrim":
 				continue
 			if GS.parties_hostile(a, b) and (a.target_party == b.id or b.target_party == a.id):
 				_ai_battle(a, b)
-
-func _avatar_contact(a: Dictionary, b: Dictionary) -> void:
-	var avatar: Dictionary = a if a.kind == "avatar" else b
-	var other: Dictionary = b if a.kind == "avatar" else a
-	if other.lord == "zuko" and GS.hours > avatar.get("escape_until", 0.0):
-		avatar.escape_until = GS.hours + 30.0
-		var away: Vector2 = (avatar.pos - other.pos).normalized()
-		if away == Vector2.ZERO:
-			away = Vector2.RIGHT
-		avatar.target = (avatar.pos + away * 200.0).clamp(Vector2(20, 20), Vector2(Data.MAP_W - 20, Data.MAP_H - 20))
-		avatar.target_settlement = ""
-		avatar.moving = true
-		other.wait_until = GS.hours + 8.0
-		GS.log_msg("Prince Zuko caught up with the Avatar — but the Avatar escaped on his flying bison!", Color(1, 0.7, 0.3))
 
 func _ai_battle(a: Dictionary, b: Dictionary) -> void:
 	var res := AutoResolve.resolve([a.id], [b.id])
@@ -294,17 +279,35 @@ func _hourly() -> void:
 		pp.pos = Terrain.random_land_near(pp.pos, 30.0)
 		pp.moving = false
 		GS.log_msg("You managed to escape your captors!", Color(0.6, 1, 0.6))
-	# Special calendar events
-	if GS.day() == GS.ECLIPSE_DAY and int(GS.hour_of_day()) == 9 and not GS.flags.has("eclipse"):
-		GS.flags.eclipse = true
-		GS.log_msg("The Day of Black Sun! The sun goes dark — firebenders are powerless until it returns.", Color(0.8, 0.6, 1))
-	if GS.day() == GS.COMET_DAY and not GS.flags.has("comet"):
-		GS.flags.comet = true
-		GS.log_msg("Sozin's Comet blazes across the sky! For three days the Fire Nation's firebenders burn with terrible power.", Color(1, 0.4, 0.2))
-		_start_campaign("fire_nation", true)
+	_hourly_cosmic()
+
+## Eclipses and comets: announced by astronomers days ahead, then felt.
+func _hourly_cosmic() -> void:
+	var d := GS.day()
+	var h := GS.hour_of_day()
+	for e in GS.flags.get("cosmic", []):
+		var key := "cosmic_%s_%d" % [e.kind, e.day]
+		if d == e.day - 5 and not GS.flags.has(key + "_warn"):
+			GS.flags[key + "_warn"] = true
+			match e.kind:
+				"solar": GS.log_msg("The Fire Sages of Crescent Island announce a solar eclipse in five days (%s). Every firebender will be powerless while the sun is dark." % GS.day_name(e.day), Color(0.8, 0.6, 1))
+				"lunar": GS.log_msg("Water Tribe astronomers predict an eclipse of the full moon in five days (%s). For a few hours that night, no waterbender will bend." % GS.day_name(e.day), Color(0.7, 0.75, 1))
+				"comet": GS.log_msg("Astronomers report a comet approaching. In five days it will burn in the sky, and firebenders will burn hotter while it does.", Color(1, 0.55, 0.3))
+		if d == e.day and h >= e.from and not GS.flags.has(key):
+			GS.flags[key] = true
+			match e.kind:
+				"solar": GS.log_msg("The moon slides across the sun. Day turns to dusk, and every firebender's flame gutters out.", Color(0.8, 0.6, 1))
+				"lunar": GS.log_msg("The full moon turns the colour of rust. The tides go slack, and so does every waterbender.", Color(0.85, 0.5, 0.5))
+				"comet":
+					GS.log_msg("A comet blazes across the sky, its tail brighter than the moon. Firebenders feel it in their breath.", Color(1, 0.45, 0.2))
+					# Fire Nation hawks seize the moment if a war is on
+					for k in Data.KINGDOMS:
+						if GS.at_war("fire_nation", k):
+							_start_campaign("fire_nation", true)
+							break
 
 func _daily() -> void:
-	_daily_story()
+	_daily_events()
 	_daily_diplomacy()
 	Economy.daily_update()
 	_daily_settlements()
@@ -319,8 +322,9 @@ func _daily() -> void:
 		for sid in GS.settlements:
 			if randf() < 0.3:
 				Economy.refresh_tavern(sid)
-	if GS.is_full_moon() and not GS.flags.has("moon_%d" % GS.day()):
-		GS.flags["moon_%d" % GS.day()] = true
+	var cycle := int((GS.day() + 7) / 28)
+	if GS.is_full_moon() and not GS.flags.has("moon_%d" % cycle):
+		GS.flags["moon_%d" % cycle] = true
 		GS.log_msg("Tonight the moon is full. Waterbenders will be at their strongest.", Color(0.7, 0.85, 1))
 
 func _weekly() -> void:
@@ -346,9 +350,9 @@ func _weekly() -> void:
 			GS.player.morale = maxf(0.0, GS.player.morale - 20.0)
 			GS.log_msg("You could not pay your troops' wages! Morale plummets.", Color(1, 0.4, 0.3))
 
-func _daily_story() -> void:
-	for ev in Data.story_events:
-		var key := "story_%d" % ev.day
+func _daily_events() -> void:
+	for ev in Data.world_events:
+		var key := "event_%d" % ev.day
 		if GS.day() < ev.day or GS.flags.has(key):
 			continue
 		GS.flags[key] = true
@@ -358,42 +362,22 @@ func _daily_story() -> void:
 			var target: String = ev.campaign[1]
 			if GS.at_war(f, GS.settlements[target].faction):
 				_force_campaign(f, target, ev.get("leaders", []))
-				for other in ev.get("also", []):
-					if GS.at_war(other, GS.settlements[target].faction):
-						_force_campaign(other, target, [])
 		match ev.get("effect", ""):
-			"ocean_spirit":
-				var pole: Vector2 = Data.settlements["agna_qela"].pos
-				for id in GS.parties.keys():
-					var p: Dictionary = GS.parties[id]
-					if p.faction == "fire_nation" and p.pos.distance_to(pole) < 260.0:
-						for st in p.roster.duplicate():
-							Roster.remove(p.roster, st.id, int(ceil(st.n * 0.6)))
-						if Roster.total(p.roster) == 0 and id != "player":
-							on_party_defeated(id, "northern_water")
-				if not GS.settlements["agna_qela"].siege.is_empty() and GS.settlements["agna_qela"].siege.faction == "fire_nation":
-					_end_siege("agna_qela", false)
-			"fong_ruins":
-				var fs: Dictionary = GS.settlements["fong_fortress"]
-				for st in fs.garrison.duplicate():
-					Roster.remove(fs.garrison, st.id, int(st.n * 0.5))
-			"end_war":
-				GS.flags.war_over = true
-				GS.flags.fn_king = "zuko"
-				for k in Data.KINGDOMS:
-					if k != "fire_nation":
-						GS.make_peace("fire_nation", k)
-				GS.campaigns.clear()
-				var oz: Dictionary = GS.lords["ozai"]
-				if oz.party != "" and GS.parties.has(oz.party):
-					remove_party(oz.party)
-				oz.party = ""
-				oz.respawn_at = INF
-				for id in GS.parties:
-					var p2: Dictionary = GS.parties[id]
-					if p2.get("besieging", "") != "":
-						_leave_siege(p2)
-				GS.flags["peace_since_fire_nation"] = GS.day()
+			"north_debate":
+				# The North's choice depends on how the war at sea has gone and on
+				# whether the player has made friends in Agna Qel'a.
+				var lean := 0.35 + float(GS.player.get("faction_rel", {}).get("northern_water", 0)) / 200.0
+				if not GS.at_war("fire_nation", "southern_water"):
+					lean = 0.0
+				if randf() < lean:
+					GS.declare_war("northern_water", "fire_nation")
+					GS.log_msg("Commander Iluq carries the vote. The Northern Water Tribe sails to aid the South.", Color(0.6, 0.8, 1))
+				else:
+					GS.log_msg("Chief Tulok keeps the North neutral. Commander Iluq walks out of the council hall.", Color(0.6, 0.8, 1))
+			"hard_winter":
+				for sid in GS.settlements:
+					if Data.settlements[sid].type == "village":
+						GS.settlements[sid].prosperity = maxf(5.0, GS.settlements[sid].prosperity - 8.0)
 
 func _force_campaign(f: String, target: String, leaders: Array) -> void:
 	GS.campaigns[f] = {"target": target, "until": GS.hours + 24.0 * 25.0}
@@ -402,7 +386,9 @@ func _force_campaign(f: String, target: String, leaders: Array) -> void:
 		if lr.faction != f or lr.party == "" or not GS.parties.has(lr.party):
 			continue
 		var p: Dictionary = GS.parties[lr.party]
-		if leaders.has(lid) or (Roster.total(p.roster) > _lord_target_size(lid) * 0.5 and Data.lords[lid].get("special", "") == ""):
+		if Data.lords[lid].get("no_offense", false) and not leaders.has(lid):
+			continue
+		if leaders.has(lid) or Roster.total(p.roster) > _lord_target_size(lid) * 0.5:
 			p.campaign = target
 			p.next_think = 0.0
 			if leaders.has(lid):
@@ -411,11 +397,9 @@ func _force_campaign(f: String, target: String, leaders: Array) -> void:
 				while Roster.total(p.roster) < _lord_target_size(lid) * 1.3:
 					Roster.add(p.roster, tree[mini(tree.size() - 1, randi() % tree.size())], 1)
 
-## Wars and truces. Until the war ends the Fire Nation fights everyone and the
-## other nations stay allied; afterwards relations shift over time.
+## Wars and truces shift over time from the start. Long wars grow weary;
+## long peaces grow brittle. The Air Nomads never take part.
 func _daily_diplomacy() -> void:
-	if not GS.flags.get("war_over", false):
-		return
 	var ks: Array = Data.KINGDOMS
 	for i in ks.size():
 		for j in range(i + 1, ks.size()):
@@ -427,12 +411,37 @@ func _daily_diplomacy() -> void:
 				GS.flags[since_key] = since
 			var lasted := GS.day() - since
 			if GS.at_war(a, b):
-				if lasted > 20 and randf() < 0.03:
+				# War-weariness grows with time; a side that is losing land sues sooner
+				var losing := maxf(_land_loss(a), _land_loss(b))
+				if lasted > 30 and randf() < 0.008 + losing * 0.04:
 					GS.make_peace(a, b)
 					GS.flags[since_key] = GS.day()
-			elif lasted > 40 and randf() < 0.004:
-				GS.declare_war(a, b)
-				GS.flags[since_key] = GS.day()
+			elif lasted > 40 and randf() < 0.007:
+				# Nobody opens a third front, and nobody kicks a kingdom already on its knees
+				if _wars_of(a) < 2 and _wars_of(b) < 2 and _land_loss(a) < 0.4 and _land_loss(b) < 0.4:
+					GS.declare_war(a, b)
+					GS.flags[since_key] = GS.day()
+
+func _wars_of(f: String) -> int:
+	var n := 0
+	for k in Data.KINGDOMS:
+		if k != f and GS.at_war(f, k):
+			n += 1
+	return n
+
+## Fraction of a kingdom's original towns and castles it has lost (0..1).
+func _land_loss(f: String) -> float:
+	var orig := 0
+	var held := 0
+	for sid in Data.settlements:
+		var d: Dictionary = Data.settlements[sid]
+		if not d.type in ["town", "castle"]:
+			continue
+		if d.faction == f:
+			orig += 1
+			if GS.settlements[sid].faction == f:
+				held += 1
+	return 0.0 if orig == 0 else 1.0 - float(held) / orig
 
 func _daily_settlements() -> void:
 	for sid in GS.settlements:
@@ -442,7 +451,7 @@ func _daily_settlements() -> void:
 			continue
 		var looted: bool = s.looted_until > GS.hours
 		s.prosperity = clampf(s.prosperity + (randf_range(-0.3, 0.4) if not looted else -0.3), 5.0, 100.0)
-		if not s.siege.is_empty():
+		if not s.siege.is_empty() or d.type == "temple":
 			continue
 		if d.type == "village":
 			if not looted and s.volunteers < 6 + int(s.relation / 10.0):
@@ -479,7 +488,7 @@ func _daily_lords() -> void:
 		for s in p.roster.duplicate():
 			var up := Roster.upgradable_count(s)
 			if up > 0:
-				var opts: Array = Data.troop(s.id).upgrades
+				var opts: Array = Data.troop_upgrades(s.id)
 				Roster.upgrade(p.roster, s.id, opts.pick_random(), up)
 		# Recruit if in friendly territory
 		var near_friendly := false
@@ -526,13 +535,13 @@ func _daily_spawns() -> void:
 		if Data.settlements[sid].type == "town" and GS.settlements[sid].siege.is_empty():
 			if int(caravans.get(sid, 0)) < 2 and randf() < 0.2:
 				spawn_caravan(sid)
-	# Team Avatar
-	var has_avatar := false
+	# Air Nomad pilgrims
+	var pilgrims := 0
 	for id in GS.parties:
-		if GS.parties[id].kind == "avatar":
-			has_avatar = true
-	if not has_avatar and randf() < 0.3:
-		spawn_team_avatar()
+		if GS.parties[id].kind == "pilgrim":
+			pilgrims += 1
+	if pilgrims < 2 and randf() < 0.3:
+		spawn_pilgrims()
 
 func _daily_player() -> void:
 	var pp: Dictionary = GS.player_party()
@@ -562,8 +571,8 @@ func _daily_player() -> void:
 		if Data.goods[g].food:
 			variety += 1
 	var target := 50.0 + GS.skill("leadership") * 5.0 + mini(variety, 5) * 3.0 - Roster.total(pp.roster) * 0.35
-	if pl.companions.has("chong"):
-		target += 8.0
+	if pl.companions.has("ukiuk"):
+		target += 6.0   # terrible jokes, told well
 	if starving:
 		target -= 40.0
 	target += pl.get("victory_morale", 0.0)
@@ -618,7 +627,7 @@ func _think(p: Dictionary) -> void:
 		"bandit": _think_bandit(p)
 		"caravan": _think_caravan(p)
 		"villager": _think_villager(p)
-		"avatar": _think_avatar(p)
+		"pilgrim": _think_pilgrim(p)
 
 func _go_to(p: Dictionary, pos: Vector2) -> void:
 	p.target = pos
@@ -693,13 +702,8 @@ func _think_lord(p: Dictionary) -> void:
 	if not threat.is_empty():
 		_flee(p, threat)
 		return
-	# Prince Zuko's special obsession
-	if ldef.get("special", "") == "hunt_avatar" and not GS.flags.get("war_over", false):
-		for id in GS.parties:
-			if GS.parties[id].kind == "avatar" and GS.parties[id].pos.distance_to(p.pos) < 260.0:
-				_chase(p, id)
-				p.state = "hunt"
-				return
+	if not prey.is_empty() and prey.kind in ["villager", "caravan"] and ldef.aggression < 0.35:
+		prey = {}
 	if not prey.is_empty() and (prey.kind != "player" or randf() < ldef.aggression + 0.3):
 		_chase(p, prey.id)
 		p.state = "chase"
@@ -868,14 +872,13 @@ func _think_villager(p: Dictionary) -> void:
 		p.state = p.get("leg", "to_town")
 		_go_settlement(p, p.dest if p.state == "to_town" else p.home)
 
-func _think_avatar(p: Dictionary) -> void:
-	if GS.hours < p.get("escape_until", 0.0) and p.moving:
+## Pilgrims fly between the temples and wherever refugees gather.
+func _think_pilgrim(p: Dictionary) -> void:
+	if p.moving and p.pos.distance_to(p.target) > 5.0:
 		return
-	if p.moving and p.pos.distance_to(p.target) > 5.0 and p.target_settlement == "":
-		return
-	if p.moving and p.target_settlement != "":
-		return
-	var sids := Data.settlements.keys()
+	var sids := Data.settlements.keys().filter(func(x): return Data.settlements[x].type != "castle")
+	if randf() < 0.4:
+		sids = Data.settlement_ids_of_type("temple")
 	var sid: String = sids.pick_random()
 	_go_to(p, Data.settlements[sid].pos + Vector2(randf_range(-15, 15), randf_range(-15, 15)))
 	p.wait_until = GS.hours + randf_range(2.0, 10.0)
@@ -944,7 +947,7 @@ func _update_sieges() -> void:
 			for id in GS.parties:
 				if GS.parties[id].get("besieging", "") == sid:
 					att += party_power(GS.parties[id])
-			var def := Roster.power(s.garrison) * 2.0
+			var def := Roster.power(s.garrison) * 2.0 * Data.walls(sid)
 			if att > def * 1.1 or s.siege.hours > 120.0:
 				_resolve_assault(sid)
 			elif int(s.siege.hours) % 24 == 0:
@@ -1056,7 +1059,7 @@ func _daily_campaigns() -> void:
 						if p.state == "besiege":
 							_leave_siege(p)
 		else:
-			var chance := 0.07 if f == "fire_nation" else 0.03
+			var chance := 0.045 if f == "fire_nation" else 0.035
 			if randf() < chance:
 				_start_campaign(f, false)
 
@@ -1088,7 +1091,7 @@ func _start_campaign(f: String, forced: bool) -> void:
 		if lr.faction != f or lr.party == "" or not GS.parties.has(lr.party):
 			continue
 		var p: Dictionary = GS.parties[lr.party]
-		if Data.lords[lid].get("special", "") == "hunt_avatar":
+		if Data.lords[lid].get("no_offense", false):
 			continue
 		if forced or Roster.total(p.roster) > _lord_target_size(lid) * 0.5:
 			p.campaign = best
@@ -1126,10 +1129,6 @@ func spawn_lord(lid: String, size_frac: float) -> void:
 		# bias towards mid tiers for starting armies
 		var r := pow(randf(), 2.0 if size_frac >= 1.0 else 2.8)
 		Roster.add(p.roster, tree[mini(tree.size() - 1, int(r * tree.size()))], 1)
-	if lid == "zuko":
-		p.name = "Prince Zuko's Warship Crew"
-	elif lid == "iroh":
-		p.name = "General Iroh's Retinue"
 	lr.party = p.id
 	p.next_think = 0.0
 	p.wait_until = GS.hours + randf_range(0.0, 3.0)
@@ -1187,11 +1186,11 @@ func spawn_villagers(vid: String) -> void:
 	p.state = "to_town"
 	p.leg = "to_town"
 
-func spawn_team_avatar() -> void:
-	var start: Vector2 = Data.settlements["southern_tribe"].pos + Vector2(-10, -20)
-	if GS.day() > 5:
-		start = Data.settlements.values().pick_random().pos
-	var p := GS.make_party("", "Team Avatar", "avatar", "team_avatar", start)
-	for h in ["aang", "katara", "sokka", "toph"]:
-		Roster.add(p.roster, h, 1)
+func spawn_pilgrims() -> void:
+	var temples := Data.settlement_ids_of_type("temple")
+	var start: Vector2 = Data.settlements[temples.pick_random()].pos + Vector2(randf_range(-10, 10), randf_range(-10, 10))
+	var p := GS.make_party("", "Air Nomad Pilgrims", "pilgrim", "air_nomads", start)
+	Roster.add(p.roster, "an_master", 1)
+	Roster.add(p.roster, "an_monk", 2 + randi() % 3)
+	Roster.add(p.roster, "an_novice", 1 + randi() % 3)
 	p.next_think = 0.0

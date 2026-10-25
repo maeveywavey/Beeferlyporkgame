@@ -79,8 +79,8 @@ static func resolve(side_a: Array, side_b: Array, garrison_a: String = "", garri
 		hero_a += _hero_power(pid)
 	for pid in side_b:
 		hero_b += _hero_power(pid)
-	var wall_a := 1.8 if garrison_a != "" else 1.0
-	var wall_b := 1.8 if garrison_b != "" else 1.0
+	var wall_a := 1.8 * Data.walls(garrison_a) if garrison_a != "" else 1.0
+	var wall_b := 1.8 * Data.walls(garrison_b) if garrison_b != "" else 1.0
 	var tac_a := 1.0 + tactics_a * 0.04
 	var lost_a := 0.0
 	var lost_b := 0.0

@@ -140,7 +140,7 @@ func setup_arena(f: Dictionary, p_team: int) -> void:
 	foot_speed = 4.8
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(f.name)
-	var look := Looks.CB.random_look(f.get("culture", "earth"), rng)
+	var look := Looks.CB.random_look(f.get("culture", "earth"), rng, f.get("vlook", {}).get("sex", ""))
 	look.merge(f.get("vlook", {}), true)
 	look.merge({"outfit": "peasant", "kit": "sash"}, false)
 	_finish_setup(look)
@@ -166,7 +166,7 @@ func setup_companion(cid: String, p_team: int) -> void:
 	foot_speed = 5.0
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(cid)
-	var look := Looks.CB.random_look(c.get("culture", "earth"), rng)
+	var look := Looks.CB.random_look(Looks.CULTURE_MAP.get(c.get("culture", "earth"), "earth"), rng, c.get("vlook", {}).get("sex", ""))
 	look.merge(c.get("vlook", {}), true)
 	look.merge({"outfit": "ranger", "kit": Looks.kit_for("", look.culture, 3)}, false)
 	_finish_setup(look)

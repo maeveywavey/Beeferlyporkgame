@@ -124,7 +124,7 @@ func _troop_row(s: Dictionary) -> Control:
 		refresh())
 	row.add_child(name_btn)
 	var need := Data.troop_xp_needed(s.id)
-	if not t.upgrades.is_empty():
+	if not Data.troop_upgrades(s.id).is_empty():
 		var bar := UI.bar(float(s.xp) / maxf(1.0, need * s.n) * 100.0, 100.0, UI.GOLD, 90, 10)
 		bar.tooltip_text = "Experience: %d (needs %d per troop)" % [s.xp, need]
 		row.add_child(bar)
@@ -136,7 +136,7 @@ func _troop_row(s: Dictionary) -> Control:
 		var urow := UI.hbox(6)
 		v.add_child(urow)
 		urow.add_child(UI.label("   Ready to upgrade (%d):" % can, 14, UI.GREEN))
-		for u in t.upgrades:
+		for u in Data.troop_upgrades(s.id):
 			var cost := Data.troop_upgrade_cost(u)
 			urow.add_child(UI.button("%s (%d g)" % [Data.troop(u).name, cost], _upgrade.bind(s.id, u, 1), 0, GS.player.gold >= cost))
 			urow.add_child(UI.button("All", _upgrade.bind(s.id, u, can), 0, GS.player.gold >= cost * can))

@@ -19,8 +19,7 @@ const SETTINGS_PATH := "user://settings.cfg"
 
 const SEASONS := ["Winter", "Spring", "Summer", "Autumn"]
 const DAYS_PER_SEASON := 90
-const ECLIPSE_DAY := 251     # Day of Black Sun (summer, 100 AG)
-const COMET_DAY := 268       # Sozin's Comet (end of summer, 100 AG)
+const START_YEAR := 11      # the eleventh year since the Avatar drowned
 
 const SKILLS := ["ironflesh", "power_strike", "weapon_mastery", "archery", "athletics", "riding",
 	"bending", "leadership", "trade", "tactics", "healing", "pathfinding", "trainer"]
@@ -146,36 +145,46 @@ func _notification(what: int) -> void:
 # Character creation
 # ---------------------------------------------------------------------------
 const BACKGROUNDS := {
-	"ek_refugee": {"name": "Earth Kingdom Refugee", "start": "omashu", "bends": ["earth", ""],
+	"ek_refugee": {"name": "Ember Coast Refugee", "start": "omashu", "bends": ["earth", ""], "standing": "commoner",
 		"attrs": {"str": 1, "cha": 1}, "skills": {"athletics": 1, "trade": 1}, "gold": 350,
 		"equip": {"weapon": "staff", "armor": "peasant_clothes", "helmet": "straw_hat"},
-		"troops": [["ek_peasant", 4]], "goods": {"rice": 6, "cabbages": 4},
-		"desc": "Your village burned when the Fire Nation came. You walked to Omashu with nothing but a staff and a grudge."},
-	"fn_deserter": {"name": "Fire Nation Deserter", "start": "fire_fountain", "bends": ["fire", ""],
+		"troops": [["ek_peasant", 4]], "goods": {"rice": 6, "cabbages": 4}, "rel": {"fire_nation": -5},
+		"desc": "The Admiralty came to 'protect' your village on the Ember Coast and stayed until there was nothing left to protect. You walked inland with a staff, four neighbours and a grudge, and Omashu let you in when Ba Sing Se would not."},
+	"lower_ring": {"name": "Lower Ring Labourer", "start": "ba_sing_se", "bends": ["earth", ""], "standing": "commoner",
+		"attrs": {"str": 2}, "skills": {"ironflesh": 1, "trainer": 1}, "gold": 200,
+		"equip": {"weapon": "axe", "armor": "peasant_clothes"},
+		"troops": [["ek_peasant", 5]], "goods": {"rice": 8},
+		"desc": "You hauled stone in Ba Sing Se's Lower Ring for eleven years and never once saw the Upper Ring's gates open for someone like you. You are done waiting for them to."},
+	"fn_deserter": {"name": "Fire Nation Deserter", "start": "fire_fountain", "bends": ["fire", ""], "standing": "commoner",
 		"attrs": {"str": 1, "agi": 1}, "skills": {"weapon_mastery": 1, "tactics": 1}, "gold": 300,
 		"equip": {"weapon": "dao", "armor": "peasant_clothes"}, "rel": {"fire_nation": -5},
 		"troops": [["fn_conscript", 2]], "goods": {"fire_flakes": 6, "rice": 4},
-		"desc": "You served in the Fire Nation army until you could no longer stomach what it did. Now you wander, hoping no one recognises you."},
-	"swt_warrior": {"name": "Southern Water Tribe Warrior", "start": "southern_tribe", "bends": ["water", ""],
+		"desc": "You were conscripted for the Ember Coast and served until the day you were ordered to burn a granary with a family still inside. You walked away that night, and two others walked with you."},
+	"fn_noble": {"name": "Fire Nation Minor Noble", "start": "caldera", "bends": ["fire", ""], "standing": "gentry",
+		"attrs": {"int": 1, "cha": 1}, "skills": {"leadership": 1, "weapon_mastery": 1}, "gold": 900,
+		"equip": {"weapon": "jian", "armor": "peasant_clothes"}, "rel": {"fire_nation": 5},
+		"troops": [["fn_soldier", 3]], "goods": {"fire_flakes": 4, "rice": 4},
+		"desc": "Your house is old, small and deeply in debt. Your mother wants you to marry well; your creditors want their money; you want to be more than a name on a terraced wall in Caldera."},
+	"swt_warrior": {"name": "Southern Raider", "start": "southern_tribe", "bends": ["water", ""], "standing": "commoner",
 		"attrs": {"str": 1, "agi": 1}, "skills": {"archery": 1, "pathfinding": 1}, "gold": 450,
 		"equip": {"weapon": "war_club", "ranged": "boomerang", "armor": "water_parka", "helmet": "parka_hood"},
-		"troops": [["swt_villager", 5], ["swt_warrior", 2]], "goods": {"seal_jerky": 6, "sea_prunes": 4},
-		"desc": "The men of your tribe sailed to war years ago. You were left behind to guard the village — until now."},
-	"nwt_noble": {"name": "Northern Water Tribe Noble", "start": "agna_qela", "bends": ["water", ""],
+		"troops": [["swt_villager", 5], ["swt_warrior", 2]], "goods": {"seal_jerky": 6, "sea_prunes": 4}, "rel": {"fire_nation": -5},
+		"desc": "You crewed a raider canoe under Qannik for three winters. Then one night the ship you boarded was full of fishermen, not soldiers. You came home, and you have not gone back out."},
+	"nwt_noble": {"name": "Northern Water Tribe Noble", "start": "agna_qela", "bends": ["water", ""], "standing": "gentry",
 		"attrs": {"int": 1, "cha": 1}, "skills": {"leadership": 1, "healing": 1}, "gold": 700,
 		"equip": {"weapon": "spear", "armor": "water_parka"},
 		"troops": [["nwt_hunter", 3]], "goods": {"seal_jerky": 5, "fish": 5},
-		"desc": "Born behind the ice walls of Agna Qel'a, you leave the safety of the North to see the war for yourself."},
-	"merchant": {"name": "Wandering Merchant", "start": "ba_sing_se", "bends": ["earth", ""],
+		"desc": "Born behind the ice walls of Agna Qel'a to a family with a seat on the council, you leave the North to see for yourself the wars it pretends are not its business."},
+	"merchant": {"name": "Wandering Merchant", "start": "gaoling", "bends": ["earth", ""], "standing": "citizen",
 		"attrs": {"cha": 2}, "skills": {"trade": 2, "pathfinding": 1}, "gold": 1300,
 		"equip": {"weapon": "jian", "armor": "peasant_clothes", "helmet": "straw_hat"},
 		"troops": [["merc_archer", 2]], "goods": {"tea": 4, "rice": 6},
-		"desc": "You have hauled goods from one end of the Earth Kingdom to the other. War is bad for most — but not for trade."},
-	"kyoshi": {"name": "Kyoshi Island Trainee", "start": "kyoshi_island", "bends": [""],
+		"desc": "You have hauled goods from one end of the world to the other on credit from the Cheng family. Three wars are bad for most people. You are trying not to be the kind of person they are good for."},
+	"kyoshi": {"name": "Kyoshi Island Trainee", "start": "kyoshi_island", "bends": [""], "standing": "commoner",
 		"attrs": {"agi": 2}, "skills": {"weapon_mastery": 2, "athletics": 1}, "gold": 250,
 		"equip": {"weapon": "kyoshi_fans", "armor": "kyoshi_armor"},
 		"troops": [["ky_initiate", 3]], "goods": {"fish": 6, "rice": 4},
-		"desc": "Trained in the dojo of Kyoshi Island, you leave with your fans and face paint to defend those who cannot defend themselves."},
+		"desc": "Trained in the dojo of Kyoshi Island, you leave with your fans and face paint. Captain Oyama gave you one instruction: defend those who cannot defend themselves, and never confuse that with conquest."},
 }
 
 func create_player(pname: String, background: String, bend: String, skin: Color, hair: Color) -> Dictionary:
@@ -189,6 +198,7 @@ func create_player(pname: String, background: String, bend: String, skin: Color,
 		"items": [], "goods": bg.goods.duplicate(), "faction": "", "status": "",
 		"faction_rel": {}, "wars": [], "companions": [], "companion_state": {},
 		"start": bg.start, "captive_until": -1.0, "look": {"skin": skin, "hair": hair},
+		"standing": bg.get("standing", "commoner"),
 	}
 	for s in SKILLS:
 		p.skills[s] = 0
@@ -224,11 +234,14 @@ func new_game(p: Dictionary) -> void:
 	next_id = 1
 	pending_battle = {}
 	player = p
-	# Kingdom relations: the Fire Nation is at war with everyone.
+	# Kingdom relations: the three wars of the Quiet Years, everyone else at peace.
 	for a in Data.KINGDOMS:
 		for b in Data.KINGDOMS:
 			if a < b:
-				relations[_rel_key(a, b)] = "war" if (a == "fire_nation" or b == "fire_nation") else "peace"
+				relations[_rel_key(a, b)] = "peace"
+	for w in Data.STARTING_WARS:
+		relations[_rel_key(w[0], w[1])] = "war"
+	schedule_cosmic_events()
 	for id in Data.settlements:
 		var d: Dictionary = Data.settlements[id]
 		var s := {
@@ -263,7 +276,7 @@ func new_game(p: Dictionary) -> void:
 	# Lords' parties
 	for id in lords:
 		sim.spawn_lord(id, 1.0)
-	# Initial bandits, caravans, Team Avatar
+	# Initial bandits, caravans, Air Nomad pilgrims
 	for i in 3:
 		for sp in Data.bandit_spawns.size():
 			if randf() < 0.6:
@@ -271,13 +284,14 @@ func new_game(p: Dictionary) -> void:
 	for id in Data.settlements:
 		if Data.settlements[id].type == "town" and randf() < 0.7:
 			sim.spawn_caravan(id)
-	sim.spawn_team_avatar()
+	for i in 2:
+		sim.spawn_pilgrims()
 	for id in settlements:
 		Economy.refresh_tavern(id)
 	player.hp = max_hp()
 	sim.reset_clock()
 	game_active = true
-	log_msg("Winter, 99 AG. The Hundred Year War rages on. Somewhere, the Avatar has returned.", Color(1, 0.85, 0.5))
+	log_msg("Winter of the eleventh Quiet Year. Eleven years since the Avatar drowned; somewhere a child who will be the next one does not yet know it. Until then, the world must manage on its own.", Color(1, 0.85, 0.5))
 
 func _make_garrison(culture: String, size: int) -> Array:
 	var r := []
@@ -293,7 +307,7 @@ func _culture_tree(base: String) -> Array:
 	var out := [base]
 	var i := 0
 	while i < out.size():
-		for u in Data.troop(out[i]).upgrades:
+		for u in Data.troop_upgrades(out[i]):
 			if not out.has(u):
 				out.append(u)
 		i += 1
@@ -341,16 +355,62 @@ func moon_phase() -> float:
 func is_full_moon() -> bool:
 	return absf(moon_phase() - 0.5) < 0.04
 
+# Eclipses and comets are natural events, as in real life: rare, irregular,
+# and predicted by the sages and astronomers days in advance. A solar eclipse
+# takes firebending away for its duration, a lunar eclipse takes waterbending,
+# and a comet strengthens fire for a few days. Scheduled per new game.
+func schedule_cosmic_events() -> void:
+	var ev := []
+	var d := randi_range(50, 170)
+	while d < 720:
+		var h := randf_range(8.0, 13.0)
+		ev.append({"kind": "solar", "day": d, "from": h, "to": h + 2.5})
+		d += randi_range(150, 280)
+	# lunar eclipses fall on full-moon nights (see moon_phase)
+	d = randi_range(30, 150)
+	while d < 720:
+		var fm := int(round((d - 7) / 28.0)) * 28 + 7
+		ev.append({"kind": "lunar", "day": fm, "from": 21.0, "to": 23.9})
+		d += randi_range(140, 260)
+	if randf() < 0.6:
+		ev.append({"kind": "comet", "day": randi_range(100, 600), "from": 0.0, "to": 24.0, "days": 4})
+	ev.sort_custom(func(a, b): return a.day < b.day)
+	flags.cosmic = ev
+
+func _cosmic_active(kind: String) -> bool:
+	var d := day()
+	var h := hour_of_day()
+	for e in flags.get("cosmic", []):
+		if e.kind != kind:
+			continue
+		if kind == "comet":
+			if d >= e.day and d < e.day + int(e.get("days", 3)):
+				return true
+		elif d == e.day and h >= e.from and h < e.to:
+			return true
+	return false
+
+## The next scheduled cosmic event (or an empty dictionary).
+func next_cosmic(from_day: int = -1) -> Dictionary:
+	var d := day() if from_day < 0 else from_day
+	for e in flags.get("cosmic", []):
+		if e.day >= d:
+			return e
+	return {}
+
 func is_eclipse() -> bool:
-	return day() == ECLIPSE_DAY and hour_of_day() >= 9.0 and hour_of_day() < 13.0
+	return _cosmic_active("solar")
+
+func is_lunar_eclipse() -> bool:
+	return _cosmic_active("lunar")
 
 func is_comet() -> bool:
-	return day() >= COMET_DAY and day() <= COMET_DAY + 2
+	return _cosmic_active("comet")
 
 func day_name(d: int) -> String:
-	var year := 99 + int((d + 270) / 360)
+	var year := START_YEAR + int(d / 360)
 	var season_name: String = SEASONS[int(d / DAYS_PER_SEASON) % 4]
-	return "%s, day %d, %d AG" % [season_name, d % DAYS_PER_SEASON + 1, year]
+	return "%s, day %d, Quiet Year %d" % [season_name, d % DAYS_PER_SEASON + 1, year]
 
 func date_string() -> String:
 	return "%s — %02d:00" % [day_name(day()), int(hour_of_day())]
@@ -371,9 +431,11 @@ func bending_mult(element: String) -> float:
 				return 0.0
 			var m := 1.15 if is_daytime() else 0.85
 			if is_comet():
-				m *= 3.0
+				m *= 1.6
 			return m
 		"water":
+			if is_lunar_eclipse():
+				return 0.0
 			var m := 1.15 if not is_daytime() else 0.95
 			if is_full_moon() and not is_daytime():
 				m *= 1.5
@@ -411,16 +473,18 @@ func party_faction(p: Dictionary) -> String:
 func at_war(a: String, b: String) -> bool:
 	if a == b:
 		return false
-	if a == "team_avatar" or b == "team_avatar" or a == "neutral" or b == "neutral":
+	if a == "air_nomads" or b == "air_nomads" or a == "neutral" or b == "neutral":
 		return false
 	if a == "bandits" or b == "bandits":
 		return true
-	if a == "freedom_fighters" or b == "freedom_fighters":
-		var other := b if a == "freedom_fighters" else a
-		if other == "fire_nation":
+	if a == "red_lanterns" or b == "red_lanterns":
+		# The Brotherhood robs the Earth Kingdom's tax barges and no one else,
+		# unless you give it cause.
+		var other := b if a == "red_lanterns" else a
+		if other == "earth_kingdom":
 			return true
 		if other == "player":
-			return int(player.get("faction_rel", {}).get("freedom_fighters", 0)) < -10
+			return int(player.get("faction_rel", {}).get("red_lanterns", 0)) < -10
 		return false
 	if a == "player" or b == "player":
 		var other := b if a == "player" else a
@@ -464,10 +528,6 @@ func change_lord_rel(lord_id: String, amount: int) -> void:
 		lords[lord_id].relation = clampi(lords[lord_id].relation + amount, -100, 100)
 
 func is_king(lid: String) -> bool:
-	if lid == "zuko" and flags.get("fn_king", "") == "zuko":
-		return true
-	if lid == "ozai" and flags.get("fn_king", "") == "zuko":
-		return false
 	return Data.lords.get(lid, {}).get("king", false)
 
 func faction_settlements(faction: String) -> Array:
@@ -495,7 +555,7 @@ func skill(name: String) -> int:
 	# Companion bonuses
 	for c in player.companions:
 		var cd: Dictionary = Data.companions.get(c, {})
-		v += int(cd.get("bonus", {}).get(name, 0)) if name in ["healing", "pathfinding", "trainer", "tactics", "leadership"] else 0
+		v += int(cd.get("bonus", {}).get(name, 0)) if name in ["healing", "pathfinding", "trainer", "tactics", "leadership", "trade"] else 0
 	return v
 
 func skill_cap(name: String) -> int:
@@ -618,7 +678,7 @@ func start_battle(enemy_ids: Array, ally_ids: Array = [], siege: String = "", pl
 	}
 	get_tree().change_scene_to_file("res://scenes/battle.tscn")
 
-## Earth Rumble arena fight (round index into Data.arena_fighters).
+## Stone Pit arena fight (round index into Data.arena_fighters).
 func start_arena(round_i: int) -> void:
 	pending_battle = {"arena": round_i, "enemies": [], "allies": [], "siege": "", "player_attacking": true,
 		"biome": "highland", "hour": 20.0, "fire_mult": bending_mult("fire"), "water_mult": bending_mult("water"),
@@ -636,7 +696,7 @@ func finish_arena(won: bool, round_i: int, player_hp: float) -> void:
 		flags.arena_round = round_i + 1
 		lines.append("You defeated %s! The crowd roars. (+%d gold)" % [f.name, f.prize])
 		if round_i == Data.arena_fighters.size() - 1:
-			lines.append("You are the new Earth Rumble champion! Xin Fu can barely believe it.")
+			lines.append("You are the new champion of the Stone Pit! Madam Gu is already printing posters.")
 			add_renown(30)
 			flags.arena_round = 0
 			flags.arena_champion = true

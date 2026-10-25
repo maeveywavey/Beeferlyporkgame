@@ -146,8 +146,7 @@ static func give_xp(roster: Array, xp_each: int) -> void:
 		s.xp = mini(cap, s.xp + xp_each * s.n)
 
 static func upgradable_count(stack: Dictionary) -> int:
-	var t := Data.troop(stack.id)
-	if t.upgrades.is_empty():
+	if Data.troop_upgrades(stack.id).is_empty():
 		return 0
 	var need := Data.troop_xp_needed(stack.id)
 	if need <= 0:

@@ -396,7 +396,7 @@ func _update_parties(delta: float) -> void:
 		if boat:
 			boat.visible = Terrain.height(p.pos) < 0.0
 		var body := node.get_node_or_null("Body")
-		if body and p.kind == "avatar":
+		if body and p.kind == "pilgrim":
 			body.position.y = 7.0 + sin(Time.get_ticks_msec() / 600.0) * 0.6
 		var actor = node.get_node_or_null("Actor")
 		if actor:
@@ -430,7 +430,7 @@ func _update_labels() -> void:
 	for id in party_nodes:
 		var node: Node3D = party_nodes[id]
 		var p: Dictionary = GS.parties[id]
-		var want: bool = node.visible and (p.kind in ["lord", "player", "avatar"] or cam_dist < 140.0)
+		var want: bool = node.visible and (p.kind in ["lord", "player", "pilgrim"] or cam_dist < 140.0)
 		if want and not party_labels.has(id):
 			party_labels[id] = _make_world_label("", 13)
 		if not party_labels.has(id):
@@ -439,7 +439,7 @@ func _update_labels() -> void:
 		if not want:
 			l.visible = false
 			continue
-		var wp := node.position + Vector3(0, 9.0 if p.kind == "avatar" else 4.2, 0)
+		var wp := node.position + Vector3(0, 9.0 if p.kind == "pilgrim" else 4.2, 0)
 		if camera.is_position_behind(wp):
 			l.visible = false
 			continue
@@ -451,7 +451,7 @@ func _update_labels() -> void:
 		var col := Color(1, 1, 1)
 		if id != "player" and GS.parties_hostile(GS.player_party(), p):
 			col = Color(1, 0.55, 0.45)
-		elif p.kind == "avatar":
+		elif p.kind == "pilgrim":
 			col = Color(1, 0.8, 0.4)
 		l.add_theme_color_override("font_color", col)
 		l.position = camera.unproject_position(wp) - Vector2(l.size.x / 2.0, l.size.y)
@@ -463,9 +463,11 @@ func _update_hud(captive: bool) -> void:
 	var food_col := "2b1d10" if food_days > 3 else "b03020"
 	var t := "[b]%s[/b]  ·  %s" % [GS.date_string(), GS.moon_string()]
 	if GS.is_comet():
-		t += "  ·  [color=#ff5522]SOZIN'S COMET[/color]"
+		t += "  ·  [color=#ff5522]COMET[/color]"
 	if GS.is_eclipse():
 		t += "  ·  [color=#aa88ff]SOLAR ECLIPSE[/color]"
+	if GS.is_lunar_eclipse():
+		t += "  ·  [color=#c06060]LUNAR ECLIPSE[/color]"
 	t += "\nGold [color=#9a6a00]%d[/color]   Party %d/%d   Wounded %d   Prisoners %d   Food [color=#%s]%.1f days[/color]   Morale %d   Renown %d   HP %d/%d" % [
 		pl.gold, GS.party_size(), GS.party_limit(), Roster.wounded(pp.roster), Roster.total(pp.prisoners),
 		food_col, food_days, int(pl.morale), pl.renown, pl.hp, GS.max_hp()]
@@ -620,7 +622,7 @@ func _pick(screen: Vector2) -> Dictionary:
 		var n: Node3D = party_nodes[id]
 		if not n.visible or id == "player":
 			continue
-		var wp := n.position + Vector3(0, 8.0 if GS.parties[id].kind == "avatar" else 1.5, 0)
+		var wp := n.position + Vector3(0, 8.0 if GS.parties[id].kind == "pilgrim" else 1.5, 0)
 		if camera.is_position_behind(wp):
 			continue
 		var d := camera.unproject_position(wp).distance_to(screen)

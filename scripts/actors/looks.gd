@@ -4,8 +4,8 @@ extends RefCounted
 const CB = preload("res://scripts/actors/character_builder.gd")
 
 const CULTURE_MAP := {"fire": "fire", "earth": "earth", "kyoshi": "kyoshi", "north": "water", "south": "south",
-	"swamp": "swamp", "sand": "sand", "air": "air"}
-const OUTLAW_TROOPS := ["mountain_bandit", "pirate", "pirate_captain", "fn_deserter", "freedom_fighter", "freedom_veteran", "merc_swordsman", "merc_archer"]
+	"swamp": "swamp", "sand": "sand", "air": "air", "omashu": "omashu"}
+const OUTLAW_TROOPS := ["mountain_bandit", "pirate", "pirate_captain", "fn_deserter", "red_lantern", "red_lantern_elder", "merc_swordsman", "merc_archer"]
 const HELMET_MAP := {"arrow": "air_arrow", "none": "", "ek_helm": "ek_helm"}
 
 ## Appearance for a troop type (deterministic per unit seed).
@@ -14,9 +14,18 @@ static func troop_look(tid: String, rng: RandomNumberGenerator) -> Dictionary:
 	var culture: String = CULTURE_MAP.get(t.culture, "earth")
 	if OUTLAW_TROOPS.has(tid):
 		culture = "outlaw" if tid != "fn_deserter" else "fire"
-	var look := CB.random_look(culture, rng)
+	var sex: String = t.get("sex", "")
 	if t.culture == "kyoshi":
-		look.sex = "f"
+		sex = "f"
+	elif t.culture == "north" and t.bend == "water" and sex == "":
+		# The Law of the Two Paths: healers are women, combat benders men,
+		# until the law changes.
+		if t.healer:
+			sex = "f"
+		elif not GS.flags.get("two_paths", false):
+			sex = "m"
+	var look := CB.random_look(culture, rng, sex)
+	if t.culture == "kyoshi":
 		look.hair = "Hair_Buns"
 	look.outfit = "peasant" if t.tier <= 1 or t.bend == "air" else "ranger"
 	var helmet: String = t.look.get("helmet", "none")
@@ -32,7 +41,7 @@ static func kit_for(tid: String, culture: String, tier: int) -> String:
 	match culture:
 		"fire":
 			return "fn_armor" if tier >= 2 else "sash"
-		"earth":
+		"earth", "omashu":
 			return "ek_armor" if tier >= 2 else ""
 		"kyoshi":
 			return "kyoshi_armor"
@@ -49,13 +58,12 @@ static func lord_look(lid: String) -> Dictionary:
 	var culture: String = l.get("culture", Data.factions[l.faction].culture)
 	culture = {"north": "water"}.get(culture, culture)
 	var look: Dictionary = l.get("look", {}).duplicate()
-	if not look.has("sex"):
-		var rng := RandomNumberGenerator.new()
-		rng.seed = hash(lid)
-		look.merge(CB.random_look(culture, rng), false)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(lid)
+	look.merge(CB.random_look(culture, rng, look.get("sex", "")), false)
 	look.merge({"culture": culture, "outfit": "ranger", "kit": kit_for("", culture, 4)}, false)
 	if not look.has("accessory"):
-		look.accessory = {"fire": "fn_noble", "earth": "ek_helm", "water": "", "south": "wolf", "kyoshi": "kyoshi", "air": "air_arrow"}.get(culture, "")
+		look.accessory = {"fire": "fn_noble", "earth": "ek_helm", "omashu": "ek_helm", "water": "", "south": "wolf", "kyoshi": "kyoshi", "air": "air_arrow"}.get(culture, "")
 	return look
 
 static func player_look() -> Dictionary:

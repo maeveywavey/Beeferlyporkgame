@@ -57,7 +57,7 @@ func _run() -> void:
 		print(wname, " pressed ", n)
 		await _close_all()
 	# Settlements of every type
-	for sid in ["omashu", "fong_fortress", "senlin", "kyoshi_island", "southern_air_temple", "jets_hideout", "caldera", "agna_qela"]:
+	for sid in ["omashu", "fong_fortress", "senlin", "kyoshi_island", "southern_air_temple", "red_lantern_den", "wan_shi_tong", "stonewatch", "caldera", "agna_qela"]:
 		GS.player_party().pos = Data.settlements[sid].pos
 		map.open_settlement(sid)
 		await get_tree().process_frame
@@ -114,7 +114,7 @@ func _run() -> void:
 				Quests.on_arrive(q.target)
 	print("quests: ", GS.quests.map(func(x): return x.status))
 	# Vassalage via the king
-	var kuei_party: String = GS.lords["kuei"].party
+	var kuei_party: String = GS.lords["hualing"].party
 	GS.player.renown = 500
 	if kuei_party != "":
 		var ew2 = load("res://scripts/ui/encounter_window.gd").new()

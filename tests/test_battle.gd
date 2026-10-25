@@ -25,9 +25,9 @@ func _ready() -> void:
 	Roster.add(GS.player_party().roster, "ek_archer", 8)
 	Roster.add(GS.player_party().roster, "ek_earthbender", 6)
 	Roster.add(GS.player_party().roster, "nwt_healer", 2)
-	GS.player.companions = ["ty_lee", "haru"]
+	GS.player.companions = ["hana", "pemba"]
 	var e := GS.make_party("", "Test", "lord", "fire_nation", Vector2.ZERO)
-	e.lord = "zhao"
+	e.lord = "kuro"
 	Roster.add(e.roster, "fn_soldier", 15)
 	Roster.add(e.roster, "fn_firebender", 8)
 	Roster.add(e.roster, "fn_archer", 6)

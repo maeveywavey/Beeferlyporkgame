@@ -29,8 +29,8 @@ func build() -> void:
 	if note != "":
 		content.add_child(UI.rich("[i]%s[/i]" % note, 700))
 	content.add_child(UI.sep())
-	if p.kind == "avatar":
-		_build_avatar(p)
+	if p.kind == "pilgrim":
+		_build_pilgrim(p)
 	elif page == "talk" and p.lord != "":
 		_build_lord_talk(p)
 	elif hostile:
@@ -92,7 +92,7 @@ func _gather_sides(p: Dictionary) -> Array:
 		if id == p.id or id == "player":
 			continue
 		var o: Dictionary = GS.parties[id]
-		if o.pos.distance_to(pp.pos) > 10.0 or o.kind == "avatar":
+		if o.pos.distance_to(pp.pos) > 10.0 or o.kind == "pilgrim":
 			continue
 		if GS.parties_hostile(o, pp) and not GS.parties_hostile(o, p) and o.kind in ["lord", "bandit"]:
 			enemies.append(id)
@@ -169,8 +169,8 @@ func _build_neutral(p: Dictionary) -> void:
 		"caravan": desc = "A merchant caravan, guarded by a handful of hired swords. The merchants eye you nervously."
 		"villager": desc = "Villagers on their way to market with carts of produce."
 		"bandit": desc = "A ragged band who seem unsure whether to fight you."
-	if p.faction == "freedom_fighters":
-		desc = "\"We fight the Fire Nation. If you do too, you're welcome in our forest.\" — a boy chewing on a stalk of wheat."
+	if p.faction == "red_lanterns":
+		desc = "\"We take from the tax barges and give to the Lower Ring. If that offends you, say so now.\" — a woman with a red lantern tattooed on her wrist."
 	content.add_child(UI.rich(desc, 700))
 	content.add_child(UI.option("Attack them!", _confirm_attack.bind(p)))
 	content.add_child(UI.option("Leave them be", _leave.bind(p)))
@@ -179,8 +179,8 @@ func _confirm_attack(p: Dictionary) -> void:
 	UI.clear(content)
 	var f: String = p.faction
 	var warn := "Attacking them will make you an enemy of the %s." % Data.factions.get(f, Data.factions.neutral).name
-	if f == "freedom_fighters":
-		GS.change_faction_rel("freedom_fighters", -50)
+	if f == "red_lanterns":
+		GS.change_faction_rel("red_lanterns", -50)
 	content.add_child(UI.rich(warn, 700))
 	content.add_child(UI.option("Fight the battle yourself", _fight.bind(p)))
 	content.add_child(UI.option("Send your troops", _auto.bind(p), Roster.healthy(GS.player_party().roster) > 0))
@@ -290,32 +290,45 @@ func _request_fief(lid: String) -> void:
 	refresh()
 
 # ---------------------------------------------------------------------------
-func _build_avatar(p: Dictionary) -> void:
-	var met: bool = GS.flags.has("met_avatar")
+func _build_pilgrim(p: Dictionary) -> void:
+	var met: bool = GS.flags.has("met_pilgrims")
 	if not met:
-		content.add_child(UI.rich("A giant six-legged flying bison lands in front of you. A bald boy with a blue arrow tattoo hops down.\n\n[b]Aang:[/b] \"Hi! I'm Aang. This is Katara, Sokka, and Toph. And that's Appa! We're trying to end the war. Are you friendly?\"", 700))
+		content.add_child(UI.rich("A sky bison settles in the grass beside your column, and a dozen novices tumble off its saddle. An elderly nun with blue arrows on her hands bows to you.\n\n[b]Pilgrim:[/b] \"We fly between the temples and wherever people are hungry. You look like you have walked a long way. Sit, if you like. We have fruit.\"", 700))
 	else:
-		content.add_child(UI.rich("[b]Aang:[/b] \"Hey, it's you again! " + ["Sokka has a new plan. Again.", "Katara says we need to keep moving.", "Toph keeps calling me Twinkletoes.", "Have you seen a grumpy guy with a ponytail? He keeps following us."].pick_random() + "\"", 700))
+		content.add_child(UI.rich("[b]Pilgrim:[/b] \"" + [
+			"The novices have named the bison after you. It is meant as a compliment, mostly.",
+			"We carried forty refugees out of the Ember Coast last week. The Admiralty's ships watched us go and did nothing. That will not last.",
+			"Abbess Pema asks after you. She says you have the face of someone who is about to make a large decision.",
+			"Violence is always a choice. So is lunch. We have chosen lunch."].pick_random() + "\"", 700))
 	if not met:
-		content.add_child(UI.option("\"I fight the Fire Nation too. How can I help?\"", func():
-			GS.flags.met_avatar = true
-			GS.add_renown(15)
-			GS.give_player_xp(300)
-			if GS.player.bend != "":
-				GS.player.skill_points += 1
-				note = "Aang shows you a few tricks from his travels. (+1 skill point, +15 renown)"
-			else:
-				note = "Sokka gives you some strategy tips, mostly about meat. (+15 renown)"
+		content.add_child(UI.option("Sit with them and share news of the road", func():
+			GS.flags.met_pilgrims = true
+			GS.add_renown(5)
+			GS.give_player_xp(150)
+			GS.change_faction_rel("air_nomads", 10)
+			note = "You eat moon peaches and trade news for an hour. The novices are delighted by your boots. (+10 Air Nomad relation)"
 			refresh()))
-	var last: float = GS.flags.get("katara_heal", -999.0)
-	if GS.hours - last > 24.0 * 7.0 and Roster.wounded(GS.player_party().roster) > 0:
-		content.add_child(UI.option("Ask Katara to heal your wounded", func():
-			GS.flags.katara_heal = GS.hours
-			Roster.heal_fraction(GS.player_party().roster, 0.7)
+	var last: float = GS.flags.get("pilgrim_heal", -999.0)
+	if GS.hours - last > 24.0 * 5.0 and (Roster.wounded(GS.player_party().roster) > 0 or GS.player.hp < GS.max_hp()):
+		content.add_child(UI.option("Ask the monks to tend your wounded", func():
+			GS.flags.pilgrim_heal = GS.hours
+			Roster.heal_fraction(GS.player_party().roster, 0.6)
 			GS.player.hp = GS.max_hp()
-			note = "Katara bends water around your wounded. Many of them stand up healed."
+			note = "The monks move among your wounded with herbs, clean water and a great deal of patience. Many of them are walking by evening. They will not take payment."
 			refresh()))
-	content.add_child(UI.option("Ask about the Fire Nation", func():
-		note = "[b]Sokka:[/b] \"Sozin's Comet comes at the end of summer (%s). If the Fire Lord isn't stopped before then, it's over. Oh, and on the Day of Black Sun (%s), firebenders lose their bending for a few hours. Just saying.\"" % [GS.day_name(GS.COMET_DAY), GS.day_name(GS.ECLIPSE_DAY)]
+	content.add_child(UI.option("Ask what the sky has in store", func():
+		var e := GS.next_cosmic()
+		if e.is_empty():
+			note = "[b]Pilgrim:[/b] \"The sages see no eclipses and no comets for a long while. Only weather. Weather is enough.\""
+		else:
+			var what: String = {"solar": "the sun will go dark", "lunar": "the full moon will be eclipsed", "comet": "a comet will cross the sky"}[e.kind]
+			note = "[b]Pilgrim:[/b] \"The Crescent Island sages say %s on %s. They are rarely wrong about the sky. People are another matter.\"" % [what, GS.day_name(e.day)]
 		refresh()))
-	content.add_child(UI.option("Farewell, Avatar.", _leave.bind(p)))
+	content.add_child(UI.option("Ask about the wars", func():
+		note = "[b]Pilgrim:[/b] \"" + [
+			"The Fire Nation is hungry and the Earth Kingdom is proud. Hunger and pride make long wars.",
+			"Omashu fed its own people first and Ba Sing Se called it treason. Both are right. That is the trouble with this war.",
+			"The South raids the Fire Navy's supply ships. The supply ships carry rice to soldiers who carry fire to villages. Follow anything far enough and it is all one circle.",
+			"Eleven years ago an Avatar drowned trying to make a peace. We are still waiting for someone to finish the sentence."].pick_random() + "\""
+		refresh()))
+	content.add_child(UI.option("Go in peace.", _leave.bind(p)))

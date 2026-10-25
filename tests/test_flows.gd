@@ -20,7 +20,7 @@ func _ready() -> void:
 	var sid := "southern_tribe"
 	GS.player_party().pos = Data.settlements[sid].pos
 	var e := GS.make_party("", "Raiders", "lord", "fire_nation", Data.settlements[sid].pos + Vector2(3, 0))
-	e.lord = "zhao"
+	e.lord = "kuro"
 	e.besieging = sid
 	Roster.add(e.roster, "fn_soldier", 20)
 	Roster.add(e.roster, "fn_firebender", 10)
@@ -33,7 +33,7 @@ func _ready() -> void:
 		print("   result: ", map.modal_layer.get_child(0).result.get("lines", []))
 	# 2. Defeat and captivity
 	var e2 := GS.make_party("", "Overwhelming", "lord", "fire_nation", GS.player_party().pos)
-	e2.lord = "ozai"
+	e2.lord = "haoren"
 	Roster.add(e2.roster, "fn_imperial_fb", 60)
 	GS.pending_battle = {"enemies": [e2.id], "allies": [], "siege": "", "player_attacking": false}
 	GS.finish_battle(false, {}, true, [])

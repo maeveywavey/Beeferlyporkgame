@@ -118,8 +118,10 @@ func _ready() -> void:
 	var msg := "The battle begins!"
 	if fire_mult == 0.0:
 		msg += " The sun is dark — firebenders are powerless!"
-	elif fire_mult > 2.0:
-		msg += " Sozin's Comet burns overhead — firebending is at its peak!"
+	elif fire_mult > 1.6:
+		msg += " A comet burns overhead — firebending is at its peak!"
+	if water_mult == 0.0:
+		msg += " The moon is eclipsed — waterbenders are powerless!"
 	elif water_mult > 1.4:
 		msg += " The full moon empowers waterbenders."
 	feed_msg(msg, Color(1, 0.9, 0.5))
@@ -435,7 +437,7 @@ func _spawn_arena() -> void:
 	u.rotation.y = PI
 	units.append(u)
 	team_units[1].append(u)
-	feed_msg("Xin Fu: \"In this corner... %s!\"" % Data.arena_fighters[arena].name, Color(1, 0.85, 0.4))
+	feed_msg("Madam Gu: \"In this corner... %s!\"" % Data.arena_fighters[arena].name, Color(1, 0.85, 0.4))
 
 func _build_siege_walls() -> void:
 	var culture: String = Data.settlements[siege].culture

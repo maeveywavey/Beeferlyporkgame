@@ -43,6 +43,7 @@ const PALETTES := {
 	"sand": {"primary": Color(0.75, 0.62, 0.4), "secondary": Color(0.45, 0.22, 0.14), "accent": Color(0.3, 0.3, 0.55)},
 	"outlaw": {"primary": Color(0.33, 0.22, 0.3), "secondary": Color(0.25, 0.2, 0.16), "accent": Color(0.6, 0.15, 0.12)},
 	"swamp": {"primary": Color(0.32, 0.38, 0.2), "secondary": Color(0.35, 0.26, 0.16), "accent": Color(0.7, 0.7, 0.3)},
+	"omashu": {"primary": Color(0.38, 0.48, 0.2), "secondary": Color(0.45, 0.3, 0.52), "accent": Color(0.8, 0.68, 0.35)},
 }
 
 static var _libs := {}
@@ -252,11 +253,13 @@ static func build(look: Dictionary) -> Dictionary:
 	return parts
 
 ## Random appearance for a member of a culture.
-static func random_look(culture: String, rng: RandomNumberGenerator = null) -> Dictionary:
+static func random_look(culture: String, rng: RandomNumberGenerator = null, force_sex: String = "") -> Dictionary:
 	if rng == null:
 		rng = RandomNumberGenerator.new()
 		rng.randomize()
 	var sex := "m" if rng.randf() < 0.55 else "f"
+	if force_sex != "":
+		sex = force_sex
 	var skin := 2
 	var hair_c := Color(0.08, 0.06, 0.05)
 	var eye := Color(0.35, 0.25, 0.15)
@@ -264,7 +267,7 @@ static func random_look(culture: String, rng: RandomNumberGenerator = null) -> D
 		"fire":
 			skin = rng.randi_range(0, 2)
 			eye = Color(0.85, 0.6, 0.15)
-		"earth", "kyoshi":
+		"earth", "kyoshi", "omashu":
 			skin = rng.randi_range(1, 4)
 			eye = [Color(0.3, 0.45, 0.2), Color(0.4, 0.28, 0.16)][rng.randi() % 2]
 		"water", "south":
