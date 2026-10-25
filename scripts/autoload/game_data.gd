@@ -285,10 +285,10 @@ var items := {
 	"guan_dao": {"name": "Guan Dao", "slot": "weapon", "dmg": 30, "reach": 2.5, "speed": 0.78, "dtype": "cut", "price": 750, "model": "guan_dao"},
 	"space_sword": {"name": "Meteorite Sword", "slot": "weapon", "dmg": 34, "reach": 1.7, "speed": 1.15, "dtype": "cut", "price": 6000, "model": "space_sword"},
 	# ranged
-	"short_bow": {"name": "Short Bow", "slot": "ranged", "dmg": 17, "ammo": 24, "accuracy": 0.8, "proj_speed": 45.0, "price": 200, "model": "bow"},
-	"yuyan_bow": {"name": "Yuyan Longbow", "slot": "ranged", "dmg": 26, "ammo": 24, "accuracy": 0.95, "proj_speed": 60.0, "price": 1100, "model": "bow"},
-	"boomerang": {"name": "Boomerang", "slot": "ranged", "dmg": 15, "ammo": 99, "accuracy": 0.85, "proj_speed": 28.0, "price": 150, "model": "boomerang"},
-	"throwing_knives": {"name": "Throwing Knives", "slot": "ranged", "dmg": 14, "ammo": 8, "accuracy": 0.75, "proj_speed": 32.0, "price": 120, "model": "knife"},
+	"short_bow": {"name": "Short Bow", "slot": "ranged", "dmg": 21, "ammo": 24, "accuracy": 0.8, "proj_speed": 45.0, "price": 200, "model": "bow"},
+	"yuyan_bow": {"name": "Yuyan Longbow", "slot": "ranged", "dmg": 31, "ammo": 24, "accuracy": 0.95, "proj_speed": 60.0, "price": 1100, "model": "bow"},
+	"boomerang": {"name": "Boomerang", "slot": "ranged", "dmg": 18, "ammo": 99, "accuracy": 0.85, "proj_speed": 28.0, "price": 150, "model": "boomerang"},
+	"throwing_knives": {"name": "Throwing Knives", "slot": "ranged", "dmg": 19, "ammo": 8, "accuracy": 0.75, "proj_speed": 32.0, "price": 120, "model": "knife"},
 	# body armour
 	"peasant_clothes": {"name": "Peasant Clothes", "slot": "armor", "armor": 3, "price": 20},
 	"water_parka": {"name": "Water Tribe Parka", "slot": "armor", "armor": 8, "price": 120},
@@ -599,6 +599,35 @@ var rumors := [
 	"Kyoshi Warriors paint their faces like the old Avatar and fight with steel fans. Don't laugh at them.",
 	"An old man who plays Pai Sho is the finest tea-maker in the world, I hear. Retired general, or so they say.",
 	"The Rough Rhinos ride for gold. Colonel Mongke would sell his own mother for the right price.",
+]
+
+# Story beats from the original series. "campaign" forces a faction to march
+# on a target; "effect" triggers special handling in the world simulation.
+var story_events := [
+	{"day": 6, "text": "News spreads from the South Pole: the Avatar has returned — and he is an airbender!"},
+	{"day": 25, "text": "The Avatar was seen on Kyoshi Island, where the Kyoshi Warriors helped him escape Prince Zuko."},
+	{"day": 45, "text": "Admiral Zhao has assembled a great armada. The Fire Navy sails for the North Pole!", "campaign": ["fire_nation", "agna_qela"], "leaders": ["zhao", "chan"]},
+	{"day": 75, "text": "The Ocean Spirit rose against the Fire Navy at the North Pole! Fire Nation armies in the north have been shattered.", "effect": "ocean_spirit"},
+	{"day": 110, "text": "Rumours say the Avatar has found an earthbending teacher: a blind girl from Gaoling."},
+	{"day": 150, "text": "General Fong tried to force the Avatar State. The Avatar left his base in ruins.", "effect": "fong_ruins"},
+	{"day": 175, "text": "Princess Azula has slipped into Ba Sing Se in disguise. The Dai Li whisper of a coup...", "campaign": ["fire_nation", "ba_sing_se"], "leaders": ["azula"]},
+	{"day": 205, "text": "Prince Zuko has returned to the Fire Nation as a hero. Iroh languishes in prison."},
+	{"day": 249, "text": "The invasion begins! The Water Tribes and Earth Kingdom rebels sail for the Fire Nation capital to strike on the Day of Black Sun.", "campaign": ["southern_water", "caldera"], "also": ["earth_kingdom"]},
+	{"day": 272, "text": "The Avatar has defeated Fire Lord Ozai! Zuko is crowned Fire Lord and declares an end to the Hundred Year War.", "effect": "end_war"},
+]
+
+# Earth Rumble fighters in Gaoling's arena, in the order you face them.
+var arena_fighters := [
+	{"name": "The Gopher", "bend": "earth", "power": 1.1, "hp": 90, "armor": 6, "skill": 45, "weapon": "fists", "prize": 120,
+		"look": {"body": Color(0.5, 0.4, 0.25), "trim": Color(0.3, 0.2, 0.1), "helmet": "bandana"}},
+	{"name": "Fire Nation Man", "bend": "fire", "power": 1.0, "hp": 100, "armor": 8, "skill": 50, "weapon": "fists", "prize": 200,
+		"look": {"body": Color(0.6, 0.15, 0.1), "trim": Color(0.2, 0.1, 0.1), "helmet": "fn_cap"}},
+	{"name": "The Hippo", "bend": "earth", "power": 1.4, "hp": 200, "armor": 14, "skill": 40, "weapon": "fists", "prize": 350,
+		"look": {"body": Color(0.45, 0.4, 0.35), "trim": Color(0.25, 0.25, 0.25), "helmet": "none"}},
+	{"name": "The Boulder", "bend": "earth", "power": 1.8, "hp": 220, "armor": 18, "skill": 60, "weapon": "fists", "prize": 600,
+		"look": {"body": Color(0.35, 0.3, 0.25), "trim": Color(0.6, 0.15, 0.1), "helmet": "none"}},
+	{"name": "The Blind Bandit", "bend": "earth", "power": 2.6, "hp": 170, "armor": 20, "skill": 98, "weapon": "fists", "prize": 2000,
+		"look": {"body": Color(0.3, 0.55, 0.25), "trim": Color(0.85, 0.8, 0.5), "helmet": "none"}},
 ]
 
 func _ready() -> void:

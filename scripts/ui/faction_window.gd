@@ -30,8 +30,11 @@ func build() -> void:
 	if selected != "player" and GS.at_war(selected, GS.player_faction()) and GS.player_faction() == "player":
 		wars.append("You")
 	var txt := "[b]%s[/b]\n%s\nAt war with: %s" % [fd.name, fd.desc, ", ".join(wars) if not wars.is_empty() else "nobody"]
-	if fd.king != "" and Data.lords.has(fd.king):
-		txt += "\nRuler: %s" % Data.lords[fd.king].name
+	var king: String = fd.king
+	if selected == "fire_nation" and GS.flags.has("fn_king"):
+		king = GS.flags.fn_king
+	if king != "" and Data.lords.has(king):
+		txt += "\nRuler: %s" % (Data.lords[king].name if king != "zuko" else "Fire Lord Zuko")
 	var camp: Dictionary = GS.campaigns.get(selected, {})
 	if not camp.is_empty():
 		txt += "\nCurrently campaigning against: %s" % Data.settlements[camp.target].name

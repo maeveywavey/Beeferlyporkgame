@@ -128,6 +128,21 @@ func setup_lord(lid: String, p_team: int, key: String) -> void:
 		look = {"body": Color(0.15, 0.45, 0.25), "trim": Color(0.95, 0.8, 0.25), "helmet": "kyoshi"}
 	_finish_setup(look, Color(0.85, 0.68, 0.52), Color(0.1, 0.07, 0.05))
 
+func setup_arena(f: Dictionary, p_team: int) -> void:
+	team = p_team
+	party_key = "arena"
+	display_name = f.name
+	is_hero = true
+	max_hp = f.hp
+	armor = f.armor
+	skill = f.skill / 100.0
+	dmg_mult = 1.2
+	weapon_id = f.weapon
+	bend = f.bend
+	bend_power = f.power
+	foot_speed = 4.8
+	_finish_setup(f.look, Color(0.85, 0.68, 0.52), Color(0.1, 0.07, 0.05))
+
 func setup_companion(cid: String, p_team: int) -> void:
 	var c: Dictionary = Data.companions[cid]
 	companion_id = cid
@@ -486,7 +501,7 @@ func apply_damage(amount: float, attacker, dtype: String, push: Vector3, knockba
 	var a := 0.0 if ignore_armor else armor
 	if dtype == "blunt":
 		a *= 0.6
-	var dmg := maxf(amount * 0.2, amount - a * 0.55) if amount > 0.0 else 0.0
+	var dmg := maxf(amount * 0.25, amount - a * 0.42) if amount > 0.0 else 0.0
 	if is_player:
 		dmg *= [0.5, 1.0, 1.5][clampi(int(GS.settings.difficulty), 0, 2)]
 	# Mounts soak some hits

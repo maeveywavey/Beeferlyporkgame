@@ -41,7 +41,7 @@ func build() -> void:
 	# Skills
 	var right := UI.vbox(3)
 	cols.add_child(right)
-	right.add_child(UI.label("Skills (%d points) — max = governing attribute / 3" % pl.skill_points, 19, UI.BROWN))
+	right.add_child(UI.label("Skills (%d points) — max = governing attribute / 2" % pl.skill_points, 19, UI.BROWN))
 	for s in GS.SKILLS:
 		var row2 := UI.hbox()
 		var cap := GS.skill_cap(s)

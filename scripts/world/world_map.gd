@@ -353,6 +353,7 @@ func _update_lighting() -> void:
 		sun.light_color = sun.light_color.lerp(Color(1, 0.4, 0.2), 0.4)
 	env.background_color = sky
 	env.fog_light_color = sky.lightened(0.15)
+	env.fog_density = clampf(0.1 / cam_dist, 0.00015, 0.0015)
 	sun.rotation_degrees.x = -25.0 - daylight * 40.0
 
 func _player_sight() -> float:
@@ -387,6 +388,9 @@ func _update_parties(delta: float) -> void:
 		var mv := Vector2(target.x - old.x, target.z - old.z)
 		if mv.length() > 0.01:
 			node.rotation.y = lerp_angle(node.rotation.y, atan2(mv.x, mv.y), minf(1.0, delta * 8.0))
+		var boat := node.get_node_or_null("Boat")
+		if boat:
+			boat.visible = Terrain.height(p.pos) < 0.0
 		var body := node.get_node_or_null("Body")
 		if body and p.kind == "avatar":
 			body.position.y = 7.0 + sin(Time.get_ticks_msec() / 600.0) * 0.6

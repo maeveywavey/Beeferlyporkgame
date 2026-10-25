@@ -35,10 +35,12 @@ var winner := -1
 var obstacles: Array = []
 var walls: Array = []
 var siege := ""
+var arena := -1
 var wall_z := 0.0
 var breach_half := 6.0
 var heights := PackedFloat32Array()
 var player_kills := 0
+var weather: CPUParticles3D
 var _reinforce_t := 2.0
 var _sep_t := 0.0
 var _finished := false
@@ -83,12 +85,16 @@ func _ready() -> void:
 		biome = "beach"
 	hour = b.get("hour", 12.0)
 	siege = b.get("siege", "")
+	arena = b.get("arena", -1)
 	if siege != "":
 		wall_z = 28.0 if b.player_attacking else -28.0
 	_build_heights()
 	_build_environment()
 	_build_ground()
-	_build_props()
+	if arena >= 0:
+		_build_arena()
+	else:
+		_build_props()
 	if siege != "":
 		_build_siege_walls()
 	_build_hud()
@@ -96,8 +102,11 @@ func _ready() -> void:
 	cam.fov = 70.0
 	cam.far = 600.0
 	add_child(cam)
-	_prepare_sides(b)
-	_initial_spawn()
+	if arena >= 0:
+		_spawn_arena()
+	else:
+		_prepare_sides(b)
+		_initial_spawn()
 	if not autotest:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	else:
@@ -151,6 +160,8 @@ func _build_heights() -> void:
 			var x := gx - HALF
 			var z := gz - HALF
 			var h := n.get_noise_2d(x, z) * amp
+			if arena >= 0:
+				h = 0.0 if Vector2(x, z).length() < 16.0 else minf(6.0, (Vector2(x, z).length() - 16.0) * 0.8)
 			# keep spawn areas smoother
 			var edge := clampf((absf(z) - 40.0) / 20.0, 0.0, 1.0)
 			h *= 1.0 - edge * 0.5
@@ -234,7 +245,7 @@ func _build_ground() -> void:
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(900, 900)
 	far.mesh = pm
-	far.position = Vector3(0, 10.0, 0)
+	far.position = Vector3(0, 3.5, 0)
 	far.material_override = MB.mat(base.darkened(0.15))
 	add_child(far)
 	var rng := RandomNumberGenerator.new()
@@ -291,6 +302,51 @@ func _build_environment() -> void:
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 60.0
 	add_child(sun)
+	_build_weather()
+
+func _build_weather() -> void:
+	var kind := ""
+	if biome == "snow":
+		kind = "snow"
+	elif biome in ["swamp", "forest", "grass"] and randf() < 0.25:
+		kind = "rain"
+	elif biome == "desert" and randf() < 0.3:
+		kind = "dust"
+	if kind == "":
+		return
+	weather = CPUParticles3D.new()
+	weather.amount = 700 if kind != "dust" else 250
+	weather.lifetime = 3.0 if kind == "snow" else 1.2
+	weather.local_coords = false
+	weather.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	weather.emission_box_extents = Vector3(30, 1, 30)
+	weather.direction = Vector3(0, -1, 0)
+	weather.spread = 10.0
+	var mesh := BoxMesh.new()
+	var col := Color(1, 1, 1)
+	match kind:
+		"snow":
+			mesh.size = Vector3(0.06, 0.06, 0.06)
+			weather.gravity = Vector3(0.5, -2.5, 0)
+			weather.initial_velocity_min = 1.0
+			weather.initial_velocity_max = 2.0
+		"rain":
+			mesh.size = Vector3(0.015, 0.5, 0.015)
+			weather.gravity = Vector3(0, -25, 0)
+			weather.initial_velocity_min = 10.0
+			weather.initial_velocity_max = 14.0
+			col = Color(0.7, 0.75, 0.85, 0.6)
+		"dust":
+			mesh.size = Vector3(0.12, 0.12, 0.12)
+			weather.direction = Vector3(1, 0, 0)
+			weather.gravity = Vector3(3, -0.3, 0)
+			weather.initial_velocity_min = 4.0
+			weather.initial_velocity_max = 8.0
+			weather.emission_box_extents = Vector3(30, 6, 30)
+			col = Color(0.85, 0.75, 0.55, 0.7)
+	weather.mesh = mesh
+	weather.material_override = MB.mat(col, 1.0, true)
+	add_child(weather)
 
 func _build_props() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -331,6 +387,51 @@ func _build_props() -> void:
 				rock.scale = Vector3(1, 0.7, 1.2)
 				node.add_child(rock)
 				obstacles.append({"p": p, "r": s * 0.9})
+
+func _build_arena() -> void:
+	# A ring of stone with spectator stands
+	var segs := 28
+	for i in segs:
+		var a := TAU * i / segs
+		var p := Vector2(cos(a), sin(a)) * 16.5
+		obstacles.append({"p": p, "r": 1.9})
+		var rock := MB.box(Vector3(3.8, 1.4, 1.2), Color(0.5, 0.45, 0.38), Vector3(p.x, 0.5, p.y))
+		rock.rotation.y = -a + PI / 2.0
+		add_child(rock)
+		for row in 3:
+			var sp := Vector2(cos(a), sin(a)) * (20.0 + row * 2.5)
+			var stand := MB.box(Vector3(5.0, 0.6, 2.2), Color(0.45, 0.32, 0.2), Vector3(sp.x, ground_height(sp.x, sp.y) + 0.3 + row * 0.9, sp.y))
+			stand.rotation.y = -a + PI / 2.0
+			add_child(stand)
+			if randf() < 0.8:
+				var fan := MB.sphere(0.35, Color(randf(), randf(), randf()).lerp(Color(0.6, 0.5, 0.4), 0.5), Vector3(sp.x, ground_height(sp.x, sp.y) + 1.2 + row * 0.9, sp.y))
+				add_child(fan)
+	for i in 6:
+		var lp := Vector2(cos(TAU * i / 6.0), sin(TAU * i / 6.0)) * 18.0
+		var light := OmniLight3D.new()
+		light.light_color = Color(1, 0.75, 0.45)
+		light.light_energy = 2.5
+		light.omni_range = 22.0
+		light.position = Vector3(lp.x, 6.0, lp.y)
+		add_child(light)
+		add_child(MB.cyl(0.2, 0.25, 6.0, Color(0.3, 0.2, 0.1), Vector3(lp.x, 3.0, lp.y), 6))
+
+func _spawn_arena() -> void:
+	reserves = [[], []]
+	active_cap = [1, 1]
+	_spawn_entry({"kind": "player", "id": "player", "key": "player"}, 0, Vector3(0, 0, -8), 0.0)
+	var u = Unit.new()
+	u.battle = self
+	u.setup_arena(Data.arena_fighters[arena], 1)
+	u.max_hp *= 1.5
+	u.hp = u.max_hp
+	add_child(u)
+	u.position = Vector3(0, 0, 8)
+	u.facing = PI
+	u.rotation.y = PI
+	units.append(u)
+	team_units[1].append(u)
+	feed_msg("Xin Fu: \"In this corner... %s!\"" % Data.arena_fighters[arena].name, Color(1, 0.85, 0.4))
 
 func _build_siege_walls() -> void:
 	var culture: String = Data.settlements[siege].culture
@@ -515,12 +616,19 @@ func _check_reinforcements(delta: float) -> void:
 # ---------------------------------------------------------------------------
 # Main loop
 # ---------------------------------------------------------------------------
+var _prof_us := 0
+var _prof_n := 0
+
 func _physics_process(delta: float) -> void:
 	if paused:
 		return
+	var t0 := Time.get_ticks_usec()
 	for u in units:
 		u.tick(delta)
 	_separate()
+	if autotest:
+		_prof_us += Time.get_ticks_usec() - t0
+		_prof_n += 1
 	_update_walls()
 	if not battle_over:
 		_check_reinforcements(delta)
@@ -532,6 +640,8 @@ func _physics_process(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	_update_camera(delta)
+	if weather != null and cam != null:
+		weather.global_position = cam.global_position + Vector3(0, 12.0, 0)
 	_update_hud(delta)
 	if player_unit != null and player_controlled and player_unit.alive and not paused:
 		player_unit.facing = cam_yaw
@@ -739,7 +849,7 @@ func melee_strike(att) -> void:
 	if landed:
 		spawn_spark(victim.chest(), Color(0.7, 0.1, 0.1))
 		if att.is_player:
-			hud_note("Hit %s for %d" % [victim.display_name, int(maxf(dmg * 0.2, dmg - victim.armor * 0.55))])
+			hud_note("Hit %s for %d" % [victim.display_name, int(maxf(dmg * 0.25, dmg - victim.armor * 0.42))])
 
 func spawn_projectile(p: Dictionary, from: Vector3) -> void:
 	var pr = Projectile.new()
@@ -983,6 +1093,11 @@ func on_unit_down(u, killer, dtype: String) -> void:
 	if u.is_player:
 		player_downed = true
 		player_controlled = false
+		if arena >= 0 and not battle_over:
+			battle_over = true
+			winner = 1
+			big_label.text = "DEFEAT\nPress Tab to continue"
+			return
 		spectate_target = null
 		feed_msg("You have been knocked unconscious! (Tab: fast-forward the battle)", Color(1, 0.4, 0.3))
 	elif u.companion_id != "":
@@ -1034,8 +1149,11 @@ func _finish(retreat: bool) -> void:
 	if player_unit != null and player_unit.alive:
 		GS.player.hp = int(maxf(1.0, player_unit.hp))
 	if autotest:
+		print("avg physics frame: %.2f ms over %d frames, units %d" % [_prof_us / 1000.0 / maxf(1, _prof_n), _prof_n, units.size()])
 		print("BATTLE RESULT winner=", winner, " casualties=", casualties, " player_downed=", player_downed)
-	if retreat:
+	if arena >= 0:
+		GS.finish_arena(winner == 0 and not retreat, arena, player_unit.hp if player_unit != null else 1.0)
+	elif retreat:
 		GS.retreat_battle(casualties, companions_down)
 	else:
 		GS.finish_battle(winner == 0, casualties, player_downed, companions_down)
@@ -1274,7 +1392,7 @@ func _build_hud() -> void:
 	bl.anchor_top = 1.0
 	bl.anchor_bottom = 1.0
 	bl.offset_left = 12
-	bl.offset_top = -170
+	bl.offset_top = -128
 	bl.offset_right = 430
 	bl.offset_bottom = -12
 	root.add_child(bl)

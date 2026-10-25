@@ -195,7 +195,7 @@ func _build_lord_talk(p: Dictionary) -> void:
 	var pl: Dictionary = GS.player
 	var faction: String = p.faction
 	if pl.faction == "":
-		var is_king: bool = ld.get("king", false)
+		var is_king: bool = GS.is_king(lid)
 		if pl.renown >= 150 and is_king and lr.relation >= -5:
 			content.add_child(UI.option("I wish to pledge myself to you as a vassal.", _pledge.bind(lid)))
 		elif is_king:
@@ -204,7 +204,7 @@ func _build_lord_talk(p: Dictionary) -> void:
 			content.add_child(UI.option("I offer my sword to the %s as a mercenary." % Data.factions[faction].name, _mercenary.bind(lid)))
 	elif pl.faction == faction:
 		content.add_child(UI.rich("[i]%s greets you as a fellow servant of the %s.[/i]" % [ld.name, Data.factions[faction].name], 700))
-		if pl.status == "vassal" and ld.get("king", false):
+		if pl.status == "vassal" and GS.is_king(lid):
 			content.add_child(UI.option("My liege, I request a fief.", _request_fief.bind(lid)))
 	content.add_child(UI.option("What news of the war?", func():
 		note = Data.rumors.pick_random()

@@ -300,6 +300,8 @@ func _hourly() -> void:
 		_start_campaign("fire_nation", true)
 
 func _daily() -> void:
+	_daily_story()
+	_daily_diplomacy()
 	Economy.daily_update()
 	_daily_settlements()
 	_daily_lords()
@@ -337,6 +339,94 @@ func _weekly() -> void:
 			GS.add_gold(-GS.player.gold)
 			GS.player.morale = maxf(0.0, GS.player.morale - 20.0)
 			GS.log_msg("You could not pay your troops' wages! Morale plummets.", Color(1, 0.4, 0.3))
+
+func _daily_story() -> void:
+	for ev in Data.story_events:
+		var key := "story_%d" % ev.day
+		if GS.day() < ev.day or GS.flags.has(key):
+			continue
+		GS.flags[key] = true
+		GS.log_msg(ev.text, Color(1, 0.85, 0.55))
+		if ev.has("campaign"):
+			var f: String = ev.campaign[0]
+			var target: String = ev.campaign[1]
+			if GS.at_war(f, GS.settlements[target].faction):
+				_force_campaign(f, target, ev.get("leaders", []))
+				for other in ev.get("also", []):
+					if GS.at_war(other, GS.settlements[target].faction):
+						_force_campaign(other, target, [])
+		match ev.get("effect", ""):
+			"ocean_spirit":
+				var pole: Vector2 = Data.settlements["agna_qela"].pos
+				for id in GS.parties.keys():
+					var p: Dictionary = GS.parties[id]
+					if p.faction == "fire_nation" and p.pos.distance_to(pole) < 260.0:
+						for st in p.roster.duplicate():
+							Roster.remove(p.roster, st.id, int(ceil(st.n * 0.6)))
+						if Roster.total(p.roster) == 0 and id != "player":
+							on_party_defeated(id, "northern_water")
+				if not GS.settlements["agna_qela"].siege.is_empty() and GS.settlements["agna_qela"].siege.faction == "fire_nation":
+					_end_siege("agna_qela", false)
+			"fong_ruins":
+				var fs: Dictionary = GS.settlements["fong_fortress"]
+				for st in fs.garrison.duplicate():
+					Roster.remove(fs.garrison, st.id, int(st.n * 0.5))
+			"end_war":
+				GS.flags.war_over = true
+				GS.flags.fn_king = "zuko"
+				for k in Data.KINGDOMS:
+					if k != "fire_nation":
+						GS.make_peace("fire_nation", k)
+				GS.campaigns.clear()
+				var oz: Dictionary = GS.lords["ozai"]
+				if oz.party != "" and GS.parties.has(oz.party):
+					remove_party(oz.party)
+				oz.party = ""
+				oz.respawn_at = INF
+				for id in GS.parties:
+					var p2: Dictionary = GS.parties[id]
+					if p2.get("besieging", "") != "":
+						_leave_siege(p2)
+				GS.flags["peace_since_fire_nation"] = GS.day()
+
+func _force_campaign(f: String, target: String, leaders: Array) -> void:
+	GS.campaigns[f] = {"target": target, "until": GS.hours + 24.0 * 25.0}
+	for lid in GS.lords:
+		var lr: Dictionary = GS.lords[lid]
+		if lr.faction != f or lr.party == "" or not GS.parties.has(lr.party):
+			continue
+		var p: Dictionary = GS.parties[lr.party]
+		if leaders.has(lid) or (Roster.total(p.roster) > _lord_target_size(lid) * 0.5 and Data.lords[lid].get("special", "") == ""):
+			p.campaign = target
+			p.next_think = 0.0
+			if leaders.has(lid):
+				# Story leaders arrive with a full army
+				var tree: Array = GS.culture_tree(Data.factions[f].culture)
+				while Roster.total(p.roster) < _lord_target_size(lid) * 1.3:
+					Roster.add(p.roster, tree[mini(tree.size() - 1, randi() % tree.size())], 1)
+
+## Wars and truces. Until the war ends the Fire Nation fights everyone and the
+## other nations stay allied; afterwards relations shift over time.
+func _daily_diplomacy() -> void:
+	if not GS.flags.get("war_over", false):
+		return
+	var ks: Array = Data.KINGDOMS
+	for i in ks.size():
+		for j in range(i + 1, ks.size()):
+			var a: String = ks[i]
+			var b: String = ks[j]
+			var since_key: String = "rel_since_" + a + "|" + b
+			var since: int = GS.flags.get(since_key, GS.day())
+			if not GS.flags.has(since_key):
+				GS.flags[since_key] = since
+			var lasted := GS.day() - since
+			if GS.at_war(a, b):
+				if lasted > 20 and randf() < 0.03:
+					GS.make_peace(a, b)
+					GS.flags[since_key] = GS.day()
+			elif lasted > 40 and randf() < 0.004:
+				GS.declare_war(a, b)
+				GS.flags[since_key] = GS.day()
 
 func _daily_settlements() -> void:
 	for sid in GS.settlements:
@@ -598,7 +688,7 @@ func _think_lord(p: Dictionary) -> void:
 		_flee(p, threat)
 		return
 	# Prince Zuko's special obsession
-	if ldef.get("special", "") == "hunt_avatar":
+	if ldef.get("special", "") == "hunt_avatar" and not GS.flags.get("war_over", false):
 		for id in GS.parties:
 			if GS.parties[id].kind == "avatar" and GS.parties[id].pos.distance_to(p.pos) < 260.0:
 				_chase(p, id)

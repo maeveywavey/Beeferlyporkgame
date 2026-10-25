@@ -447,6 +447,13 @@ func change_lord_rel(lord_id: String, amount: int) -> void:
 	if lords.has(lord_id):
 		lords[lord_id].relation = clampi(lords[lord_id].relation + amount, -100, 100)
 
+func is_king(lid: String) -> bool:
+	if lid == "zuko" and flags.get("fn_king", "") == "zuko":
+		return true
+	if lid == "ozai" and flags.get("fn_king", "") == "zuko":
+		return false
+	return Data.lords.get(lid, {}).get("king", false)
+
 func faction_settlements(faction: String) -> Array:
 	var out := []
 	for id in settlements:
@@ -476,7 +483,7 @@ func skill(name: String) -> int:
 	return v
 
 func skill_cap(name: String) -> int:
-	return int(player.attrs[SKILL_ATTR[name]] / 3)
+	return int(player.attrs[SKILL_ATTR[name]] / 2)
 
 func max_hp() -> int:
 	return 35 + player.attrs.str * 2 + player.skills.ironflesh * 4 + player.level
@@ -570,6 +577,34 @@ func start_battle(enemy_ids: Array, ally_ids: Array = [], siege: String = "", pl
 		"ally_garrison": siege != "" and not player_attacking,
 	}
 	get_tree().change_scene_to_file("res://scenes/battle.tscn")
+
+## Earth Rumble arena fight (round index into Data.arena_fighters).
+func start_arena(round_i: int) -> void:
+	pending_battle = {"arena": round_i, "enemies": [], "allies": [], "siege": "", "player_attacking": true,
+		"biome": "highland", "hour": 20.0, "fire_mult": bending_mult("fire"), "water_mult": bending_mult("water"),
+		"enemy_garrison": false, "ally_garrison": false}
+	get_tree().change_scene_to_file("res://scenes/battle.tscn")
+
+func finish_arena(won: bool, round_i: int, player_hp: float) -> void:
+	var f: Dictionary = Data.arena_fighters[round_i]
+	player.hp = maxi(1, int(player_hp))
+	var lines := []
+	if won:
+		add_gold(f.prize)
+		add_renown(3 + round_i * 3)
+		give_player_xp(100 + round_i * 150)
+		flags.arena_round = round_i + 1
+		lines.append("You defeated %s! The crowd roars. (+%d gold)" % [f.name, f.prize])
+		if round_i == Data.arena_fighters.size() - 1:
+			lines.append("You are the new Earth Rumble champion! Xin Fu can barely believe it.")
+			add_renown(30)
+			flags.arena_round = 0
+			flags.arena_champion = true
+	else:
+		flags.arena_round = 0
+		lines.append("%s threw you out of the ring. Better luck next time." % f.name)
+	last_battle_result = {"won": won, "lines": lines, "prisoners": [], "goods": {}, "items": []}
+	pending_battle = {}
 
 ## Called by the battle scene. `casualties` maps party id (or "garrison:<sid>")
 ## to {troop_id: {"killed": n, "wounded": n}}.

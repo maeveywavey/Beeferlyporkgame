@@ -8,7 +8,13 @@ func _ready() -> void:
 	match mode:
 		"menu":
 			get_tree().change_scene_to_file.call_deferred("res://scenes/main_menu.tscn")
-		"world", "town", "party", "encounter", "char", "factions", "trade":
+		"create":
+			get_tree().change_scene_to_file.call_deferred("res://scenes/main_menu.tscn")
+			get_tree().create_timer(0.5).timeout.connect(func():
+				var mm = Engine.get_main_loop().current_scene
+				mm.page = "create"
+				mm._build())
+		"world", "town", "party", "encounter", "char", "factions", "trade", "far", "inv":
 			var p := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 			GS.new_game(p)
 			var Roster = load("res://scripts/core/roster.gd")
@@ -18,6 +24,10 @@ func _ready() -> void:
 			if mode != "world":
 				var m := mode
 				get_tree().create_timer(1.0).timeout.connect(func(): _open(m))
+		"arena":
+			var pa := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
+			GS.new_game(pa)
+			GS.start_arena.call_deferred(3)
 		"battle", "siege":
 			var p2 := GS.create_player("Lee", "fn_deserter", "fire", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 			GS.new_game(p2)
@@ -45,6 +55,9 @@ static func _open(mode: String) -> void:
 		"party": map._open_party()
 		"char": map._open_character()
 		"factions": map._open_factions()
+		"inv": map._open_inventory()
+		"far":
+			map.cam_dist = 600.0
 		"trade":
 			var w = load("res://scripts/ui/trade_window.gd").new()
 			w.sid = "omashu"

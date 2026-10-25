@@ -380,6 +380,18 @@ static func build_party(p: Dictionary) -> Node3D:
 		body_node.add_child(box(Vector3(1.4, 0.9, 0.06), flag_col, Vector3(-0.1, pole_h - 0.5, 0)))
 		if p.kind == "lord":
 			body_node.add_child(box(Vector3(0.5, 0.5, 0.08), fc, Vector3(-0.1, pole_h - 0.5, 0.02)))
+	# Boat shown while the party sails across water
+	var boat := Node3D.new()
+	boat.name = "Boat"
+	boat.visible = false
+	var hull_c := Color(0.35, 0.22, 0.12) if p.faction != "fire_nation" else Color(0.3, 0.3, 0.32)
+	var hull := box(Vector3(2.2, 0.7, 5.0), hull_c, Vector3(0, 0.1, 0))
+	boat.add_child(hull)
+	boat.add_child(box(Vector3(1.6, 0.4, 1.2), hull_c, Vector3(0, 0.1, 2.8), Vector3(0, 45, 0)))
+	boat.add_child(cyl(0.08, 0.08, 4.5, Color(0.3, 0.2, 0.1), Vector3(0, 2.4, -0.5), 5))
+	var sail_c: Color = Data.factions.get(p.faction, Data.factions.neutral).color.lightened(0.3)
+	boat.add_child(box(Vector3(2.4, 2.4, 0.05), sail_c, Vector3(0, 2.8, -0.4)))
+	root.add_child(boat)
 	if p.kind == "player":
 		var ring := TorusMesh.new()
 		ring.inner_radius = 1.5

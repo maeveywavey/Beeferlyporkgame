@@ -48,6 +48,7 @@ func build() -> void:
 		"tavern": _build_tavern(opts)
 		"hall": _build_hall(opts)
 		"recruit": _build_recruit(opts)
+		"arena": _build_arena(opts)
 
 func _go(p: String) -> void:
 	page = p
@@ -101,6 +102,8 @@ func _build_main(o: VBoxContainer) -> void:
 			o.add_child(UI.option("Go to the tavern", func(): _go("tavern")))
 			o.add_child(UI.option("Go to the lord's hall", func(): _go("hall")))
 			o.add_child(UI.option("Speak with the guild master (work)", _ask_work))
+			if sid == "gaoling":
+				o.add_child(UI.option("Visit the Earth Rumble arena", func(): _go("arena")))
 		"castle":
 			o.add_child(UI.option("Go to the lord's hall", func(): _go("hall")))
 			o.add_child(UI.option("Speak with the castle steward (work)", _ask_work))
@@ -348,6 +351,21 @@ func _build_tavern(o: VBoxContainer) -> void:
 			note = "The patrons cheer your name."
 		refresh(), GS.player.gold >= 40))
 	o.add_child(UI.option("Play a game of Pai Sho (wager 50 gold)", _pai_sho, GS.player.gold >= 50))
+	o.add_child(UI.option("Back", func(): _go("main")))
+
+func _build_arena(o: VBoxContainer) -> void:
+	var r: int = GS.flags.get("arena_round", 0)
+	var f: Dictionary = Data.arena_fighters[r]
+	o.add_child(UI.rich("Torches blaze around a ring of stone. Xin Fu, the promoter, bellows at the crowd: [i]\"Welcome to EARTH RUMBLE!\"[/i]", 740))
+	if GS.flags.get("arena_champion", false):
+		o.add_child(UI.rich("[b]You are a former Earth Rumble champion.[/b]", 740))
+	o.add_child(UI.rich("Round %d of %d — your opponent: [b]%s[/b] (%s). Prize: %d gold." % [r + 1, Data.arena_fighters.size(), f.name, Data.element_name(f.bend), f.prize], 740))
+	o.add_child(UI.rich("[i]You fight alone. Lose, and you start again from the first round.[/i]", 740))
+	o.add_child(UI.option("Step into the ring (entry fee 20 gold)", func():
+		GS.add_gold(-20)
+		GS.start_arena(r), GS.player.gold >= 20 and GS.player.hp > GS.max_hp() * 0.3))
+	if GS.player.hp <= GS.max_hp() * 0.3:
+		o.add_child(UI.rich(UI.color_text("You are too badly hurt to fight. Rest first.", UI.RED), 740))
 	o.add_child(UI.option("Back", func(): _go("main")))
 
 func _pai_sho() -> void:

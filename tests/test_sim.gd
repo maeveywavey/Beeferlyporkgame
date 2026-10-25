@@ -16,9 +16,19 @@ func _ready() -> void:
 	GS.new_game(p)
 	print("parties: ", GS.parties.size())
 	t0 = Time.get_ticks_msec()
-	for i in 24 * 60:
-		GS.sim.advance(1.0)
-	print("60 days simulated in ", Time.get_ticks_msec() - t0, " ms")
+	for d in 300:
+		for h in 24:
+			GS.sim.advance(1.0)
+		if d % 30 == 29:
+			var o := {}
+			for sid in GS.settlements:
+				o[GS.settlements[sid].faction] = o.get(GS.settlements[sid].faction, 0) + 1
+			var lords_alive := 0
+			for lid in GS.lords:
+				if GS.lords[lid].party != "":
+					lords_alive += 1
+			print("day ", d + 1, " ", o, " lords in field ", lords_alive, " parties ", GS.parties.size())
+	print("300 days simulated in ", Time.get_ticks_msec() - t0, " ms")
 	print("date: ", GS.date_string(), " parties: ", GS.parties.size())
 	var kinds := {}
 	for id in GS.parties:
@@ -29,7 +39,8 @@ func _ready() -> void:
 		owners[GS.settlements[sid].faction] = owners.get(GS.settlements[sid].faction, 0) + 1
 	print("settlements by faction: ", owners)
 	for line in GS.log_lines.slice(-200):
-		print("  ", line.t)
+		if line.t.find("starving") < 0:
+			print("  ", line.t)
 	var ok := GS.save_game("user://test.sav")
 	print("save ok: ", ok)
 	print("load ok: ", GS.load_game("user://test.sav"))
