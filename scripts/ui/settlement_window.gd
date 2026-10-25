@@ -2,6 +2,7 @@ extends "res://scripts/ui/window_base.gd"
 ## Mount & Blade style text menu for a settlement.
 
 const Roster = preload("res://scripts/core/roster.gd")
+const Story = preload("res://scripts/story/story.gd")
 const Economy = preload("res://scripts/core/economy.gd")
 const Quests = preload("res://scripts/core/quests.gd")
 const AutoResolve = preload("res://scripts/core/auto_resolve.gd")
@@ -68,6 +69,10 @@ func _build_main(o: VBoxContainer) -> void:
 	var s: Dictionary = GS.settlements[sid]
 	var pf := GS.player_faction()
 	var hostile := GS.at_war(s.faction, pf)
+	# Story beats available here (quests, companions, the logbook)
+	if not hostile or d.type in ["ruin", "temple"]:
+		for so in Story.settlement_options(sid):
+			o.add_child(UI.option("★ " + so.text, _story_option.bind(so)))
 	if d.type == "ruin":
 		_build_ruin(o)
 		return
@@ -134,6 +139,17 @@ func _build_main(o: VBoxContainer) -> void:
 	o.add_child(UI.option("Rest here for a day (heal faster)", _rest.bind(24.0)))
 	o.add_child(UI.option("Wait here until healed", _rest.bind(-2.0), Roster.wounded(GS.player_party().roster) > 0 or GS.player.hp < GS.max_hp()))
 	o.add_child(UI.option("Leave", close))
+
+func _story_option(so: Dictionary) -> void:
+	if so.has("once"):
+		Story.set_flag("opt_" + so.dlg, true)
+	GS.player.inside = sid
+	var dw = map.open_dialogue(so.dlg)
+	if dw == null:
+		return
+	dw.tree_exited.connect(func():
+		if is_inside_tree() and not is_queued_for_deletion():
+			refresh())
 
 func _mk(path: String) -> Control:
 	var w = load(path).new()
@@ -214,6 +230,7 @@ func _raid() -> void:
 		GS.add_good(g, 2 + randi() % 3)
 	GS.player.honor = GS.player.get("honor", 0) - 5
 	GS.change_faction_rel(s.faction, -10)
+	Story.react("raid")
 	# Mixed Ember Coast villages: burning them angers both nations
 	var kin: String = {"earth": "earth_kingdom", "fire": "fire_nation", "north": "northern_water", "south": "southern_water", "omashu": "omashu"}.get(d.culture, "")
 	if kin != "" and kin != s.faction:
@@ -402,6 +419,7 @@ func _build_temple(o: VBoxContainer) -> void:
 	o.add_child(UI.option("Donate to the refugees (100 gold)", func():
 		GS.add_gold(-100)
 		GS.change_faction_rel("air_nomads", 3)
+		Story.react("donate")
 		GS.player.honor = int(GS.player.get("honor", 0)) + 1
 		GS.add_renown(2)
 		note = "The abbot accepts the gold for the refugees' kitchens, and thanks you without making a speech about it. (+1 honour)"
@@ -467,6 +485,8 @@ func _build_tavern(o: VBoxContainer) -> void:
 			else:
 				GS.add_gold(-cd.cost)
 				GS.player.companions.append(cid)
+				GS.companion_state(cid).approval = 10
+				Story.set_flag("joined_" + cid, GS.day())
 				t.erase("companion")
 				GS.log_msg("%s has joined your party." % cd.name, Color(0.6, 1, 0.6))
 				note = UI.color_text("%s joins you." % cd.name, UI.GREEN)

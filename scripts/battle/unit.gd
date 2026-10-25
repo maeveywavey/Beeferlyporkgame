@@ -158,18 +158,15 @@ func setup_companion(cid: String, p_team: int) -> void:
 	dmg_mult = 1.25
 	weapon_id = c.weapon
 	ranged_id = c.get("ranged", "")
-	bend = c.bend
-	bend_power = c.power
+	# Story outcomes can change a companion (Juro's fire returning, Hana's mastery)
+	var cs: Dictionary = GS.companion_state(cid)
+	bend = cs.get("bend", c.bend)
+	bend_power = float(cs.get("power", c.power)) + float(cs.get("power_bonus", 0.0))
 	healer = c.get("healer", false)
 	chi_blocker = c.get("chi_blocker", false)
 	mount_id = c.get("mount", "")
 	foot_speed = 5.0
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(cid)
-	var look := Looks.CB.random_look(Looks.CULTURE_MAP.get(c.get("culture", "earth"), "earth"), rng, c.get("vlook", {}).get("sex", ""))
-	look.merge(c.get("vlook", {}), true)
-	look.merge({"outfit": "ranger", "kit": Looks.kit_for("", look.culture, 3)}, false)
-	_finish_setup(look)
+	_finish_setup(Looks.companion_look(cid))
 
 func setup_player(p_team: int) -> void:
 	var pl: Dictionary = GS.player

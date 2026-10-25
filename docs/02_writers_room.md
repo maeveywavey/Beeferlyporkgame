@@ -183,7 +183,7 @@ The Omashu Secession is resolved separately, through **Shen Mu's** letter.
 | **Elder Malik** | Diplomacy / Qannik | |
 
 ### Air Nomads (no armies)
-Abbot Dorje (Southern), Abbess Pema (Eastern), Abbess Yeshe (Western) and Abbot Lhakpa (Northern).
+Abbot Dorje (Southern), Abbess Tsering (Eastern), Abbess Yeshe (Western) and Abbot Lhakpa (Northern).
 
 ---
 

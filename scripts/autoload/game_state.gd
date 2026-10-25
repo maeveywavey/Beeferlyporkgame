@@ -12,6 +12,7 @@ const WorldSim = preload("res://scripts/core/world_sim.gd")
 const Economy = preload("res://scripts/core/economy.gd")
 const Quests = preload("res://scripts/core/quests.gd")
 const AutoResolve = preload("res://scripts/core/auto_resolve.gd")
+const Story = preload("res://scripts/story/story.gd")
 
 const SAVE_PATH := "user://savegame.sav"
 const AUTOSAVE_PATH := "user://autosave.sav"
@@ -606,6 +607,7 @@ func _duel_outcome(won: bool, lid: String, champion: String) -> void:
 		player.honor = int(player.get("honor", 0)) + 2
 		change_lord_rel(lid, 10)
 		change_faction_rel("fire_nation", 3)
+		Story.react("agni_kai_won")
 		lines.append("%s stands over %s in the ring. The witnesses bow; the matter is settled with honour. (+20 renown, +2 honour)" % [who, l.name])
 		log_msg("%s won an Agni Kai against %s." % [who, l.name], Color(1, 0.75, 0.4))
 	else:
@@ -731,6 +733,8 @@ func release_lord(lid: String, ransomed: bool) -> void:
 	player.captive_lords.erase(lid)
 	lords[lid].held = false
 	lords[lid].respawn_at = hours + 48.0
+	if not ransomed:
+		Story.react("release_lord")
 	if ransomed:
 		add_gold(lord_ransom(lid))
 		log_msg("%s has been ransomed for %d gold." % [Data.lords[lid].name, lord_ransom(lid)], Color(0.9, 0.85, 0.4))
@@ -865,6 +869,7 @@ func finish_battle(won: bool, casualties: Dictionary, player_downed: bool, compa
 				capture_lord(ep.lord)
 				result.lines.append("%s has been taken prisoner!" % Data.lords[ep.lord].name)
 			sim.on_party_defeated(pid, "player")
+		Story.react("battle_won")
 		# Siege won
 		if b.siege != "" and b.player_attacking:
 			sim.capture_settlement(b.siege, player_faction(), "player")

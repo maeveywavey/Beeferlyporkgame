@@ -204,7 +204,8 @@ static func dress_head(parts: Dictionary, style: String, sex: String, hair: Colo
 		"bandana":
 			add.call(sphere(0.128, Color(0.55, 0.1, 0.12), at(Vector3(0, y + 0.03, -0.01), Vector3(-10, 0, 0), Vector3(1, 0.85, 1.05)), true))
 		"pirate_hat":
-			add.call(node(lathe([Vector2(0.0, 0.11), Vector2(0.12, 0.1), Vector2(0.13, 0.02), Vector2(0.22, 0.0), Vector2(0.22, -0.015), Vector2(0.12, 0.0)], 24, 1.0, 0.8), Color(0.12, 0.1, 0.1), at(Vector3(0, top - 0.04, 0.0))))
+			# low-crowned captain's hat with a rolled brim, dyed oxblood
+			add.call(node(lathe([Vector2(0.0, 0.1), Vector2(0.105, 0.095), Vector2(0.118, 0.025), Vector2(0.165, 0.02), Vector2(0.178, 0.045), Vector2(0.17, 0.0), Vector2(0.115, -0.008)], 24, 1.0, 0.8), Color(0.28, 0.09, 0.07), at(Vector3(0, top - 0.045, 0.0))))
 		"sand_wrap":
 			# hood from the outfit kit plus an indigo veil over the mouth
 			add.call(panel(shell(0.118, 0.08, 150.0, 0.01, 14, 0.02), Color(0.3, 0.28, 0.52), at(Vector3(0, y - 0.03, 0.0))))

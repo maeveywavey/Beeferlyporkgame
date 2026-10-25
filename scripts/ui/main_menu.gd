@@ -12,10 +12,19 @@ var c_background := "ek_refugee"
 var c_bend := ""
 var c_skin := Color(0.87, 0.7, 0.55)
 var c_hair := Color(0.12, 0.08, 0.05)
+var c_body := "m"
+var c_pronouns := "they"
+var c_hair_style := "Hair_SimpleParted"
+var c_beard := false
 var note := ""
+var _preview_vp: SubViewport
+var _preview_actor
 
 const SKINS := [Color(0.96, 0.84, 0.72), Color(0.87, 0.7, 0.55), Color(0.72, 0.53, 0.38), Color(0.55, 0.38, 0.25), Color(0.4, 0.27, 0.18)]
 const HAIRS := [Color(0.08, 0.06, 0.05), Color(0.3, 0.18, 0.1), Color(0.55, 0.35, 0.18), Color(0.75, 0.75, 0.75)]
+const HAIR_STYLES := [["Hair_SimpleParted", "Parted"], ["Hair_Long", "Long"], ["Hair_Buns", "Buns"], ["Hair_Buzzed", "Cropped"], ["Hair_BuzzedFemale", "Short"], ["", "Shaved"]]
+const PRONOUNS := [["he", "he/him"], ["she", "she/her"], ["they", "they/them"]]
+const Actor = preload("res://scripts/actors/actor.gd")
 
 func _ready() -> void:
 	Music.play("map")
@@ -50,6 +59,9 @@ func _draw_emblem(c: Control) -> void:
 
 func _build() -> void:
 	UI.clear(body)
+	if page != "create" and _preview_actor != null:
+		_preview_actor.queue_free()
+		_preview_actor = null
 	match page:
 		"title": _build_title()
 		"create": _build_create()
@@ -57,7 +69,7 @@ func _build() -> void:
 func _build_title() -> void:
 	body.add_child(UI.spacer(10))
 	body.add_child(UI.title("AVATAR: MOUNT & BEND", 40))
-	body.add_child(UI.title("A tale of the Hundred Year War", 20))
+	body.add_child(UI.title("A tale of the Quiet Years", 20))
 	var intro := UI.rich("[center][i]Water. Earth. Fire. Air. Eleven years ago, the Avatar drowned at sea on the way to a peace that never came. Somewhere a child is the next Avatar, and does not know it yet.\n\nUntil they do, the world must manage on its own. Raise an army, master your element, serve a nation or carve out your own realm in the Quiet Years.[/i][/center]", 700)
 	body.add_child(intro)
 	body.add_child(UI.spacer(10))
@@ -130,18 +142,53 @@ func _build_create() -> void:
 			b2.add_theme_color_override("font_color", UI.GOLD)
 			b2.add_theme_color_override("font_hover_color", UI.GOLD)
 		brow.add_child(b2)
+	# Appearance and identity, with a live preview
+	var arow := UI.hbox(24)
+	body.add_child(arow)
+	var acol := UI.vbox(6)
+	arow.add_child(acol)
+	acol.add_child(UI.label("Appearance", 20, UI.BROWN))
+	var r1 := UI.hbox(6)
+	acol.add_child(r1)
+	r1.add_child(UI.label("Build:", 16))
+	for bb in [["m", "Broader frame"], ["f", "Narrower frame"]]:
+		r1.add_child(_choice_button(bb[1], c_body == bb[0], func():
+			c_body = bb[0]
+			if c_body == "f":
+				c_beard = false
+			_build()))
+	var r2 := UI.hbox(6)
+	acol.add_child(r2)
+	r2.add_child(UI.label("Pronouns:", 16))
+	for pp in PRONOUNS:
+		r2.add_child(_choice_button(pp[1], c_pronouns == pp[0], func():
+			c_pronouns = pp[0]
+			_build()))
+	var r3 := UI.hbox(6)
+	acol.add_child(r3)
+	r3.add_child(UI.label("Hair:", 16))
+	for hs in HAIR_STYLES:
+		r3.add_child(_choice_button(hs[1], c_hair_style == hs[0], func():
+			c_hair_style = hs[0]
+			_build()))
+	if c_body == "m":
+		r3.add_child(_choice_button("Beard", c_beard, func():
+			c_beard = not c_beard
+			_build()))
 	var looks := UI.hbox(8)
-	body.add_child(looks)
+	acol.add_child(looks)
 	looks.add_child(UI.label("Skin:", 16))
 	for c in SKINS:
 		looks.add_child(_swatch(c, c == c_skin, func():
 			c_skin = c
 			_build()))
-	looks.add_child(UI.label("   Hair:", 16))
+	looks.add_child(UI.label("   Hair colour:", 16))
 	for c in HAIRS:
 		looks.add_child(_swatch(c, c == c_hair, func():
 			c_hair = c
 			_build()))
+	acol.add_child(UI.rich("[i]Build only chooses a body model. Pronouns are how the world refers to you; they open no doors and close none, except who might fall for you.[/i]", 560))
+	arow.add_child(_preview())
 	body.add_child(UI.spacer(6))
 	var row := UI.hbox()
 	body.add_child(row)
@@ -150,6 +197,56 @@ func _build_create() -> void:
 		_build(), 120))
 	row.add_child(UI.expand())
 	row.add_child(UI.button("Begin your journey", _start, 240))
+
+func _choice_button(text: String, sel: bool, cb: Callable) -> Button:
+	var b := UI.button(text, cb)
+	if sel:
+		b.add_theme_color_override("font_color", UI.GOLD)
+		b.add_theme_color_override("font_hover_color", UI.GOLD)
+	return b
+
+## A turning 3D preview of the character being created.
+func _preview() -> Control:
+	var box := SubViewportContainer.new()
+	box.custom_minimum_size = Vector2(240, 300)
+	box.stretch = true
+	if _preview_vp == null:
+		_preview_vp = SubViewport.new()
+		_preview_vp.own_world_3d = true
+		_preview_vp.size = Vector2i(240, 300)
+		var we := WorldEnvironment.new()
+		var env := Environment.new()
+		env.background_mode = Environment.BG_COLOR
+		env.background_color = Color(0.86, 0.78, 0.62)
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		env.ambient_light_color = Color(0.9, 0.86, 0.8)
+		env.ambient_light_energy = 0.55
+		we.environment = env
+		_preview_vp.add_child(we)
+		var sun := DirectionalLight3D.new()
+		sun.rotation_degrees = Vector3(-30, 35, 0)
+		_preview_vp.add_child(sun)
+		var cam := Camera3D.new()
+		cam.fov = 32.0
+		cam.transform = Transform3D(Basis(), Vector3(0, 1.15, 3.6)).looking_at(Vector3(0, 0.95, 0), Vector3.UP)
+		_preview_vp.add_child(cam)
+	elif _preview_vp.get_parent() != null:
+		_preview_vp.get_parent().remove_child(_preview_vp)
+	box.add_child(_preview_vp)
+	if _preview_actor != null:
+		_preview_actor.queue_free()
+	var culture: String = {"fn_deserter": "fire", "fn_noble": "fire", "swt_warrior": "south", "nwt_noble": "water", "kyoshi": "kyoshi"}.get(c_background, "earth")
+	_preview_actor = Actor.new()
+	_preview_actor.setup({"sex": c_body, "skin": c_skin, "hair": c_hair_style, "hair_color": c_hair, "beard": c_beard,
+		"culture": culture, "outfit": "peasant", "kit": "", "accessory": ""})
+	_preview_actor.set_stance("talk")
+	_preview_actor.set_expression("happy")
+	_preview_vp.add_child(_preview_actor)
+	return box
+
+func _process(delta: float) -> void:
+	if _preview_actor != null and is_instance_valid(_preview_actor):
+		_preview_actor.rotation.y += delta * 0.5
 
 func _swatch(c: Color, sel: bool, cb: Callable) -> Button:
 	var b := Button.new()
@@ -171,5 +268,6 @@ func _start() -> void:
 	if nm == "":
 		nm = "Lee"
 	var p := GS.create_player(nm, c_background, c_bend, c_skin, c_hair)
+	p.look.merge({"sex": c_body, "pronouns": c_pronouns, "hair_style": c_hair_style, "beard": c_beard}, true)
 	GS.new_game(p)
 	get_tree().change_scene_to_file("res://scenes/world_map.tscn")

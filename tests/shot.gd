@@ -16,6 +16,21 @@ func _ready() -> void:
 			var m = Engine.get_main_loop().current_scene
 			m.cam_dist = 55.0
 			m.cam_yaw = 0.5)
+	if mode.begins_with("dlg:"):
+		var did := mode.substr(4)
+		var pd := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
+		GS.new_game(pd)
+		GS.flags.seen_help = true
+		for cid in Data.companions:
+			GS.player.companions.append(cid)
+		get_tree().change_scene_to_file.call_deferred("res://scenes/world_map.tscn")
+		get_tree().create_timer(1.0).timeout.connect(func():
+			var m = Engine.get_main_loop().current_scene
+			var w = m.open_dialogue(did)
+			var steps := int(args[3]) if args.size() > 3 else 0
+			for i in steps:
+				var node: Dictionary = w.dlg.nodes[w.node_id]
+				w._go(node.get("next", "") if not node.has("choices") else node.choices[0].get("next", ""), []))
 	match mode:
 		"menu":
 			get_tree().change_scene_to_file.call_deferred("res://scenes/main_menu.tscn")
@@ -43,7 +58,7 @@ func _ready() -> void:
 			GS.player.equip.mount = "komodo_rhino"
 			var Roster2 = load("res://scripts/core/roster.gd")
 			var eg := GS.make_party("", "Gallery", "bandit", "fire_nation", Vector2.ZERO)
-			for t in ["fn_soldier", "fn_yuyan", "fn_rhino_rider", "fn_imperial_fb", "ek_soldier", "ek_ostrich_rider", "ek_royal_guard", "ek_dai_li", "ky_warrior", "nwt_waterbender", "nwt_guard", "swt_wolf", "sand_raider", "pirate_captain", "aang", "toph"]:
+			for t in ["fn_soldier", "fn_yuyan", "fn_rhino_rider", "fn_imperial_fb", "ek_soldier", "ek_ostrich_rider", "ek_royal_guard", "ek_dai_li", "ky_warrior", "nwt_waterbender", "nwt_guard", "swt_wolf", "sand_raider", "pirate_captain", "an_master", "om_royal_guard"]:
 				Roster2.add(eg.roster, t, 1)
 			GS.pending_battle = {"enemies": [eg.id], "allies": [], "siege": "", "player_attacking": true, "biome": "grass",
 				"hour": 13.0, "fire_mult": 1.15, "water_mult": 0.95, "enemy_garrison": false, "ally_garrison": false}

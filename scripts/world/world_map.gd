@@ -18,6 +18,9 @@ const QuestWindow = preload("res://scripts/ui/quest_window.gd")
 const FactionWindow = preload("res://scripts/ui/faction_window.gd")
 const CampWindow = preload("res://scripts/ui/camp_window.gd")
 const ResultWindow = preload("res://scripts/ui/result_window.gd")
+const DialogueWindow = preload("res://scripts/ui/dialogue_window.gd")
+const EpilogueWindow = preload("res://scripts/ui/epilogue_window.gd")
+const Story = preload("res://scripts/story/story.gd")
 
 const SIGHT := 70.0
 
@@ -270,7 +273,32 @@ func _on_player_encounter(pid: String) -> void:
 func _on_player_arrived(sid: String) -> void:
 	waiting = false
 	Quests.on_arrive(sid)
+	Story.fire("arrive", sid)
 	open_settlement(sid)
+	if Story.has_pending():
+		open_dialogue(Story.pop_pending())
+
+func open_dialogue(id: String) -> Control:
+	if id == "" or not Story.has_dialogue(id):
+		return null
+	waiting = false
+	GS.player_party().moving = false
+	var w = DialogueWindow.new()
+	w.dlg_id = id
+	open_window(w)
+	return w
+
+## Story beats queued by the simulation appear when no window is open.
+func _check_story() -> void:
+	if is_modal_open():
+		return
+	if Story.has_pending():
+		open_dialogue(Story.pop_pending())
+	elif GS.flags.get("pending_epilogue", "") != "":
+		var ew = EpilogueWindow.new()
+		ew.kind = GS.flags.pending_epilogue
+		GS.flags.pending_epilogue = ""
+		open_window(ew)
 
 func start_waiting(hours: float) -> void:
 	waiting = true
@@ -283,6 +311,7 @@ func start_waiting(hours: float) -> void:
 func _process(delta: float) -> void:
 	if not GS.game_active:
 		return
+	_check_story()
 	var pp: Dictionary = GS.player_party()
 	var captive: bool = GS.player.get("captive_until", -1.0) > GS.hours
 	if not is_modal_open():

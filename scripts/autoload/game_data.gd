@@ -676,7 +676,7 @@ var settlements := {
 		"produces": ["tea"], "desc": "A temple of monks on the peaks of the Patola range. Sky bison graze its terraces, and refugees from three wars sleep in its courtyards."},
 	"northern_air_temple": {"name": "Northern Air Temple", "type": "temple", "faction": "air_nomads", "pos": Vector2(915, 175), "culture": "air", "abbot": "Abbot Lhakpa",
 		"produces": ["herbs"], "desc": "The highest of the temples, a monks' retreat of wind-chimes and cold stone. Its gliders can be seen for miles."},
-	"eastern_air_temple": {"name": "Eastern Air Temple", "type": "temple", "faction": "air_nomads", "pos": Vector2(1470, 700), "culture": "air", "abbot": "Abbess Pema",
+	"eastern_air_temple": {"name": "Eastern Air Temple", "type": "temple", "faction": "air_nomads", "pos": Vector2(1470, 700), "culture": "air", "abbot": "Abbess Tsering",
 		"produces": ["tea", "herbs"], "desc": "A temple of nuns among mountain peaks, whose archives hold letters from every Avatar who ever visited."},
 	"western_air_temple": {"name": "Western Air Temple", "type": "temple", "faction": "air_nomads", "pos": Vector2(520, 330), "culture": "air", "abbot": "Abbess Yeshe",
 		"produces": ["herbs"], "desc": "A nuns' temple built upside-down beneath a cliff edge, hidden from anyone who does not already know where to look."},

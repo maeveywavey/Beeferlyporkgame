@@ -281,6 +281,7 @@ func _build_agni_kai_challenge(p: Dictionary, lid: String, they_challenge: bool)
 			GS.player.honor = int(GS.player.get("honor", 0)) - 2
 			GS.add_renown(-5)
 			GS.change_faction_rel("fire_nation", -3)
+			load("res://scripts/story/story.gd").react("refuse_duel")
 			note = "%s turns away in contempt. Word of your refusal will travel through every noble house in Caldera. (-2 honour)" % ld.name
 		else:
 			note = "\"Then do not waste my time with challenges.\""
@@ -355,7 +356,7 @@ func _build_pilgrim(p: Dictionary) -> void:
 		content.add_child(UI.rich("[b]Pilgrim:[/b] \"" + [
 			"The novices have named the bison after you. It is meant as a compliment, mostly.",
 			"We carried forty refugees out of the Ember Coast last week. The Admiralty's ships watched us go and did nothing. That will not last.",
-			"Abbess Pema asks after you. She says you have the face of someone who is about to make a large decision.",
+			"Abbess Tsering asks after you. She says you have the face of someone who is about to make a large decision.",
 			"Violence is always a choice. So is lunch. We have chosen lunch."].pick_random() + "\"", 700))
 	if not met:
 		content.add_child(UI.option("Sit with them and share news of the road", func():

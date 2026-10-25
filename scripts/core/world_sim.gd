@@ -7,6 +7,7 @@ const Terrain = preload("res://scripts/core/terrain.gd")
 const AutoResolve = preload("res://scripts/core/auto_resolve.gd")
 const Economy = preload("res://scripts/core/economy.gd")
 const Quests = preload("res://scripts/core/quests.gd")
+const Story = preload("res://scripts/story/story.gd")
 
 const CONTACT := 3.0
 const SIGHT := 60.0
@@ -228,6 +229,7 @@ func on_party_defeated(pid: String, victor_faction: String) -> void:
 	if not GS.parties.has(pid):
 		return
 	var p: Dictionary = GS.parties[pid]
+	Story.on_party_defeated(p, victor_faction)
 	if p.lord != "":
 		var lr: Dictionary = GS.lords[p.lord]
 		lr.party = ""
@@ -308,6 +310,7 @@ func _hourly_cosmic() -> void:
 
 func _daily() -> void:
 	_daily_events()
+	Story.fire("daily")
 	_daily_diplomacy()
 	Economy.daily_update()
 	_daily_settlements()
@@ -1137,6 +1140,8 @@ func spawn_lord(lid: String, size_frac: float) -> void:
 
 func spawn_bandit(idx: int) -> void:
 	var sp: Dictionary = Data.bandit_spawns[idx]
+	if sp.name == "Sandbenders" and GS.flags.get("sand_clan_safe", false):
+		return   # Kesi's clan has water now
 	var p := GS.make_party("", sp.name, "bandit", sp.faction, Terrain.random_land_near(sp.pos, 40.0))
 	p.spawn = idx
 	p.anchor = sp.pos

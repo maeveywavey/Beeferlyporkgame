@@ -1127,6 +1127,9 @@ func on_unit_down(u, killer, dtype: String) -> void:
 		var chance := 0.5 if u.team == 0 else 0.4
 		if dtype == "blunt":
 			chance = 0.9
+		# Pemba never takes a life: their blows only knock people down
+		if killer != null and is_instance_valid(killer) and killer.companion_id != "" and Data.companions.get(killer.companion_id, {}).get("nonlethal", false):
+			chance = 1.0
 		wounded = randf() < chance
 		if not casualties.has(u.party_key):
 			casualties[u.party_key] = {}

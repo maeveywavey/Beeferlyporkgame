@@ -109,3 +109,26 @@ static func party_look(p: Dictionary) -> Dictionary:
 	if tid != "":
 		return troop_look(tid, rng)
 	return CB.random_look("earth", rng)
+
+## Look for a companion (shared by battles, portraits and walkable scenes).
+static func companion_look(cid: String) -> Dictionary:
+	var c: Dictionary = Data.companions[cid]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(cid)
+	var culture: String = CULTURE_MAP.get(c.get("culture", "earth"), "earth")
+	var vl: Dictionary = c.get("vlook", {})
+	var look := CB.random_look(culture, rng, vl.get("sex", ""))
+	look.merge(vl, true)
+	look.merge({"outfit": "ranger", "kit": kit_for("", look.culture, 3)}, false)
+	return look
+
+## Look for a story character defined in a dialogue script's NPCS table.
+static func npc_look(def: Dictionary, id: String) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(id)
+	var culture: String = CULTURE_MAP.get(def.get("culture", "earth"), def.get("culture", "earth"))
+	var vl: Dictionary = def.get("vlook", {})
+	var look := CB.random_look(culture, rng, vl.get("sex", ""))
+	look.merge(vl, true)
+	look.merge({"outfit": def.get("outfit", "peasant"), "kit": def.get("kit", kit_for("", culture, 1))}, false)
+	return look
