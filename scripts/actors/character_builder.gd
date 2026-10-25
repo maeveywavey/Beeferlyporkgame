@@ -210,7 +210,8 @@ static func build(look: Dictionary) -> Dictionary:
 			elif mname.find("Regular") >= 0:
 				mi.set_surface_override_material(s, skin_material(m, skin_c))
 			else:
-				mi.set_surface_override_material(s, toon_from(m, {"texture": cloth_tex}))
+				# civilians vary their dye; soldiers keep their uniform colours
+				mi.set_surface_override_material(s, toon_from(m, {"texture": cloth_tex, "tint": look.get("cloth_tint", Color.WHITE)}))
 	parts.meshes.append_array(outfit_meshes)
 	# Hair, beard
 	var hair: String = look.get("hair", "Hair_SimpleParted")

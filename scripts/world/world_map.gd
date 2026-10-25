@@ -79,6 +79,17 @@ func _ready() -> void:
 	if not GS.flags.has("seen_help"):
 		GS.flags.seen_help = true
 		open_window(load("res://scripts/ui/help_window.gd").new())
+	# back from walking a settlement: reopen its menu, or keep resting there
+	var back: String = GS.flags.get("town_return", "")
+	if back != "":
+		GS.flags.town_return = ""
+		var wait: float = float(GS.flags.get("town_wait", 0.0))
+		GS.flags.town_wait = 0.0
+		if wait != 0.0:
+			GS.player.inside = back
+			start_waiting(wait)
+		else:
+			open_settlement(back)
 	if not GS.last_battle_result.is_empty():
 		var rw = ResultWindow.new()
 		rw.result = GS.last_battle_result

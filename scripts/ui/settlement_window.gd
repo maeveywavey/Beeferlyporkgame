@@ -95,6 +95,8 @@ func _build_main(o: VBoxContainer) -> void:
 			o.add_child(UI.option("Leave", close))
 		return
 	# Friendly or neutral settlement
+	if s.siege.is_empty() and map != null and map.has_method("open_settlement"):
+		o.add_child(UI.option("Walk around %s" % d.name, _walk))
 	if not s.siege.is_empty() and GS.at_war(s.siege.faction, s.faction) and GS.at_war(s.siege.faction, pf):
 		o.add_child(UI.option("Break the siege! Attack the besiegers", _defend))
 	for q in Quests.deliverable_at(sid):
@@ -139,6 +141,13 @@ func _build_main(o: VBoxContainer) -> void:
 	o.add_child(UI.option("Rest here for a day (heal faster)", _rest.bind(24.0)))
 	o.add_child(UI.option("Wait here until healed", _rest.bind(-2.0), Roster.wounded(GS.player_party().roster) > 0 or GS.player.hp < GS.max_hp()))
 	o.add_child(UI.option("Leave", close))
+
+## Enter the walkable version of this settlement.
+func _walk() -> void:
+	GS.player.inside = sid
+	GS.flags.town_sid = sid
+	GS.save_game(GS.AUTOSAVE_PATH)
+	get_tree().change_scene_to_file("res://scenes/town.tscn")
 
 func _story_option(so: Dictionary) -> void:
 	if so.has("once"):
@@ -411,6 +420,8 @@ func _council_motion(k: String, motion: String) -> void:
 func _build_temple(o: VBoxContainer) -> void:
 	var d: Dictionary = Data.settlements[sid]
 	o.add_child(UI.rich("Wind-chimes sound from every balcony. Novices race sky bison calves across a terrace while refugees from three wars queue for soup. %s greets you at the gate with a bow and no questions." % d.get("abbot", "The abbot"), 740))
+	if map != null and map.has_method("open_settlement"):
+		o.add_child(UI.option("Walk around %s" % d.name, _walk))
 	o.add_child(UI.option("Rest in the temple (free; the monks tend your wounded)", func():
 		Roster.heal_fraction(GS.player_party().roster, 0.5)
 		GS.player.hp = GS.max_hp()

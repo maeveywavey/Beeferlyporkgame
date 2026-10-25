@@ -16,6 +16,30 @@ func _ready() -> void:
 			var m = Engine.get_main_loop().current_scene
 			m.cam_dist = 55.0
 			m.cam_yaw = 0.5)
+	if mode.begins_with("walk:"):
+		# walk:<sid>[:hour[:yaw[:pitch[:x,z]]]]
+		var parts := mode.split(":")
+		var pw := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
+		GS.new_game(pw)
+		GS.flags.seen_help = true
+		for cid in ["hana", "juro", "nima"]:
+			GS.player.companions.append(cid)
+		GS.flags.town_sid = parts[1]
+		if parts.size() > 2:
+			GS.hours = float(parts[2])
+		load("res://scripts/town/town_scene.gd").autotest = true
+		get_tree().change_scene_to_file.call_deferred("res://scenes/town.tscn")
+		get_tree().create_timer(0.8).timeout.connect(func():
+			var t = Engine.get_main_loop().current_scene
+			if parts.size() > 3:
+				t.cam_yaw = float(parts[3])
+			if parts.size() > 4:
+				t.cam_pitch = float(parts[4])
+			if parts.size() > 5:
+				var xz := parts[5].split(",")
+				t.player.position = Vector3(float(xz[0]), 0, float(xz[1]))
+			t.cam_dist = 7.0
+			t._update_camera(1.0))
 	if mode.begins_with("dlg:"):
 		var did := mode.substr(4)
 		var pd := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
