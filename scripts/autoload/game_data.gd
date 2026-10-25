@@ -69,6 +69,29 @@ const KINGDOMS := ["fire_nation", "earth_kingdom", "omashu", "northern_water", "
 # Wars already being fought when the game begins.
 const STARTING_WARS := [["fire_nation", "earth_kingdom"], ["earth_kingdom", "omashu"], ["fire_nation", "southern_water"]]
 
+# How each people orders itself: shown in the Nations window, and the source
+# of the class rules the game enforces (see docs/02_writers_room.md, part 2).
+var societies := {
+	"fire_nation": {"ladder": ["The Fire Lord and the royal family", "The old noble houses", "Fire Sages (outside rank, inside every decision)", "Officers, merchants and civil servants", "Commoners: farmers, fishers, smiths — conscripted at sixteen", "Ember Coast settlers: neither wholly Fire nor Earth"],
+		"text": "Rank is inherited, and the noble houses of Caldera terrace the crater walls in order of precedence. Disputes of honour between nobles are settled by Agni Kai, a firebending duel before witnesses. Commoners serve; three ruined harvests have made the service longer and the rations smaller. The Fire Sages chart the sky and announce eclipses, and nobody declares war without asking them first.",
+		"rules": "Fire Nation nobles accept an Agni Kai only from someone of Gentry standing; a non-bender must name a firebending champion. Refusing a noble's challenge costs honour."},
+	"earth_kingdom": {"ladder": ["The Earth Queen", "The Grand Secretariat, and the Dai Li who serve it", "Upper Ring nobility", "Middle Ring merchants and scholars, who rise by civil examination", "Lower Ring labourers and refugees", "Villagers beyond the walls"],
+		"text": "The Kingdom is held together by walls, seals and paperwork. Ba Sing Se's three rings are three worlds, and the gates between them are guarded. The Dai Li were founded long ago to protect the city's culture; now they protect its silence. Most earthbenders are miners, builders and farmers, not soldiers.",
+		"rules": "Ba Sing Se's Middle Ring needs Citizen standing or papers; the Upper Ring needs Gentry standing or an invitation. A trade permit improves prices in Earth Kingdom markets."},
+	"omashu": {"ladder": ["The King and his Consort", "The Courier Guild and the old mountain families", "Valley farmers", "Refugees, who are granted 'stair rights' after a year"],
+		"text": "Omashu promotes by deeds. Anyone who carries a message through a siege has their name carved on the palace stairs, and the stairs are long. The city loves spectacle, argument and its king, roughly in that order. Since the Secession every citizen has been a little bit of a soldier.",
+		"rules": "Omashu troops are hardier and faster but less armoured than Ba Sing Se's. Omashu's walls are among the strongest in the world."},
+	"northern_water": {"ladder": ["The Chief", "The council of elders and noble families", "Masters of waterbending and of healing", "Warriors and hunters (men) — healers (women)", "Fishers and families of the outer canals"],
+		"text": "The North is old, proud and careful. Marriages are arranged between families to bind the council together. Under the Law of the Two Paths, men may learn waterbending as combat and women only as healing — a law written after a famine war nearly took every healer the Tribe had. Some women learn both anyway, at night.",
+		"rules": "Northern women may train only as healers until the Law of the Two Paths changes. Changing it opens the Moon Guard."},
+	"southern_water": {"ladder": ["The Chief, chosen by the council", "The council: every head of household", "Raider-captains and masters", "Everyone else, loudly"],
+		"text": "The South has fewer laws than the North and more arguments. Its council is open to anyone with something to say, and benders of every gender fight. Its raiders defend the seas or commit piracy, depending on whose ship is burning.",
+		"rules": "With Southern relation 15 or Gentry standing you may address the council and sway its votes on war and peace."},
+	"air_nomads": {"ladder": ["Abbots and abbesses", "Masters, marked with blue arrows", "Monks and nuns", "Novices"],
+		"text": "The Nomads have no ranks but age and mastery, and few possessions but their bison. They are vegetarian, will not fight, and shelter anyone who asks. Monks and nuns live in separate temples — a choice of community, not a rule enforced at the gate.",
+		"rules": "Air Temples cannot be attacked. Rest there for free; temple markets sell no meat. Pilgrims on sky bison never fight and will heal your wounded."},
+}
+
 # Culture -> the tier 1 troop a village or town of that culture offers.
 var culture_recruit := {
 	"fire": "fn_conscript", "earth": "ek_peasant", "north": "nwt_hunter",

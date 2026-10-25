@@ -527,6 +527,94 @@ func change_lord_rel(lord_id: String, amount: int) -> void:
 	if lords.has(lord_id):
 		lords[lord_id].relation = clampi(lords[lord_id].relation + amount, -100, 100)
 
+# ---------------------------------------------------------------------------
+# Social standing: who will let you through which gate
+# ---------------------------------------------------------------------------
+const STANDINGS := ["commoner", "citizen", "gentry", "noble"]
+const STANDING_NAMES := {"commoner": "Commoner", "citizen": "Citizen", "gentry": "Gentry", "noble": "Noble"}
+const STANDING_DESC := {
+	"commoner": "Gates close in your face. Ba Sing Se's Lower Ring is open to you; the Middle Ring needs papers.",
+	"citizen": "You hold papers, a trade or a name people know. Ba Sing Se's Middle Ring and the guild halls open to you.",
+	"gentry": "You are received in halls and may duel Fire Nation nobles. Ba Sing Se's Upper Ring opens to you.",
+	"noble": "You hold land in your own right. Kings receive you as a peer, more or less.",
+}
+
+## Effective standing: the higher of what you were born to or bought, and
+## what your deeds have earned.
+func standing_rank() -> int:
+	var r := STANDINGS.find(player.get("standing", "commoner"))
+	if player.renown >= 80:
+		r = maxi(r, 1)
+	if player.renown >= 260 or player.get("status", "") == "vassal":
+		r = maxi(r, 2)
+	for sid in settlements:
+		if settlements[sid].owner == "player" and Data.settlements[sid].type in ["town", "castle"]:
+			r = maxi(r, 3)
+			break
+	return maxi(r, 0)
+
+func standing() -> String:
+	return STANDINGS[standing_rank()]
+
+func standing_name() -> String:
+	return STANDING_NAMES[standing()]
+
+func raise_standing(to: String) -> void:
+	if STANDINGS.find(to) > STANDINGS.find(player.get("standing", "commoner")):
+		player.standing = to
+
+# ---------------------------------------------------------------------------
+# Agni Kai: Fire Nation duels of honour
+# ---------------------------------------------------------------------------
+## A firebending companion who can stand as your champion, or "".
+func agni_kai_champion() -> String:
+	for cid in player.companions:
+		var c: Dictionary = Data.companions.get(cid, {})
+		if c.get("bend", "") == "fire" and not player.get("companion_state", {}).get(cid, {}).get("wounded", false):
+			return cid
+	return ""
+
+func start_duel(lid: String) -> void:
+	pending_battle = {"arena": -1, "duel": lid, "enemies": [], "allies": [], "siege": "", "player_attacking": true,
+		"biome": "volcanic", "hour": 12.0, "fire_mult": bending_mult("fire"), "water_mult": bending_mult("water"),
+		"enemy_garrison": false, "ally_garrison": false}
+	get_tree().change_scene_to_file("res://scenes/battle.tscn")
+
+## A champion fights in your place; resolved by skill rather than played.
+func champion_duel(lid: String, cid: String) -> bool:
+	var c: Dictionary = Data.companions[cid]
+	var l: Dictionary = Data.lords[lid]
+	var mine := float(c.power) * (float(c.skill) / 100.0) * float(c.hp) / 130.0
+	var theirs := float(l.power) * 0.85 * float(l.hp) / 160.0
+	var chance := clampf(0.5 + (mine - theirs) * 0.45, 0.15, 0.85)
+	var won := randf() < chance
+	_duel_outcome(won, lid, Data.companions[cid].get("short", c.name))
+	return won
+
+func finish_duel(won: bool, lid: String, player_hp: float) -> void:
+	player.hp = maxi(1, int(player_hp))
+	_duel_outcome(won, lid, "")
+	pending_battle = {}
+
+func _duel_outcome(won: bool, lid: String, champion: String) -> void:
+	var l: Dictionary = Data.lords[lid]
+	flags["agni_kai_" + lid] = day()
+	var who: String = player.name if champion == "" else champion
+	var lines := []
+	if won:
+		add_renown(20)
+		player.honor = int(player.get("honor", 0)) + 2
+		change_lord_rel(lid, 10)
+		change_faction_rel("fire_nation", 3)
+		lines.append("%s stands over %s in the ring. The witnesses bow; the matter is settled with honour. (+20 renown, +2 honour)" % [who, l.name])
+		log_msg("%s won an Agni Kai against %s." % [who, l.name], Color(1, 0.75, 0.4))
+	else:
+		add_renown(-10)
+		change_lord_rel(lid, 4)
+		lines.append("%s yields to %s. There is no shame in losing an Agni Kai well, the witnesses say. There is some. (-10 renown)" % [who, l.name])
+		log_msg("%s lost an Agni Kai against %s." % [who, l.name], Color(1, 0.6, 0.4))
+	last_battle_result = {"won": won, "lines": lines, "prisoners": [], "goods": {}, "items": []}
+
 func is_king(lid: String) -> bool:
 	return Data.lords.get(lid, {}).get("king", false)
 

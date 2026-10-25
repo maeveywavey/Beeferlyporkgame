@@ -13,9 +13,9 @@ func build() -> void:
 	var status := "Independent"
 	if pl.faction != "":
 		status = "%s of the %s" % [pl.status.capitalize(), Data.factions[pl.faction].name]
-	var info := "[b]%s[/b] — Level %d  (XP %d / %d)\nBending: %s    Status: %s\nHP %d    Chi %d    Renown %d    Honour %d" % [
-		bg.get("name", ""), pl.level, pl.xp, GS.xp_for_level(pl.level), Data.element_name(pl.bend), status,
-		GS.max_hp(), int(GS.max_chi()), pl.renown, pl.get("honor", 0)]
+	var info := "[b]%s[/b] — Level %d  (XP %d / %d)\nBending: %s    Status: %s    Standing: %s\nHP %d    Chi %d    Renown %d    Honour %d\n[i]%s[/i]" % [
+		bg.get("name", ""), pl.level, pl.xp, GS.xp_for_level(pl.level), Data.element_name(pl.bend), status, GS.standing_name(),
+		GS.max_hp(), int(GS.max_chi()), pl.renown, pl.get("honor", 0), GS.STANDING_DESC[GS.standing()]]
 	content.add_child(UI.rich(info, 940))
 	var cols := UI.hbox(30)
 	content.add_child(cols)

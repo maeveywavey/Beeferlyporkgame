@@ -49,6 +49,7 @@ func build() -> void:
 		"hall": _build_hall(opts)
 		"recruit": _build_recruit(opts)
 		"arena": _build_arena(opts)
+		"council": _build_council(opts)
 
 func _go(p: String) -> void:
 	page = p
@@ -98,6 +99,9 @@ func _build_main(o: VBoxContainer) -> void:
 			else:
 				note = UI.color_text("You don't have what was asked for yet.", UI.RED)
 			refresh()))
+	if sid == "ba_sing_se":
+		_build_rings(o)
+		return
 	match d.type:
 		"town":
 			o.add_child(UI.option("Visit the marketplace", func(): _open(_mk("res://scripts/ui/trade_window.gd"))))
@@ -107,6 +111,16 @@ func _build_main(o: VBoxContainer) -> void:
 			o.add_child(UI.option("Speak with the guild master (work)", _ask_work))
 			if sid == "gaoling":
 				o.add_child(UI.option("Visit the Stone Pit", func(): _go("arena")))
+			if sid == "southern_tribe":
+				o.add_child(UI.option("Go to the council hall", func(): _go("council")))
+			if s.faction == "earth_kingdom" and not GS.player.get("permits", {}).has("earth_kingdom"):
+				o.add_child(UI.option("Apply for an Earth Kingdom trade permit (250 gold, needs Citizen standing)", func():
+					GS.add_gold(-250)
+					if not GS.player.has("permits"):
+						GS.player.permits = {}
+					GS.player.permits["earth_kingdom"] = true
+					note = "After four forms, two seals and a clerk who sighs at you, the permit is yours. Earth Kingdom markets will deal with you at better rates."
+					refresh(), GS.player.gold >= 250 and GS.standing_rank() >= 1))
 		"castle":
 			o.add_child(UI.option("Go to the lord's hall", func(): _go("hall")))
 			o.add_child(UI.option("Speak with the castle steward (work)", _ask_work))
@@ -200,6 +214,11 @@ func _raid() -> void:
 		GS.add_good(g, 2 + randi() % 3)
 	GS.player.honor = GS.player.get("honor", 0) - 5
 	GS.change_faction_rel(s.faction, -10)
+	# Mixed Ember Coast villages: burning them angers both nations
+	var kin: String = {"earth": "earth_kingdom", "fire": "fire_nation", "north": "northern_water", "south": "southern_water", "omashu": "omashu"}.get(d.culture, "")
+	if kin != "" and kin != s.faction:
+		GS.change_faction_rel(kin, -6)
+		GS.log_msg("The village's families were %s. Their kin will hear of this." % Data.factions[kin].name, Color(1, 0.5, 0.35))
 	if Data.lords.has(s.owner):
 		GS.change_lord_rel(s.owner, -15)
 	GS.log_msg("You raided %s, taking %d gold and supplies." % [d.name, gold], Color(1, 0.6, 0.3))
@@ -264,6 +283,113 @@ func _build_ruin(o: VBoxContainer) -> void:
 	else:
 		o.add_child(UI.rich("You have already explored this place.", 740))
 	o.add_child(UI.option("Leave", close))
+
+# ---------------------------------------------------------------------------
+# Ba Sing Se: three rings, three sets of gates, one Dai Li
+# ---------------------------------------------------------------------------
+func _ring_access(ring: String) -> bool:
+	match ring:
+		"middle": return GS.standing_rank() >= 1 or GS.player.get("permits", {}).has("middle_ring")
+		"upper": return GS.standing_rank() >= 2 or GS.flags.get("upper_invite", false) or GS.lords.get("hualing", {}).get("relation", 0) >= 10
+	return true
+
+func _build_rings(o: VBoxContainer) -> void:
+	var s: Dictionary = GS.settlements[sid]
+	o.add_child(UI.rich("[b]The Lower Ring[/b] — refugees, labourers and the smell of a million cooking fires. Nobody here asks for papers.", 740))
+	o.add_child(UI.option("Go to a Lower Ring tavern", func(): _go("tavern")))
+	o.add_child(UI.option("Visit the labour hall (recruit Lower Ring volunteers: %d)" % s.volunteers, func(): _go("recruit"), s.volunteers > 0))
+	o.add_child(UI.option("Rest in a Lower Ring boarding house (a day)", _rest.bind(24.0)))
+	o.add_child(UI.spacer(4))
+	if _ring_access("middle"):
+		o.add_child(UI.rich("[b]The Middle Ring[/b] — merchants, scholars and the civil examination halls. The gate guard checks your papers and waves you through.", 740))
+		o.add_child(UI.option("Visit the Middle Ring market", func(): _open(_mk("res://scripts/ui/trade_window.gd"))))
+		o.add_child(UI.option("Speak with the merchants' guild (work)", _ask_work))
+		if not GS.player.get("permits", {}).has("earth_kingdom"):
+			o.add_child(UI.option("Apply for an Earth Kingdom trade permit (250 gold)", func():
+				GS.add_gold(-250)
+				if not GS.player.has("permits"):
+					GS.player.permits = {}
+				GS.player.permits["earth_kingdom"] = true
+				note = "Four forms, two seals and one sighing clerk later, the permit is yours."
+				refresh(), GS.player.gold >= 250))
+	else:
+		o.add_child(UI.rich("[b]The Middle Ring gate[/b] — a guard holds out a hand for papers you do not have.", 740))
+		o.add_child(UI.option("Buy Middle Ring travel papers (300 gold)", func():
+			GS.add_gold(-300)
+			if not GS.player.has("permits"):
+				GS.player.permits = {}
+			GS.player.permits["middle_ring"] = true
+			note = "The clerk stamps your papers with the patience of a man who has stamped a hundred thousand of them. You may pass the Middle Ring gate."
+			refresh(), GS.player.gold >= 300))
+		o.add_child(UI.option("Bribe the gate guard (60 gold — the Dai Li may notice)", _bribe_gate))
+	o.add_child(UI.spacer(4))
+	if _ring_access("upper"):
+		o.add_child(UI.rich("[b]The Upper Ring[/b] — gardens, silent streets and the palace. Servants bow to you as if you belong here.", 740))
+		o.add_child(UI.option("Visit the Upper Ring armourers", func(): _open(_mk("res://scripts/ui/shop_window.gd")), s.looted_until < GS.hours))
+		o.add_child(UI.option("Request an audience at the palace", func(): _go("hall")))
+	else:
+		o.add_child(UI.rich("[b]The Upper Ring[/b] is closed to you. [i](Requires Gentry standing or an invitation. You are %s.)[/i]" % GS.standing_name(), 740))
+	if s.owner == "player":
+		o.add_child(UI.option("Manage the garrison", func(): _open(_mk("res://scripts/ui/garrison_window.gd"))))
+	o.add_child(UI.option("Leave the city", close))
+
+func _bribe_gate() -> void:
+	if GS.player.gold < 60:
+		note = UI.color_text("You can't afford it.", UI.RED)
+	elif randf() < 0.25:
+		GS.add_gold(-60)
+		GS.change_faction_rel("earth_kingdom", -5)
+		GS.change_lord_rel("shu_fan", -5)
+		note = "The guard takes your coin, and a man in a long green robe takes your name. You are escorted back to the Lower Ring without a word. (Dai Li: -5)"
+	else:
+		GS.add_gold(-60)
+		GS.flags["bsse_pass_day"] = GS.day()
+		note = "The coin disappears into a sleeve. The guard looks at the sky while you walk past him."
+		if not GS.player.has("permits"):
+			GS.player.permits = {}
+		GS.player.permits["middle_ring"] = true
+	refresh()
+
+# ---------------------------------------------------------------------------
+# The Southern council: anyone may speak; few are listened to
+# ---------------------------------------------------------------------------
+func _build_council(o: VBoxContainer) -> void:
+	var rel := int(GS.player.get("faction_rel", {}).get("southern_water", 0))
+	o.add_child(UI.rich("The council hall is a ring of whalebone benches around a fire. Chief Siqiniq sits on the same bench as everyone else. Elder Malik is speaking, slowly; Raider-Captain Qannik is interrupting him, quickly.", 740))
+	var last := int(GS.flags.get("council_day", -999))
+	if rel < 15 and GS.standing_rank() < 2:
+		o.add_child(UI.rich("[i]You may sit and listen, but the council will not hear a stranger's motion. (Needs Southern relation 15 or Gentry standing.)[/i]", 740))
+	elif GS.day() - last < 30:
+		o.add_child(UI.rich("[i]You spoke here recently. The council is still arguing about the last thing you said.[/i]", 740))
+	else:
+		for k in Data.KINGDOMS:
+			if k == "southern_water":
+				continue
+			if GS.at_war("southern_water", k):
+				o.add_child(UI.option("Argue for peace with the %s" % Data.factions[k].name, _council_motion.bind(k, "peace")))
+			elif k == "fire_nation" or GS.at_war(k, GS.player_faction()):
+				o.add_child(UI.option("Argue for war against the %s" % Data.factions[k].name, _council_motion.bind(k, "war")))
+	o.add_child(UI.option("Back", func(): _go("main")))
+
+func _council_motion(k: String, motion: String) -> void:
+	GS.flags.council_day = GS.day()
+	var rel := float(GS.player.get("faction_rel", {}).get("southern_water", 0))
+	var chance := clampf(0.2 + GS.player.attrs.cha * 0.03 + GS.skill("leadership") * 0.03 + rel / 250.0 + GS.player.renown / 2500.0, 0.05, 0.85)
+	if randf() < chance:
+		if motion == "peace":
+			GS.make_peace("southern_water", k)
+			GS.change_lord_rel("malik", 10)
+			GS.change_lord_rel("qannik", -15)
+			note = "The vote is close, and Qannik walks out before it is counted. The South sends envoys to the %s. Elder Malik catches your sleeve on the way out: \"Thank you. That was the easy part.\"" % Data.factions[k].name
+		else:
+			GS.declare_war("southern_water", k)
+			GS.change_lord_rel("qannik", 10)
+			GS.change_lord_rel("malik", -10)
+			note = "The hall roars. Qannik claps you on the back hard enough to bruise. Elder Malik does not look at you."
+		GS.add_renown(10)
+	else:
+		note = "You speak well, and the council listens politely, and then votes the other way. Chief Siqiniq gives you a small nod: not today."
+	refresh()
 
 func _build_temple(o: VBoxContainer) -> void:
 	var d: Dictionary = Data.settlements[sid]

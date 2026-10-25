@@ -460,6 +460,8 @@ func _daily_settlements() -> void:
 			if not looted and randf() < 0.2 and d.has("bound"):
 				spawn_villagers(sid)
 		elif s.owner != "player":
+			if sid == "ba_sing_se" and s.volunteers < 12 and randf() < 0.7:
+				s.volunteers += 1   # the Lower Ring always has hungry hands
 			var cap := 260 if d.type == "town" else 150
 			if Roster.total(s.garrison) < cap:
 				var tree: Array = GS.culture_tree(_faction_culture(s.faction, d.culture))

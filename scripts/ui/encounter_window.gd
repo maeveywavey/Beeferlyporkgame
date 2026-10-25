@@ -195,6 +195,10 @@ func _build_lord_talk(p: Dictionary) -> void:
 	content.add_child(UI.spacer(4))
 	var pl: Dictionary = GS.player
 	var faction: String = p.faction
+	# A Fire Nation noble you have offended may demand satisfaction
+	if _agni_kai_possible(lid) and lr.relation <= -25 and GS.standing_rank() >= 2 and not GS.flags.has("agni_kai_" + lid):
+		_build_agni_kai_challenge(p, lid, true)
+		return
 	if pl.faction == "":
 		var is_king: bool = GS.is_king(lid)
 		if pl.renown >= 150 and is_king and lr.relation >= -5:
@@ -225,11 +229,63 @@ func _build_lord_talk(p: Dictionary) -> void:
 			content.add_child(UI.option("Not now.", func():
 				page = "talk"
 				refresh()))))
+	content.add_child(UI.option("Tell me about yourself.", func():
+		note = "[i]%s[/i]" % ld.get("bio", "")
+		page = "talk"
+		refresh()))
+	if _agni_kai_possible(lid) and GS.day() - int(GS.flags.get("agni_kai_" + lid, -999)) > 30:
+		if GS.standing_rank() >= 2:
+			content.add_child(UI.option("I challenge you to an Agni Kai.", _build_agni_kai_challenge.bind(p, lid, false)))
+		else:
+			content.add_child(UI.rich("[i](A Fire Nation noble will only accept an Agni Kai from someone of Gentry standing or higher. You are %s.)[/i]" % GS.standing_name(), 700))
 	content.add_child(UI.option("What news of the war?", func():
 		note = Data.rumors.pick_random()
 		page = "talk"
 		refresh()))
 	content.add_child(UI.option("Farewell.", _leave.bind(p)))
+
+## Agni Kai are fought between firebenders; a non-bender needs a champion.
+func _agni_kai_possible(lid: String) -> bool:
+	var ld: Dictionary = Data.lords[lid]
+	if ld.faction != "fire_nation" or ld.bend != "fire" or GS.is_king(lid):
+		return false
+	return GS.player.bend == "fire" or GS.agni_kai_champion() != ""
+
+func _build_agni_kai_challenge(p: Dictionary, lid: String, they_challenge: bool) -> void:
+	var ld: Dictionary = Data.lords[lid]
+	UI.clear(content)
+	if they_challenge:
+		content.add_child(UI.rich("[b]%s:[/b] \"You have insulted my house once too often. I demand an Agni Kai — at noon, before witnesses. Unless you are a coward.\"" % ld.name, 700))
+	else:
+		content.add_child(UI.rich("[b]%s:[/b] \"An Agni Kai? Very well. At noon, before witnesses. Fire decides, and the matter is closed whatever it decides.\"" % ld.name, 700))
+	if GS.player.bend == "fire":
+		content.add_child(UI.option("Fight the Agni Kai yourself", func():
+			GS.player.inside = ""
+			GS.start_duel(lid), GS.player.hp > GS.max_hp() * 0.4))
+		if GS.player.hp <= GS.max_hp() * 0.4:
+			content.add_child(UI.rich(UI.color_text("You are too badly hurt to fight a duel.", UI.RED), 700))
+	var champ := GS.agni_kai_champion()
+	if champ != "":
+		var cname: String = Data.companions[champ].get("short", Data.companions[champ].name)
+		content.add_child(UI.option("Name %s as your champion" % cname, func():
+			var won := GS.champion_duel(lid, champ)
+			note = GS.last_battle_result.lines[0]
+			GS.last_battle_result = {}
+			if not won:
+				GS.companion_state(champ).wounded = true
+			page = "talk"
+			refresh()))
+	content.add_child(UI.option("Refuse" + (" (dishonourable)" if they_challenge else ""), func():
+		if they_challenge:
+			GS.flags["agni_kai_" + lid] = GS.day()
+			GS.player.honor = int(GS.player.get("honor", 0)) - 2
+			GS.add_renown(-5)
+			GS.change_faction_rel("fire_nation", -3)
+			note = "%s turns away in contempt. Word of your refusal will travel through every noble house in Caldera. (-2 honour)" % ld.name
+		else:
+			note = "\"Then do not waste my time with challenges.\""
+		page = "talk"
+		refresh()))
 
 func _mercenary(lid: String) -> void:
 	var f: String = Data.lords[lid].faction
@@ -262,6 +318,7 @@ func _pledge(lid: String) -> void:
 		if GS.settlements[sid].faction == "player":
 			GS.settlements[sid].faction = f
 	GS.add_renown(10)
+	GS.raise_standing("gentry")
 	GS.log_msg("You swore fealty to %s. You are now a vassal of the %s." % [Data.lords[lid].name, Data.factions[f].name], Color(1, 0.9, 0.4))
 	note = "\"Rise, %s. Serve me well.\"" % GS.player.name
 	refresh()

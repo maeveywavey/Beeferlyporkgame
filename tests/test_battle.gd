@@ -1,5 +1,5 @@
 extends Node
-## Runs battles headlessly. Args after "--": [field|siege|bend] [element]
+## Runs battles headlessly. Args after "--": [field|siege|arena|duel|big|bend] [element]
 const Roster = preload("res://scripts/core/roster.gd")
 var B
 var mode := "field"
@@ -43,6 +43,9 @@ func _ready() -> void:
 		"hour": 21.0, "fire_mult": 0.85, "water_mult": 1.5, "enemy_garrison": mode == "siege", "ally_garrison": false}
 	if mode == "arena":
 		GS.start_arena(0)
+		return
+	if mode == "duel":
+		GS.start_duel("daisuke")
 		return
 	get_tree().change_scene_to_file("res://scenes/battle.tscn")
 	if mode == "bend":

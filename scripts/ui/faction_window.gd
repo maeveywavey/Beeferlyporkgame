@@ -5,6 +5,7 @@ const Roster = preload("res://scripts/core/roster.gd")
 
 var map
 var selected := "fire_nation"
+var show_society := false
 
 func _init() -> void:
 	window_size = Vector2(1100, 680)
@@ -13,7 +14,7 @@ func build() -> void:
 	set_title("Nations of the World")
 	var tabs := UI.hbox()
 	content.add_child(tabs)
-	for f in Data.KINGDOMS + ["player"]:
+	for f in Data.KINGDOMS + ["air_nomads", "player"]:
 		if f == "player" and GS.faction_settlements("player").is_empty():
 			continue
 		var b := UI.button(Data.factions[f].short, func():
@@ -37,6 +38,24 @@ func build() -> void:
 	if not camp.is_empty():
 		txt += "\nCurrently campaigning against: %s" % Data.settlements[camp.target].name
 	content.add_child(UI.rich(txt, 1040))
+	var soc: Dictionary = Data.societies.get(selected, {})
+	if not soc.is_empty():
+		content.add_child(UI.button("Show lords and lands" if show_society else "How this people lives", func():
+			show_society = not show_society
+			refresh(), 260))
+	if show_society and not soc.is_empty():
+		var sc0 := UI.scroll(400)
+		content.add_child(sc0)
+		var stxt := "[b]Society[/b]\n%s\n\n[b]Order of precedence[/b]\n" % soc.text
+		for i in soc.ladder.size():
+			stxt += "%d. %s\n" % [i + 1, soc.ladder[i]]
+		stxt += "\n[b]What this means for you[/b]\n%s\n\nYour standing: [b]%s[/b] — %s" % [soc.rules, GS.standing_name(), GS.STANDING_DESC[GS.standing()]]
+		sc0.add_child(UI.rich(stxt, 1020))
+		var b0 := UI.hbox()
+		content.add_child(b0)
+		b0.add_child(UI.expand())
+		b0.add_child(UI.button("Done", close, 120))
+		return
 	var cols := UI.hbox(20)
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(cols)
@@ -60,7 +79,10 @@ func build() -> void:
 			where = "near " + GS.sim._nearest_settlement_name(p.pos)
 			if p.get("besieging", "") != "":
 				where = "besieging " + Data.settlements[p.besieging].name
-		ll.add_child(UI.label("%s — %d troops, %s (relation %d)" % [Data.lords[lid].name, troops, where, lr.relation], 15))
+		var ll_l := UI.label("%s — %d troops, %s (relation %d)" % [Data.lords[lid].name, troops, where, lr.relation], 15)
+		ll_l.tooltip_text = Data.lords[lid].get("bio", "")
+		ll_l.mouse_filter = Control.MOUSE_FILTER_PASS
+		ll.add_child(ll_l)
 	# Lands
 	var right := UI.vbox(3)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL

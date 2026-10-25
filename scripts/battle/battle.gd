@@ -37,6 +37,7 @@ var obstacles: Array = []
 var walls: Array = []
 var siege := ""
 var arena := -1
+var duel := ""          # lord id for an Agni Kai
 var wall_z := 0.0
 var breach_half := 6.0
 var heights := PackedFloat32Array()
@@ -88,12 +89,13 @@ func _ready() -> void:
 	hour = b.get("hour", 12.0)
 	siege = b.get("siege", "")
 	arena = b.get("arena", -1)
+	duel = b.get("duel", "")
 	if siege != "":
 		wall_z = 28.0 if b.player_attacking else -28.0
 	_build_heights()
 	_build_environment()
 	_build_ground()
-	if arena >= 0:
+	if arena >= 0 or duel != "":
 		_build_arena()
 	else:
 		_build_props()
@@ -104,7 +106,9 @@ func _ready() -> void:
 	cam.fov = 70.0
 	cam.far = 600.0
 	add_child(cam)
-	if arena >= 0:
+	if duel != "":
+		_spawn_duel()
+	elif arena >= 0:
 		_spawn_arena()
 	else:
 		_prepare_sides(b)
@@ -164,7 +168,7 @@ func _build_heights() -> void:
 			var x := gx - HALF
 			var z := gz - HALF
 			var h := n.get_noise_2d(x, z) * amp
-			if arena >= 0:
+			if arena >= 0 or duel != "":
 				h = 0.0 if Vector2(x, z).length() < 16.0 else minf(6.0, (Vector2(x, z).length() - 16.0) * 0.8)
 			# keep spawn areas smoother
 			var edge := clampf((absf(z) - 40.0) / 20.0, 0.0, 1.0)
@@ -438,6 +442,14 @@ func _spawn_arena() -> void:
 	units.append(u)
 	team_units[1].append(u)
 	feed_msg("Madam Gu: \"In this corner... %s!\"" % Data.arena_fighters[arena].name, Color(1, 0.85, 0.4))
+
+## Agni Kai: the player and a Fire Nation lord face each other alone.
+func _spawn_duel() -> void:
+	reserves = [[], []]
+	active_cap = [1, 1]
+	_spawn_entry({"kind": "player", "id": "player", "key": "player"}, 0, Vector3(0, 0, -9), 0.0)
+	var u = _spawn_entry({"kind": "lord", "id": duel, "key": "duel"}, 1, Vector3(0, 0, 9), PI)
+	feed_msg("Agni Kai! %s bows, then drops into a fighting stance." % Data.lords[duel].name, Color(1, 0.7, 0.35))
 
 func _build_siege_walls() -> void:
 	var culture: String = Data.settlements[siege].culture
@@ -1099,7 +1111,7 @@ func on_unit_down(u, killer, dtype: String) -> void:
 	if u.is_player:
 		player_downed = true
 		player_controlled = false
-		if arena >= 0 and not battle_over:
+		if (arena >= 0 or duel != "") and not battle_over:
 			battle_over = true
 			winner = 1
 			big_label.text = "DEFEAT\nPress Tab to continue"
@@ -1157,7 +1169,9 @@ func _finish(retreat: bool) -> void:
 	if autotest:
 		print("avg physics frame: %.2f ms over %d frames, units %d" % [_prof_us / 1000.0 / maxf(1, _prof_n), _prof_n, units.size()])
 		print("BATTLE RESULT winner=", winner, " casualties=", casualties, " player_downed=", player_downed)
-	if arena >= 0:
+	if duel != "":
+		GS.finish_duel(winner == 0 and not retreat, duel, player_unit.hp if player_unit != null else 1.0)
+	elif arena >= 0:
 		GS.finish_arena(winner == 0 and not retreat, arena, player_unit.hp if player_unit != null else 1.0)
 	elif retreat:
 		GS.retreat_battle(casualties, companions_down)

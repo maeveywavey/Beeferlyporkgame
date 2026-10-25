@@ -74,14 +74,18 @@ static func market_goods(sid: String) -> Array:
 		return tg
 	return []
 
+## A trade permit for the market's nation narrows the spread.
+static func _permit_bonus(sid: String) -> float:
+	return 0.05 if GS.player.get("permits", {}).has(GS.settlements[sid].faction) else 0.0
+
 static func buy_price(sid: String, good: String) -> int:
 	var m: float = GS.settlements[sid].prices.get(good, 1.0)
-	var spread := 1.08 - GS.skill("trade") * 0.008
+	var spread := 1.08 - GS.skill("trade") * 0.008 - _permit_bonus(sid)
 	return maxi(1, int(round(Data.goods[good].price * m * spread)))
 
 static func sell_price(sid: String, good: String) -> int:
 	var m: float = GS.settlements[sid].prices.get(good, 1.0)
-	var spread := 0.88 + GS.skill("trade") * 0.01
+	var spread := 0.88 + GS.skill("trade") * 0.01 + _permit_bonus(sid)
 	return maxi(1, int(round(Data.goods[good].price * m * spread)))
 
 static func buy(sid: String, good: String) -> bool:
@@ -116,6 +120,11 @@ static func shop_items(sid: String) -> Array:
 		s.shop = pool.slice(0, n)
 		if sid == "fire_fountain" and randf() < 0.5:
 			s.shop.append("space_sword")
+		if sid == "ba_sing_se":
+			# the Upper Ring's armourers stock what the royal guard wears
+			for it in ["ek_royal", "guan_dao", "hook_swords"]:
+				if not s.shop.has(it):
+					s.shop.append(it)
 		s.shop_day = GS.day()
 	return s.shop
 
