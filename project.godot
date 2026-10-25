@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 Data="*res://scripts/autoload/game_data.gd"
 GS="*res://scripts/autoload/game_state.gd"
 Sfx="*res://scripts/autoload/sfx.gd"
+Music="*res://scripts/autoload/music.gd"
 
 [display]
 

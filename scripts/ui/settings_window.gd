@@ -69,6 +69,17 @@ func build() -> void:
 		GS.settings.volume = v
 		GS.apply_settings())
 	g.add_child(vol)
+	g.add_child(UI.label("Music volume"))
+	var mv := HSlider.new()
+	mv.min_value = 0.0
+	mv.max_value = 1.0
+	mv.step = 0.05
+	mv.value = GS.settings.get("music", 0.5)
+	mv.custom_minimum_size.x = 220
+	mv.value_changed.connect(func(v):
+		GS.settings.music = v
+		GS.apply_settings())
+	g.add_child(mv)
 	content.add_child(UI.spacer(20))
 	var b := UI.hbox()
 	content.add_child(b)

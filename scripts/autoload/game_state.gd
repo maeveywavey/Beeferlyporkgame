@@ -63,7 +63,7 @@ var game_active := false
 
 var settings := {
 	"battle_size": 80, "difficulty": 1, "auto_block": true, "mouse_sens": 0.25,
-	"invert_y": false, "volume": 0.7, "fullscreen": false,
+	"invert_y": false, "volume": 0.7, "music": 0.5, "fullscreen": false,
 }
 
 var sim
@@ -125,6 +125,9 @@ func save_settings() -> void:
 func apply_settings() -> void:
 	var bus := AudioServer.get_bus_index("Master")
 	AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(0.001, float(settings.volume))))
+	var music := get_node_or_null("/root/Music")
+	if music:
+		music.apply_volume()
 	if DisplayServer.get_name() != "headless":
 		var want := DisplayServer.WINDOW_MODE_FULLSCREEN if settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 		if DisplayServer.window_get_mode() != want and not (want == DisplayServer.WINDOW_MODE_WINDOWED and DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MAXIMIZED):

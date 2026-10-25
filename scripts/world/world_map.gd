@@ -56,6 +56,7 @@ func _ready() -> void:
 	if not GS.game_active:
 		get_tree().change_scene_to_file.call_deferred("res://scenes/main_menu.tscn")
 		return
+	Music.play("map")
 	_build_environment()
 	MapBuilder.build_terrain(self)
 	_build_settlements()
@@ -526,7 +527,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
 			cam_dist = maxf(25.0, cam_dist * 0.88)
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
-			cam_dist = minf(700.0, cam_dist * 1.14)
+			cam_dist = minf(950.0, cam_dist * 1.14)
 		elif mb.button_index == MOUSE_BUTTON_MIDDLE or mb.button_index == MOUSE_BUTTON_RIGHT:
 			_dragging = mb.pressed
 			_drag_last = mb.position
@@ -549,6 +550,14 @@ func _unhandled_input(event: InputEvent) -> void:
 				GS.player_party().target_party = ""
 			KEY_F, KEY_HOME:
 				follow_player = true
+			KEY_M:
+				if cam_dist < 500.0:
+					cam_dist = 900.0
+					follow_player = false
+					cam_target = Vector3(Data.MAP_W / 2.0, 0, Data.MAP_H / 2.0 + 60.0)
+				else:
+					cam_dist = 90.0
+					follow_player = true
 			KEY_T: _open_camp()
 			KEY_P: _open_party()
 			KEY_C: _open_character()

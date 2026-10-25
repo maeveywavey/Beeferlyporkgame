@@ -2,7 +2,7 @@
 
 A Mount & Blade–style sandbox set in the world of *Avatar: The Last Airbender* (original series), built in **Godot 4.3**. You raise an army, trade, take quests, serve or betray kingdoms, besiege cities and fight real-time 3D battles with swords, bows and bending, all during the last year of the Hundred Year War.
 
-Everything is generated in code from primitives: there are no art or audio files to import, and the sound effects are synthesised at startup.
+Everything is generated in code from primitives: there are no art or audio files to import. Sound effects are synthesised at startup, and the background music is generated live: plucked-string pentatonic melodies on the map and taiko drums in battle.
 
 ## Running the game
 
@@ -23,6 +23,7 @@ The project uses the *Compatibility* (OpenGL) renderer, so it runs on modest lap
 | Mouse wheel | Zoom |
 | Right-drag | Rotate the camera |
 | Middle-drag / WASD | Pan the camera (F re-centres on your party) |
+| M | Toggle the whole-world overview |
 | Space | Stop |
 | Hold Ctrl or press `>>` | Fast travel (×4) |
 | T / Esc | Camp menu (wait, save, load, settings) |
@@ -103,6 +104,7 @@ scripts/autoload/
                             settlements, map shape, story events, arena fighters
   game_state.gd             runtime state, calendar, player helpers, battle handoff, save/load
   sfx.gd                    procedural sound effects
+  music.gd                  generative background music
 scripts/core/
   world_sim.gd              world AI: movement, lords, bandits, caravans, sieges,
                             campaigns, story events, diplomacy, daily/weekly upkeep

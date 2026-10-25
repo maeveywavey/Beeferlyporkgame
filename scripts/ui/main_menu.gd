@@ -18,6 +18,7 @@ const SKINS := [Color(0.96, 0.84, 0.72), Color(0.87, 0.7, 0.55), Color(0.72, 0.5
 const HAIRS := [Color(0.08, 0.06, 0.05), Color(0.3, 0.18, 0.1), Color(0.55, 0.35, 0.18), Color(0.75, 0.75, 0.75)]
 
 func _ready() -> void:
+	Music.play("map")
 	theme = UI.theme()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := ColorRect.new()

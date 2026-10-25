@@ -75,6 +75,7 @@ var paused := false
 # Setup
 # ---------------------------------------------------------------------------
 func _ready() -> void:
+	Music.play("battle")
 	Engine.time_scale = 1.0
 	if GS.pending_battle.is_empty():
 		_debug_setup()
