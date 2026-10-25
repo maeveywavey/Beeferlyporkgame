@@ -63,7 +63,7 @@ var game_active := false
 
 var settings := {
 	"battle_size": 80, "difficulty": 1, "auto_block": true, "mouse_sens": 0.25,
-	"invert_y": false, "volume": 0.7,
+	"invert_y": false, "volume": 0.7, "fullscreen": false,
 }
 
 var sim
@@ -125,6 +125,19 @@ func save_settings() -> void:
 func apply_settings() -> void:
 	var bus := AudioServer.get_bus_index("Master")
 	AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(0.001, float(settings.volume))))
+	if DisplayServer.get_name() != "headless":
+		var want := DisplayServer.WINDOW_MODE_FULLSCREEN if settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
+		if DisplayServer.window_get_mode() != want and not (want == DisplayServer.WINDOW_MODE_WINDOWED and DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MAXIMIZED):
+			DisplayServer.window_set_mode(want)
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F11:
+		settings.fullscreen = not settings.fullscreen
+		save_settings()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and game_active and pending_battle.is_empty():
+		save_game(AUTOSAVE_PATH)
 
 # ---------------------------------------------------------------------------
 # Character creation
@@ -486,7 +499,7 @@ func skill_cap(name: String) -> int:
 	return int(player.attrs[SKILL_ATTR[name]] / 2)
 
 func max_hp() -> int:
-	return 35 + player.attrs.str * 2 + player.skills.ironflesh * 4 + player.level
+	return 50 + player.attrs.str * 2 + player.skills.ironflesh * 4 + player.level * 2
 
 func max_chi() -> float:
 	return 60.0 + player.attrs.int * 3.0 + player.skills.bending * 8.0
@@ -590,6 +603,7 @@ func companion_state(id: String) -> Dictionary:
 ## `ally_ids` additional friendly parties. `siege` is a settlement id when
 ## assaulting or defending walls.
 func start_battle(enemy_ids: Array, ally_ids: Array = [], siege: String = "", player_attacking: bool = true) -> void:
+	save_game(AUTOSAVE_PATH)
 	var pp := player_party()
 	var biome: String = sim.biome_at(pp.pos)
 	pending_battle = {
@@ -772,6 +786,10 @@ func _player_defeated(b: Dictionary) -> void:
 		if not att.is_empty() and parties.has(att[0]):
 			sim.capture_settlement(b.siege, parties[att[0]].faction, parties[att[0]].lord)
 	player.captive_until = hours + 24.0 + randf() * 48.0
+	for pid in b.get("enemies", []):
+		if parties.has(pid):
+			parties[pid].target_party = ""
+			parties[pid].ignore_player_until = player.captive_until + 12.0
 	log_msg("You were defeated and taken captive. You lost %d gold and %d troops." % [lost_gold, lost], Color(1, 0.4, 0.3))
 
 ## Auto-resolve from the encounter menu (player not fighting personally).

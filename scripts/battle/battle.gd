@@ -173,9 +173,9 @@ func _build_heights() -> void:
 			if siege != "":
 				var dz := (z - wall_z) * signf(wall_z)
 				if dz > 1.0 and dz < 5.0:
-					h = 2.6
-				elif dz >= 5.0 and dz < 8.0:
-					h = lerpf(2.6, h, (dz - 5.0) / 3.0)
+					h = 3.0
+				elif dz >= 5.0 and dz < 9.0:
+					h = lerpf(3.0, h, (dz - 5.0) / 4.0)
 				elif absf(dz) <= 1.0:
 					h = maxf(h, 0.0)
 			heights[gz * GRID + gx] = h
@@ -239,6 +239,7 @@ func _build_ground() -> void:
 	var m := StandardMaterial3D.new()
 	m.vertex_color_use_as_albedo = true
 	m.roughness = 1.0
+	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	mi.material_override = m
 	add_child(mi)
 	# Distant backdrop ring
@@ -246,7 +247,7 @@ func _build_ground() -> void:
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(900, 900)
 	far.mesh = pm
-	far.position = Vector3(0, 3.5, 0)
+	far.position = Vector3(0, -6.0, 0)
 	far.material_override = MB.mat(base.darkened(0.15))
 	add_child(far)
 	var rng := RandomNumberGenerator.new()
@@ -300,7 +301,8 @@ func _build_environment() -> void:
 	sun.light_color = Color(0.65, 0.72, 1.0) if daylight < 0.05 else Color(1, 0.95, 0.88)
 	if fire_mult > 2.0:
 		sun.light_color = Color(1.0, 0.6, 0.4)
-	sun.shadow_enabled = true
+	# Real-time shadows over-brighten the Compatibility renderer; units use blob shadows instead.
+	sun.shadow_enabled = false
 	sun.directional_shadow_max_distance = 60.0
 	add_child(sun)
 	_build_weather()
@@ -309,7 +311,7 @@ func _build_weather() -> void:
 	var kind := ""
 	if biome == "snow":
 		kind = "snow"
-	elif biome in ["swamp", "forest", "grass"] and randf() < 0.25:
+	elif biome in ["swamp", "forest", "grass"] and randf() < 0.25 and not OS.has_environment("NO_WEATHER"):
 		kind = "rain"
 	elif biome == "desert" and randf() < 0.3:
 		kind = "dust"
@@ -451,7 +453,7 @@ func _build_siege_walls() -> void:
 		for i in n:
 			if i % 2 == 0:
 				add_child(MB.box(Vector3(1.0, 0.8, thick * 0.6), wc, Vector3(x0 + side * (i * 2.0 + 1.0), h - 0.6, wall_z - signf(wall_z) * thick * 0.2)))
-		walls.append({"c": Vector2(cx, wall_z), "axis": Vector2(1, 0), "hl": length / 2.0, "ht": thick / 2.0, "h": h - 1.0, "until": INF, "node": seg})
+		walls.append({"c": Vector2(cx, wall_z), "axis": Vector2(1, 0), "hl": length / 2.0, "ht": thick / 2.0, "h": 3.6, "until": INF, "node": seg})
 		# tower at the breach
 		var tower := MB.box(Vector3(3.5, h + 2.5, 3.5), wc.darkened(0.1), Vector3(x0 + side * 1.8, (h + 2.5) / 2.0 - 1.0, wall_z))
 		add_child(tower)
@@ -583,7 +585,7 @@ func _spawn_wave(team: int, count: int) -> void:
 		var x := (col - (n_in_row - 1) / 2.0) * spacing
 		var pos := Vector3(x, 0, z + dirz * (6.0 - row * 1.8))
 		if front[i].kind == "player":
-			pos = Vector3(0, 0, z + dirz * 2.0)
+			pos = Vector3(0, 0, z + dirz * 9.0)
 		_spawn_entry(front[i], team, pos, face)
 	for i in rng_units.size():
 		var row2 := int(i / per_row)

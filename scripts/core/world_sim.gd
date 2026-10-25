@@ -312,6 +312,8 @@ func _daily() -> void:
 	_daily_campaigns()
 	_daily_player()
 	Quests.daily()
+	if GS.day() % 3 == 0 and GS.game_active:
+		GS.save_game(GS.AUTOSAVE_PATH)
 	if GS.day() % 3 == 0:
 		for sid in GS.settlements:
 			if randf() < 0.3:

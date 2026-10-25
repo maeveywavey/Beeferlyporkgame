@@ -229,7 +229,7 @@ func _finish_setup(look: Dictionary, skin: Color, hair: Color) -> void:
 func add_ally_marker() -> void:
 	var m := MeshInstance3D.new()
 	var pm := PrismMesh.new()
-	pm.size = Vector3(0.25, 0.25, 0.05)
+	pm.size = Vector3(0.16, 0.16, 0.04)
 	m.mesh = pm
 	m.rotation_degrees.z = 180
 	var mat := StandardMaterial3D.new()
@@ -631,7 +631,8 @@ func _ai_bend(dist: float) -> Vector3:
 	# Specials
 	if can_bend("r") and (is_hero or bend_power >= 1.6) and randf() < 0.02:
 		var r := Bending.ability(bend, "r")
-		if r.kind == "lightning" and dist < r.range and dist > 6.0:
+		# Only great masters (lords and heroes) can generate lightning
+		if r.kind == "lightning" and is_hero and lord_id != "" and bend_power >= 2.5 and dist < r.range and dist > 6.0:
 			cast("r", target.chest())
 			return Vector3.ZERO
 		if r.kind == "quake" and battle.enemies_near(self, r.range) >= 3:

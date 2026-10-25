@@ -94,6 +94,12 @@ func _ready() -> void:
 			GS.pending_battle = {"enemies": [e.id], "allies": [], "siege": sg, "player_attacking": true, "biome": "grass",
 				"hour": 15.0, "fire_mult": 1.15, "water_mult": 0.95, "enemy_garrison": mode == "siege", "ally_garrison": false}
 			get_tree().change_scene_to_file.call_deferred("res://scenes/battle.tscn")
+			if mode == "siege":
+				get_tree().create_timer(1.0).timeout.connect(func():
+					var b = Engine.get_main_loop().current_scene
+					b.cam_pitch = -0.45
+					b.cam_dist = 12.0
+					b.player_unit.position = Vector3(8, b.ground_height(8, 5), 5))
 	var sn = load("res://tests/snapper.gd").new()
 	sn.out = out
 	sn.secs = secs

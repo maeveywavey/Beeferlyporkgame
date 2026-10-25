@@ -51,6 +51,13 @@ func build() -> void:
 	iy.button_pressed = GS.settings.invert_y
 	iy.toggled.connect(func(v): GS.settings.invert_y = v)
 	g.add_child(iy)
+	g.add_child(UI.label("Fullscreen (F11)"))
+	var fs := CheckBox.new()
+	fs.button_pressed = GS.settings.fullscreen
+	fs.toggled.connect(func(v):
+		GS.settings.fullscreen = v
+		GS.apply_settings())
+	g.add_child(fs)
 	g.add_child(UI.label("Volume"))
 	var vol := HSlider.new()
 	vol.min_value = 0.0

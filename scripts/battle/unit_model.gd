@@ -80,6 +80,20 @@ static func build(look: Dictionary, weapon: String, ranged: String, shield: bool
 				parts.mount_legs.append(leg2)
 	rider.position.y = seat
 	parts.seat = seat
+	# Blob shadow
+	var blob := CylinderMesh.new()
+	blob.top_radius = 0.42 if mount == "" else 1.1
+	blob.bottom_radius = blob.top_radius
+	blob.height = 0.01
+	blob.radial_segments = 12
+	blob.rings = 1
+	var bm := MeshInstance3D.new()
+	bm.mesh = blob
+	bm.material_override = MB.mat(Color(0, 0, 0, 0.35), 1.0, true)
+	bm.position.y = 0.03
+	if mount != "":
+		bm.scale = Vector3(0.8, 1, 1.4)
+	root.add_child(bm)
 	# Legs
 	var legs := []
 	for side in [-1, 1]:
