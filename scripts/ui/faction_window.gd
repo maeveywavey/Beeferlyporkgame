@@ -23,6 +23,14 @@ func build() -> void:
 		if f == selected:
 			b.add_theme_color_override("font_color", UI.GOLD)
 		tabs.add_child(b)
+	tabs.add_child(UI.expand())
+	tabs.add_child(UI.button("The Avatar", func():
+		var w = load("res://scripts/ui/avatar_window.gd").new()
+		w.map = map
+		if map != null and map.has_method("open_window"):
+			map.open_window(w)
+		else:
+			get_parent().add_child(w), 160))
 	var fd: Dictionary = Data.factions[selected]
 	var wars := []
 	for o in Data.KINGDOMS:

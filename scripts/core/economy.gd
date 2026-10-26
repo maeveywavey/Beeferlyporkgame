@@ -149,10 +149,12 @@ static func refresh_tavern(sid: String) -> void:
 			n = 2 + randi() % 4
 		t.merc = {"id": merc, "n": n}
 	t.ransom = randf() < 0.6
-	t.rumor = Data.rumors.pick_random()
+	t.rumor = Data.rumor()
 	# A wandering companion
 	var free := []
 	for cid in Data.companions:
+		if Data.companions[cid].get("story_only", false):
+			continue
 		if GS.player.is_empty() or not GS.player.companions.has(cid):
 			var elsewhere := false
 			for other in GS.settlements:

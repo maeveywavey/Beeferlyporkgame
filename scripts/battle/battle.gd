@@ -534,8 +534,8 @@ func _prepare_sides(b: Dictionary) -> void:
 		theirs.append_array(_entries_for_party(eid))
 	if b.get("enemy_garrison", false):
 		theirs.append_array(_entries_for_garrison(b.siege))
-	# Heroes first in each list
-	theirs.sort_custom(func(x, y): return x.kind == "lord" and y.kind != "lord")
+	# Heroes first in each list (the Avatar counts as one)
+	theirs.sort_custom(func(x, y): return (x.kind == "lord" or x.id == "avatar") and not (y.kind == "lord" or y.id == "avatar"))
 	reserves = [mine, theirs]
 	var total := maxf(1.0, mine.size() + theirs.size())
 	var bs := float(GS.settings.battle_size)
@@ -557,6 +557,8 @@ func _spawn_entry(e: Dictionary, team: int, pos: Vector3, face: float):
 	u.hold_pos = u.position
 	units.append(u)
 	team_units[team].append(u)
+	if e.id == "avatar":
+		_apply_avatar_mods(u)
 	if e.kind == "player":
 		player_unit = u
 		cam_yaw = face
@@ -569,6 +571,37 @@ func _spawn_entry(e: Dictionary, team: int, pos: Vector3, face: float):
 			u.order = "hold"
 			u.hold_pos = Vector3(u.position.x, 0, wall_z + signf(wall_z) * 3.0)
 	return u
+
+## What the player prepared against the Avatar: wards and chi-blocker nets at
+## the seat (traps), walls (fort), and a raid on their home (demoralised).
+func _apply_avatar_mods(u) -> void:
+	var m: Dictionary = GS.pending_battle.get("avatar", {})
+	if m.is_empty():
+		return
+	var traps := int(m.get("traps", 0))
+	var fort := int(m.get("fort", 0))
+	var mult := (1.0 - 0.12 * traps) * (0.85 if m.get("demoralized", false) else 1.0)
+	u.max_hp *= mult
+	u.hp = u.max_hp
+	u.bend_power *= 1.0 - 0.06 * fort
+	if traps > 0:
+		u.bend_block_t = 4.0 * traps
+		hud_note("The wards hold %s for a moment: %d seconds without bending." % [u.display_name, int(u.bend_block_t)])
+
+## The Avatar State: a shockwave, and every eye on the field turns.
+func avatar_state(u) -> void:
+	if autotest:
+		print("AVATAR STATE: %s at %.0f/%.0f hp, elements %s" % [u.display_name, u.hp, u.max_hp, u.avatar_elements])
+	feed_msg("%s's eyes blaze white. The Avatar State!" % u.display_name, Color(0.8, 0.95, 1))
+	hud_note("The Avatar State")
+	_ring_fx(u.position, 7.0, Color(0.85, 0.95, 1.0))
+	for o in team_units[1 - u.team]:
+		if o.alive and o.dist_to(u) < 7.0:
+			var dir: Vector3 = (o.position - u.position)
+			dir.y = 0.0
+			o.apply_damage(12.0, u, "air", dir.normalized(), 14.0, true)
+	if not GS.settings.get("reduce_flashing", false):
+		spawn_burst(u.position + Vector3(0, 1.2, 0), Color(0.85, 0.95, 1.0), 2.5)
 
 func _spawn_z(team: int) -> float:
 	var z := -SPAWN_Z if team == 0 else SPAWN_Z
@@ -1135,6 +1168,11 @@ func on_unit_down(u, killer, dtype: String) -> void:
 		feed_msg("%s has been knocked out by %s." % [u.display_name, kname], Color(1, 0.6, 0.4))
 	elif u.lord_id != "":
 		feed_msg("%s has been defeated!" % u.display_name, Color(1, 0.85, 0.4))
+	elif u.troop_id == "avatar":
+		# The Avatar is beaten, never killed: their companions carry them off
+		if autotest:
+			print("AVATAR DOWN after %.1fs, casts by element: %s" % [_autotest_t, u.get_meta("casts", {})])
+		feed_msg("%s falls, and is carried from the field by their companions." % u.display_name, Color(0.85, 0.95, 1))
 	else:
 		var chance := 0.5 if u.team == 0 else 0.4
 		if dtype == "blunt":

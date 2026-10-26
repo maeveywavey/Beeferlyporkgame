@@ -10,10 +10,12 @@ extends RefCounted
 ## A node with neither "next" nor "choices" ends the conversation.
 
 const Roster = preload("res://scripts/core/roster.gd")
+const AvatarSys = preload("res://scripts/core/avatar.gd")
 const SOURCES := [
 	"res://scripts/story/main_story.gd",
 	"res://scripts/story/companion_quests.gd",
 	"res://scripts/story/camp_talk.gd",
+	"res://scripts/story/avatar_story.gd",
 ]
 
 static var _cache := {}
@@ -39,6 +41,11 @@ static func dialogue(id: String) -> Dictionary:
 
 static func npc(id: String) -> Dictionary:
 	_load()
+	# The Avatar and the person they love change with the era
+	if id == "avatar":
+		return AvatarSys.npc()
+	if id == "av_loved":
+		return AvatarSys.loved_npc()
 	return _npcs.get(id, {})
 
 static func has_dialogue(id: String) -> bool:
@@ -74,11 +81,26 @@ static func in_party(cid: String) -> bool:
 static func _away(cid: String) -> bool:
 	return float(GS.companion_state(cid).get("away_until", -1.0)) > GS.hours
 
-## Text substitution: {name}, {they}/{them}/{their} for the player's pronouns.
+## Text substitution: {name}, {they}/{them}/{their} for the player's pronouns;
+## {avatar}, {av_name}, {av_they}/{av_them}/{av_their}, {loved}, {loved_role},
+## {av_home}, {title} and {need} for the Avatar system.
 static func fmt(text: String) -> String:
 	var g: String = GS.player.get("look", {}).get("pronouns", "they")
 	var pr: Array = {"he": ["he", "him", "his"], "she": ["she", "her", "her"], "they": ["they", "them", "their"]}.get(g, ["they", "them", "their"])
-	return text.replace("{name}", GS.player.get("name", "")).replace("{they}", pr[0]).replace("{them}", pr[1]).replace("{their}", pr[2])
+	text = text.replace("{name}", GS.player.get("name", "")).replace("{they}", pr[0]).replace("{them}", pr[1]).replace("{their}", pr[2])
+	if text.contains("{"):
+		var A: Dictionary = AvatarSys.state()
+		var ap: Array = AvatarSys.pronouns()
+		var L: Dictionary = A.get("loved", {})
+		var need: String = A.get("order", [""])[0] if not A.get("order", []).is_empty() else ""
+		text = text.replace("{avatar}", AvatarSys.display_name()).replace("{av_name}", String(A.get("name", "")))
+		text = text.replace("{av_they}", ap[0]).replace("{av_them}", ap[1]).replace("{av_their}", ap[2])
+		text = text.replace("{loved}", String(L.get("name", ""))).replace("{loved_role}", String(L.get("role", "")))
+		text = text.replace("{av_home}", Data.settlements.get(A.get("home", ""), {}).get("name", "their home"))
+		text = text.replace("{title}", AvatarSys.ruler_title() if AvatarSys.ruler_title() != "" else "warlord")
+		text = text.replace("{need}", Data.element_name(need).to_lower() if need != "" else "the elements")
+		text = text.replace("{element}", String(GS.player.get("bend", "")))
+	return text
 
 # ---------------------------------------------------------------------------
 # Queue: dialogues waiting to be shown on the map
@@ -155,6 +177,8 @@ static func _ok1(k: String, v) -> bool:
 			return _peace_count() >= int(v)
 		"pronouns":
 			return v.has(GS.player.get("look", {}).get("pronouns", "they"))
+		"era":
+			return String(GS.flags.get("era", "quiet")) == v
 		"near_faction":
 			for sid in Data.settlements:
 				if GS.settlements[sid].faction == v and _nearest(sid) <= 140.0:
@@ -182,6 +206,19 @@ static func callv_bool(name: String) -> bool:
 		"pemba_or_nima": return in_party("pemba") or in_party("nima")
 		"nima_wins": return _nima_wins()
 		"nima_loses": return not _nima_wins()
+		"av_hostage": return AvatarSys.state().get("hostage", false)
+		"av_seat": return AvatarSys.seat_near() != ""
+		"av_no_seat": return AvatarSys.seat_near() == ""
+		"av_young": return AvatarSys.stage() == "young"
+		"av_prime": return AvatarSys.stage() == "prime"
+		"av_elder": return AvatarSys.stage() == "elder"
+		"av_ruler": return AvatarSys.ruler_title() != ""
+		"av_friend": return int(AvatarSys.state().get("attitude", 0)) >= 20
+		"av_not_friend": return int(AvatarSys.state().get("attitude", 0)) < 20
+		"av_kept": return flag("ms_path", "") == "kept"
+		"av_not_kept": return flag("ms_path", "") != "kept"
+		"av_wars": return _peace_count() < Data.KINGDOMS.size()
+		"av_intel": return AvatarSys.state().get("intel", false) and not AvatarSys.state().get("hostage", false)
 	return false
 
 ## Nima's duel: decided by how the player prepared her and how much she
@@ -239,6 +276,10 @@ static func apply(effects: Array, map = null) -> void:
 			"log": GS.log_msg(fmt(e[1]), Color(1, 0.85, 0.55))
 			"skill_points": GS.player.skill_points += int(e[1])
 			"standing": GS.raise_standing(e[1])
+			"infamy": AvatarSys.add_infamy(int(e[1]), GS.player_party().pos, e[2] if e.size() > 2 else "")
+			"av_attitude":
+				var A: Dictionary = AvatarSys.state()
+				A.attitude = clampi(int(A.get("attitude", 0)) + int(e[1]), -100, 100)
 			"call": call_effect(e[1], e.slice(2))
 
 ## Story effects too specific for the generic list.
@@ -266,6 +307,46 @@ static func call_effect(name: String, args: Array) -> void:
 			GS.settlements["ba_sing_se"].prosperity = minf(100.0, GS.settlements["ba_sing_se"].prosperity + 6.0)
 		"red_lanterns_enemies":
 			GS.change_faction_rel("red_lanterns", -60)
+		"avatar_battle": AvatarSys.start_battle()
+		"avatar_defeated": AvatarSys.on_defeated()
+		"avatar_yield":
+			AvatarSys.judgement(true)
+		"avatar_hostage": AvatarSys.use_hostage()
+		"avatar_take_hostage": AvatarSys.take_hostage()
+		"avatar_teach": AvatarSys.begin_teaching()
+		"avatar_taught": AvatarSys.finish_teaching()
+		"avatar_pledge":
+			var A: Dictionary = AvatarSys.state()
+			A.pledge = true
+			A.pledge_infamy = AvatarSys.infamy()
+			A.state = "free"
+		"avatar_defy":
+			var A2: Dictionary = AvatarSys.state()
+			A2.defied = true
+			A2.pledge = false
+		"avatar_leave":
+			AvatarSys.dismiss_company()
+			AvatarSys.state().state = "free"
+		"avatar_amends":
+			var pay := maxi(500, int(GS.player.gold * 0.3))
+			GS.add_gold(-pay)
+			AvatarSys.add_infamy(-60, GS.player_party().pos)
+			var center: Vector2 = AvatarSys.cruelty_center()
+			for sid in GS.settlements:
+				if center != Vector2.INF and Data.settlements[sid].pos.distance_to(center) <= AvatarSys.LOCAL_RADIUS:
+					GS.settlements[sid].prosperity = minf(100.0, GS.settlements[sid].prosperity + 6.0)
+			GS.flags.infamy_log = []
+		"avatar_local_fight":
+			AvatarSys.spawn_company()
+			AvatarSys.start_battle()
+		"avatar_peace":
+			# The Avatar brokers one truce for a friend who asks
+			for k in Data.KINGDOMS:
+				if GS.at_war(GS.player_faction(), k):
+					GS.make_peace(GS.player_faction(), k)
+					GS.log_msg("With %s at the table, the %s agrees to a truce." % [AvatarSys.display_name(), Data.factions[k].name], Color(0.8, 0.95, 1))
+					break
+			AvatarSys.state().peace_day = GS.day()
 		"omashu_talks":
 			if GS.at_war("fire_nation", "omashu"):
 				GS.make_peace("fire_nation", "omashu")
@@ -399,6 +480,7 @@ const REACTIONS := {
 	"release_lord": {"pemba": 4, "nima": 2, "juro": 2},
 	"agni_kai_won": {"reika": 3, "juro": 2},
 	"refuse_duel": {"reika": -3},
+	"execute": {"pemba": -30, "nima": -15, "juro": -15, "hana": -10, "kesi": -10, "shen_mu": -15, "ukiuk": -10, "reika": -5},
 }
 
 static func _reactions(event: String, _sid: String) -> void:

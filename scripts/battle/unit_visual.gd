@@ -255,6 +255,23 @@ static func cast(unit, slot: String) -> void:
 	if entry[1] != "" and a.bend_pose:
 		a.bend_pose.pulse(entry[1])
 
+## The Avatar State: a white blaze around the Avatar while it lasts.
+static func avatar_glow(unit, on: bool) -> void:
+	var p: Dictionary = unit.parts
+	if on and not p.has("avatar_light"):
+		var l := OmniLight3D.new()
+		l.light_color = Color(0.85, 0.95, 1.0)
+		l.omni_range = 6.0
+		l.light_energy = 4.0
+		l.position = Vector3(0, 1.4, 0)
+		unit.add_child(l)
+		p.avatar_light = l
+	if p.has("avatar_light"):
+		p.avatar_light.visible = on
+	var a = p.get("actor")
+	if a != null:
+		a.set_expression("determined" if on else "neutral")
+
 static func hit(unit, big: bool) -> void:
 	var a = unit.parts.get("actor")
 	if a == null:

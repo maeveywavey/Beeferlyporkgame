@@ -51,6 +51,8 @@ func build() -> void:
 		content.add_child(UI.option("Sit by the fire with everyone", _fire))
 	if not Story.pages().is_empty():
 		content.add_child(UI.option("Read the Avatar's logbook (%d of 6 pages)" % Story.pages().size(), _talk.bind("ms_logbook")))
+	content.add_child(UI.option("Think about the Avatar (who, where, and what would bring them to you)", func():
+		map.open_window(load("res://scripts/ui/avatar_window.gd").new())))
 	content.add_child(UI.option("Save game", func():
 		note = "Game saved." if GS.save_game() else "Could not save!"
 		refresh()))

@@ -230,7 +230,7 @@ func _build_lord_talk(p: Dictionary) -> void:
 				page = "talk"
 				refresh()))))
 	content.add_child(UI.option("Tell me about yourself.", func():
-		note = "[i]%s[/i]" % ld.get("bio", "")
+		note = "[i]%s[/i]" % (ld.get("bio_sandbox", ld.get("bio", "")) if GS.flags.get("era", "quiet") != "quiet" else ld.get("bio", ""))
 		page = "talk"
 		refresh()))
 	if _agni_kai_possible(lid) and GS.day() - int(GS.flags.get("agni_kai_" + lid, -999)) > 30:
@@ -239,7 +239,7 @@ func _build_lord_talk(p: Dictionary) -> void:
 		else:
 			content.add_child(UI.rich("[i](A Fire Nation noble will only accept an Agni Kai from someone of Gentry standing or higher. You are %s.)[/i]" % GS.standing_name(), 700))
 	content.add_child(UI.option("What news of the war?", func():
-		note = Data.rumors.pick_random()
+		note = Data.rumor()
 		page = "talk"
 		refresh()))
 	content.add_child(UI.option("Farewell.", _leave.bind(p)))
@@ -387,6 +387,6 @@ func _build_pilgrim(p: Dictionary) -> void:
 			"The Fire Nation is hungry and the Earth Kingdom is proud. Hunger and pride make long wars.",
 			"Omashu fed its own people first and Ba Sing Se called it treason. Both are right. That is the trouble with this war.",
 			"The South raids the Fire Navy's supply ships. The supply ships carry rice to soldiers who carry fire to villages. Follow anything far enough and it is all one circle.",
-			"Eleven years ago an Avatar drowned trying to make a peace. We are still waiting for someone to finish the sentence."].pick_random() + "\""
+			"Eleven years ago an Avatar drowned trying to make a peace. We are still waiting for someone to finish the sentence." if GS.flags.get("era", "quiet") == "quiet" else "The Avatar cannot be everywhere. That is why the rest of us have to be somewhere."].pick_random() + "\""
 		refresh()))
 	content.add_child(UI.option("Go in peace.", _leave.bind(p)))

@@ -166,7 +166,7 @@ const DIALOGUES := {
 			{"text": "\"It's her life. Let her choose.\"", "next": "choose"},
 		]},
 		"turn": {"who": "pemba", "expr": "furious", "text": "No. No — {name}, you can't. …You can. You are. Then I'm not coming with you. I'm sorry. I think I'll be sorry for a long time.",
-			"do": [["flag", "dawa_turned_in", true], ["flag", "pemba_done", true], ["rel", "earth_kingdom", 10], ["gold", 400], ["call", "red_lanterns_enemies"], ["leave", "pemba"],
+			"do": [["flag", "dawa_turned_in", true], ["flag", "pemba_done", true], ["rel", "earth_kingdom", 10], ["gold", 400], ["call", "red_lanterns_enemies"], ["leave", "pemba"], ["infamy", 10, "turning in Dawa"],
 				["journal_done", "cq_pemba", "You turned Dawa in to the Earth Kingdom. Pemba left your company."]]},
 		"home": {"who": "dawa", "expr": "angry", "text": "And do what? Sweep? …Argue. With Dorje. Every day. Spirits, that's a terrible idea. Fine. One year. If they still meditate at hungry people in a year, I'm leaving again and you're coming with me.",
 			"do": [["flag", "dawa_home", true], ["flag", "pemba_done", true], ["approval", "pemba", 10],
@@ -305,7 +305,7 @@ const DIALOGUES := {
 	}},
 	"cq_reika_ledgers": {"title": "Letters of Marque", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "Midnight. Reika picks the counting-house lock with a hairpin she claims belonged to a duchess. The ledger is in the second drawer, bound in sharkskin. She reads by a shuttered lantern, turning the pages faster and faster.", "next": "b"},
-		"b": {"who": "reika", "expr": "furious", "text": "Payments. From the Grand Secretariat in Ba Sing Se. Every quarter, for eleven years, starting the month after the Avatar drowned. They're paying each other to keep the war going. Both sides. The same war.", "choices": [
+		"b": {"who": "reika", "expr": "furious", "text": "Payments. From the Grand Secretariat in Ba Sing Se. Every quarter, for eleven years, starting the month the last peace talks failed. They're paying each other to keep the war going. Both sides. The same war.", "choices": [
 			{"text": "\"Take it. Burn your letter of marque.\"", "next": "take"},
 			{"text": "\"Put it back. Blackmail him later — he'll pay more than the war does.\"", "next": "keep"},
 		]},

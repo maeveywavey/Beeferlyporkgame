@@ -2,6 +2,7 @@ extends RefCounted
 ## World map simulation: party movement and AI, encounters between parties,
 ## sieges, campaigns, spawning, and daily/weekly upkeep.
 
+const AvatarSys = preload("res://scripts/core/avatar.gd")
 const Roster = preload("res://scripts/core/roster.gd")
 const Terrain = preload("res://scripts/core/terrain.gd")
 const AutoResolve = preload("res://scripts/core/auto_resolve.gd")
@@ -310,6 +311,7 @@ func _hourly_cosmic() -> void:
 
 func _daily() -> void:
 	_daily_events()
+	AvatarSys.daily()
 	Story.fire("daily")
 	_daily_diplomacy()
 	Economy.daily_update()

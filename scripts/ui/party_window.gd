@@ -60,7 +60,8 @@ func build() -> void:
 		var l := UI.label("%s (companion)%s" % [Data.companions[cid].name, " — wounded" if wounded else ""], 16, UI.BLUE)
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(l)
-		row.add_child(UI.button("Dismiss", _dismiss_companion.bind(cid)))
+		if not Data.companions[cid].get("story_only", false):
+			row.add_child(UI.button("Dismiss", _dismiss_companion.bind(cid)))
 		list.add_child(row)
 	Roster.sort_by_tier(pp.roster)
 	for s in pp.roster:
@@ -95,6 +96,12 @@ func build() -> void:
 		lrow.add_child(UI.button("Release", func():
 			GS.release_lord(lid, false)
 			refresh(), 80))
+		if not GS.is_king(lid):
+			var ex := UI.button("Execute", func():
+				GS.execute_lord(lid)
+				refresh(), 80)
+			ex.tooltip_text = "Cruelty is remembered: +60 infamy, and their nation will never forgive it."
+			lrow.add_child(ex)
 		plist.add_child(lrow)
 	right.add_child(UI.button("Release all prisoners (+honour)", func():
 		if not pp.prisoners.is_empty():

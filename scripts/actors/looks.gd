@@ -84,13 +84,20 @@ static func player_look() -> Dictionary:
 		"water_parka", "fur_armor":
 			culture = "water"
 			kit = "water_fur"
+		"nomad_robes":
+			culture = "air"
+			kit = "air_robes"
 	var helm: String = pl.equip.get("helmet", "")
-	var look := {"sex": pv.get("sex", "m"), "skin": pv.get("skin", Color(0.84, 0.64, 0.48)), "hair": pv.get("hair_style", "Hair_SimpleParted"),
+	# An airbending master earns the arrows (Air DLC: the mastery trial)
+	var arrows: bool = pl.get("bend", "") == "air" and pl.get("master_title", "") != ""
+	var look := {"sex": pv.get("sex", "m"), "skin": pv.get("skin", Color(0.84, 0.64, 0.48)), "hair": "" if arrows else pv.get("hair_style", "Hair_SimpleParted"),
 		"hair_color": pv.get("hair", Color(0.1, 0.07, 0.05)), "eye_color": pv.get("eyes", Color(0.4, 0.28, 0.15)),
 		"beard": pv.get("beard", false), "culture": culture, "kit": kit, "outfit": "ranger" if armor_id != "" and armor_id != "peasant_clothes" else "peasant",
 		"accessory": Data.item(helm).get("look", "") if helm != "" else "", "height": pv.get("height", 1.0)}
 	if look.accessory == "parka":
 		look.culture = "water"
+	if arrows and look.accessory == "":
+		look.accessory = "air_arrow"
 	return look
 
 ## Look for a world-map party figure.

@@ -16,6 +16,7 @@ var c_body := "m"
 var c_pronouns := "they"
 var c_hair_style := "Hair_SimpleParted"
 var c_beard := false
+var c_era := "quiet"
 var note := ""
 var _preview_vp: SubViewport
 var _preview_actor
@@ -25,6 +26,10 @@ const HAIRS := [Color(0.08, 0.06, 0.05), Color(0.3, 0.18, 0.1), Color(0.55, 0.35
 const HAIR_STYLES := [["Hair_SimpleParted", "Parted"], ["Hair_Long", "Long"], ["Hair_Buns", "Buns"], ["Hair_Buzzed", "Cropped"], ["Hair_BuzzedFemale", "Short"], ["", "Shaved"]]
 const PRONOUNS := [["he", "he/him"], ["she", "she/her"], ["they", "they/them"]]
 const Actor = preload("res://scripts/actors/actor.gd")
+const AvatarSys = preload("res://scripts/core/avatar.gd")
+const ELEMENTS := [["", "Non-bender", "Better with weapons; no chi to run out of."], ["fire", "Firebender", "Breath and drive. Stronger by day."],
+	["water", "Waterbender", "Flow and redirection. Stronger by night and moon."], ["earth", "Earthbender", "Root and patience. Strong anywhere there is ground."],
+	["air", "Airbender", "Evasion and circles. Born to the Air Nomads, who ask you not to kill."]]
 
 func _ready() -> void:
 	Music.play("map")
@@ -43,7 +48,7 @@ func _ready() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 	panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(760, 560)
+	panel.custom_minimum_size = Vector2(900, 600)
 	center.add_child(panel)
 	body = UI.vbox(10)
 	panel.add_child(body)
@@ -64,13 +69,14 @@ func _build() -> void:
 		_preview_actor = null
 	match page:
 		"title": _build_title()
+		"world": _build_world()
 		"create": _build_create()
 
 func _build_title() -> void:
 	body.add_child(UI.spacer(10))
 	body.add_child(UI.title("AVATAR: MOUNT & BEND", 40))
-	body.add_child(UI.title("A tale of the Quiet Years", 20))
-	var intro := UI.rich("[center][i]Water. Earth. Fire. Air. Eleven years ago, the Avatar drowned at sea on the way to a peace that never came. Somewhere a child is the next Avatar, and does not know it yet.\n\nUntil they do, the world must manage on its own. Raise an army, master your element, serve a nation or carve out your own realm in the Quiet Years.[/i][/center]", 700)
+	body.add_child(UI.title("The Quiet Years, and after", 20))
+	var intro := UI.rich("[center][i]Water. Earth. Fire. Air. You are not the Avatar. You are one of the millions who live in the world the Avatar is trying to keep in balance.\n\nRaise an army, master your element, serve a nation or carve out your own realm. Rule well and the Avatar may come to sit at your table. Rule cruelly and they will come for you.[/i][/center]", 840)
 	body.add_child(intro)
 	body.add_child(UI.spacer(10))
 	var col := UI.vbox(8)
@@ -79,7 +85,7 @@ func _build_title() -> void:
 	var has_auto := GS.has_save(GS.AUTOSAVE_PATH)
 	var has_save := GS.has_save(GS.SAVE_PATH)
 	col.add_child(_menu_button("New Game", func():
-		page = "create"
+		page = "world"
 		_build()))
 	col.add_child(_menu_button("Continue (autosave)", func(): _load(GS.AUTOSAVE_PATH), has_auto))
 	col.add_child(_menu_button("Load Saved Game", func(): _load(GS.SAVE_PATH), has_save))
@@ -104,8 +110,40 @@ func _load(path: String) -> void:
 		note = "Could not load the save."
 		_build()
 
+## Step one: which age of the world. The player is never the Avatar; in every
+## era the Avatar is somebody else, living their own life.
+func _build_world() -> void:
+	body.add_child(UI.title("Choose your world", 30))
+	body.add_child(UI.rich("[center][i]You are never the Avatar. In every era the Avatar is someone else: a person in the world, hard to find, who comes to you only for good reason.[/i][/center]", 860))
+	var grid := UI.grid(2, 10, 10)
+	body.add_child(grid)
+	for e in ["quiet", "young", "prime", "elder"]:
+		var info: Dictionary = AvatarSys.ERAS[e]
+		var card := UI.vbox(4)
+		card.custom_minimum_size = Vector2(420, 150)
+		var b := UI.button(info.name + ("  (story)" if info.story else "  (sandbox)"), func():
+			c_era = e
+			_build(), 410)
+		if e == c_era:
+			b.add_theme_color_override("font_color", UI.GOLD)
+			b.add_theme_color_override("font_hover_color", UI.GOLD)
+		card.add_child(b)
+		card.add_child(UI.rich("[font_size=14]%s[/font_size]" % info.pitch, 410))
+		grid.add_child(card)
+	body.add_child(UI.spacer(6))
+	var row := UI.hbox()
+	body.add_child(row)
+	row.add_child(UI.button("Back", func():
+		page = "title"
+		_build(), 120))
+	row.add_child(UI.expand())
+	row.add_child(UI.button("Next: who you are", func():
+		page = "create"
+		_build(), 240))
+
+## Step two: element first, then a background that fits it, then a face.
 func _build_create() -> void:
-	body.add_child(UI.title("Who are you?", 30))
+	body.add_child(UI.title("Who are you?", 28))
 	var nrow := UI.hbox()
 	body.add_child(nrow)
 	nrow.add_child(UI.label("Name:", 18))
@@ -114,34 +152,39 @@ func _build_create() -> void:
 	le.custom_minimum_size.x = 260
 	le.text_changed.connect(func(t): c_name = t)
 	nrow.add_child(le)
+	nrow.add_child(UI.expand())
+	nrow.add_child(UI.label(AvatarSys.ERAS[c_era].name, 16, UI.BROWN))
+	body.add_child(UI.label("Bending", 20, UI.BROWN))
+	var brow := UI.hbox(6)
+	body.add_child(brow)
+	for el in ELEMENTS:
+		var b2 := UI.button(el[1], func():
+			c_bend = el[0]
+			if not GS.BACKGROUNDS[c_background].bends.has(c_bend):
+				c_background = _backgrounds_for(c_bend)[0]
+			_build(), 160)
+		b2.tooltip_text = el[2]
+		if el[0] == c_bend:
+			b2.add_theme_color_override("font_color", UI.GOLD)
+			b2.add_theme_color_override("font_hover_color", UI.GOLD)
+		brow.add_child(b2)
+	for el in ELEMENTS:
+		if el[0] == c_bend:
+			body.add_child(UI.rich("[i]%s[/i]" % el[2], 860))
 	body.add_child(UI.label("Background", 20, UI.BROWN))
-	var grid := UI.grid(3, 8, 8)
+	var grid := UI.grid(4, 8, 6)
 	body.add_child(grid)
-	for bid in GS.BACKGROUNDS:
+	for bid in _backgrounds_for(c_bend):
 		var bd: Dictionary = GS.BACKGROUNDS[bid]
 		var b := UI.button(bd.name, func():
 			c_background = bid
-			if not GS.BACKGROUNDS[bid].bends.has(c_bend):
-				c_bend = ""
-			_build(), 230)
+			_build(), 205)
 		if bid == c_background:
 			b.add_theme_color_override("font_color", UI.GOLD)
 			b.add_theme_color_override("font_hover_color", UI.GOLD)
 		grid.add_child(b)
 	var bd2: Dictionary = GS.BACKGROUNDS[c_background]
-	body.add_child(UI.rich("[i]%s[/i]\nStarts at: [b]%s[/b]" % [bd2.desc, Data.settlements[bd2.start].name], 700))
-	body.add_child(UI.label("Bending", 20, UI.BROWN))
-	var brow := UI.hbox()
-	body.add_child(brow)
-	for e in bd2.bends:
-		var label := "Non-bender (better with weapons)" if e == "" else Data.element_name(e)
-		var b2 := UI.button(label, func():
-			c_bend = e
-			_build())
-		if e == c_bend:
-			b2.add_theme_color_override("font_color", UI.GOLD)
-			b2.add_theme_color_override("font_hover_color", UI.GOLD)
-		brow.add_child(b2)
+	body.add_child(UI.rich("[i]%s[/i]\nStarts at: [b]%s[/b]" % [bd2.desc, Data.settlements[bd2.start].name], 860))
 	# Appearance and identity, with a live preview
 	var arow := UI.hbox(24)
 	body.add_child(arow)
@@ -187,16 +230,24 @@ func _build_create() -> void:
 		looks.add_child(_swatch(c, c == c_hair, func():
 			c_hair = c
 			_build()))
-	acol.add_child(UI.rich("[i]Build only chooses a body model. Pronouns are how the world refers to you; they open no doors and close none, except who might fall for you.[/i]", 560))
+	acol.add_child(UI.rich("[i]Build only chooses a body model. Pronouns are how the world refers to you; they open no doors and close none, except who might fall for you.[/i]", 600))
 	arow.add_child(_preview())
-	body.add_child(UI.spacer(6))
+	body.add_child(UI.spacer(4))
 	var row := UI.hbox()
 	body.add_child(row)
 	row.add_child(UI.button("Back", func():
-		page = "title"
+		page = "world"
 		_build(), 120))
 	row.add_child(UI.expand())
 	row.add_child(UI.button("Begin your journey", _start, 240))
+
+## Backgrounds open to a bender of `el` (every background allows non-benders).
+func _backgrounds_for(el: String) -> Array:
+	var out := []
+	for bid in GS.BACKGROUNDS:
+		if GS.BACKGROUNDS[bid].bends.has(el) or el == "":
+			out.append(bid)
+	return out
 
 func _choice_button(text: String, sel: bool, cb: Callable) -> Button:
 	var b := UI.button(text, cb)
@@ -235,10 +286,11 @@ func _preview() -> Control:
 	box.add_child(_preview_vp)
 	if _preview_actor != null:
 		_preview_actor.queue_free()
-	var culture: String = {"fn_deserter": "fire", "fn_noble": "fire", "swt_warrior": "south", "nwt_noble": "water", "kyoshi": "kyoshi"}.get(c_background, "earth")
+	var culture: String = {"fn_deserter": "fire", "fn_noble": "fire", "swt_warrior": "south", "nwt_noble": "water", "kyoshi": "kyoshi",
+		"air_nomad": "air", "temple_courier": "air"}.get(c_background, "earth")
 	_preview_actor = Actor.new()
 	_preview_actor.setup({"sex": c_body, "skin": c_skin, "hair": c_hair_style, "hair_color": c_hair, "beard": c_beard,
-		"culture": culture, "outfit": "peasant", "kit": "", "accessory": ""})
+		"culture": culture, "outfit": "peasant", "kit": "air_robes" if culture == "air" else "", "accessory": ""})
 	_preview_actor.set_stance("talk")
 	_preview_actor.set_expression("happy")
 	_preview_vp.add_child(_preview_actor)
@@ -267,7 +319,7 @@ func _start() -> void:
 	var nm := c_name.strip_edges()
 	if nm == "":
 		nm = "Lee"
-	var p := GS.create_player(nm, c_background, c_bend, c_skin, c_hair)
+	var p := GS.create_player(nm, c_background, c_bend, c_skin, c_hair, c_era)
 	p.look.merge({"sex": c_body, "pronouns": c_pronouns, "hair_style": c_hair_style, "beard": c_beard}, true)
 	GS.new_game(p)
 	get_tree().change_scene_to_file("res://scenes/world_map.tscn")

@@ -6,6 +6,7 @@ const Story = preload("res://scripts/story/story.gd")
 const Economy = preload("res://scripts/core/economy.gd")
 const Quests = preload("res://scripts/core/quests.gd")
 const AutoResolve = preload("res://scripts/core/auto_resolve.gd")
+const AvatarSys = preload("res://scripts/core/avatar.gd")
 
 var sid := ""
 var map
@@ -36,6 +37,8 @@ func build() -> void:
 	if not s.siege.is_empty():
 		var sf: String = s.siege.get("faction", "")
 		content.add_child(UI.rich(UI.color_text("Under siege by the %s!" % Data.factions.get(sf, Data.factions.neutral).name, UI.RED), 760))
+	if AvatarSys.present_at(sid):
+		content.add_child(UI.rich(UI.color_text("%s is here. People are queueing in the street to speak with %s." % [AvatarSys.display_name().capitalize(), AvatarSys.pronouns()[1]], Color(0.3, 0.45, 0.75)), 760))
 	if note != "":
 		content.add_child(UI.rich(note, 760))
 	content.add_child(UI.sep())
@@ -73,6 +76,13 @@ func _build_main(o: VBoxContainer) -> void:
 	if not hostile or d.type in ["ruin", "temple"]:
 		for so in Story.settlement_options(sid):
 			o.add_child(UI.option("★ " + so.text, _story_option.bind(so)))
+	# The Avatar: rarely here, hard to reach even then
+	if AvatarSys.present_at(sid) and not AvatarSys.hostile():
+		var tried: bool = int(AvatarSys.state().get("audience_day", -99)) == GS.day()
+		o.add_child(UI.option("✦ Seek an audience with %s (%d%% chance today)" % [AvatarSys.display_name(), int(AvatarSys.audience_chance() * 100)], _seek_avatar, not tried))
+	var A: Dictionary = AvatarSys.state()
+	if sid == A.get("home", "") and A.get("intel", false) and not A.get("hostage", false) and AvatarSys.stage() != "child":
+		o.add_child(UI.option("✦ Find the house of %s" % A.get("loved", {}).get("name", "the one the Avatar loves"), _story_option.bind({"dlg": "av_hostage_take", "text": ""})))
 	if d.type == "ruin":
 		_build_ruin(o)
 		return
@@ -141,6 +151,16 @@ func _build_main(o: VBoxContainer) -> void:
 	o.add_child(UI.option("Rest here for a day (heal faster)", _rest.bind(24.0)))
 	o.add_child(UI.option("Wait here until healed", _rest.bind(-2.0), Roster.wounded(GS.player_party().roster) > 0 or GS.player.hp < GS.max_hp()))
 	o.add_child(UI.option("Leave", close))
+
+func _seek_avatar() -> void:
+	AvatarSys.state().audience_day = GS.day()
+	if randf() < AvatarSys.audience_chance():
+		_story_option({"dlg": "av_audience", "text": ""})
+	else:
+		note = ["One of the Avatar's companions, a polite woman with a very large staff, says the Avatar is in meditation and cannot be disturbed. Come back tomorrow.",
+			"You wait four hours. A monk brings you tea, apologises, and says the Avatar was called away. You have the strong impression they are still in the building.",
+			"The queue does not move. By evening you are told the Avatar has already left, by a door nobody else seems to know about."].pick_random()
+		refresh()
 
 ## Enter the walkable version of this settlement.
 func _walk() -> void:
@@ -239,6 +259,7 @@ func _raid() -> void:
 		GS.add_good(g, 2 + randi() % 3)
 	GS.player.honor = GS.player.get("honor", 0) - 5
 	GS.change_faction_rel(s.faction, -10)
+	AvatarSys.add_infamy(25, d.pos, "raiding " + d.name)
 	Story.react("raid")
 	# Mixed Ember Coast villages: burning them angers both nations
 	var kin: String = {"earth": "earth_kingdom", "fire": "fire_nation", "north": "northern_water", "south": "southern_water", "omashu": "omashu"}.get(d.culture, "")
@@ -442,6 +463,13 @@ func _build_temple(o: VBoxContainer) -> void:
 		note = "The abbot accepts the gold for the refugees' kitchens, and thanks you without making a speech about it. (+1 honour)"
 		refresh(), GS.player.gold >= 100))
 	o.add_child(UI.option("Ask %s about the Avatar" % d.get("abbot", "the abbot"), func():
+		if AvatarSys.era() != "quiet" or AvatarSys.known():
+			note = "[b]%s:[/b] \"%s\"" % [d.get("abbot", "The abbot"), [
+				"%s stayed with us for three days last year and spent two of them asleep. The Avatar's body is still a body. People forget." % AvatarSys.display_name().capitalize(),
+				"You want to find the Avatar? Everyone does. The Avatar is in the Spirit World, or in a council hall, or in a ditch helping someone's ox out of it. Pray you never need them badly enough to be found.",
+				"The Avatar does not belong to us, though people think so. The Avatar belongs to the balance. Sometimes the balance is a treaty. Sometimes it is a warlord who needs to be stopped."].pick_random()]
+			refresh()
+			return
 		note = "[b]%s:[/b] \"%s\"" % [d.get("abbot", "The abbot"), [
 			"The Avatar who drowned stayed here once, the winter before the talks. They laughed at our novices' jokes even when the jokes were bad. That is what I remember. Not the Avatar. The laugh.",
 			"Somewhere a child is the next Avatar. The sages of that child's nation will find them, and in five years they will be told. Until then, this world belongs to the rest of us. I find that frightening and also rather hopeful.",

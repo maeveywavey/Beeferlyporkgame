@@ -80,6 +80,39 @@ func _run() -> void:
 		var n3 = await _press_all(tw, skip)
 		print(path.get_file(), " pressed ", n3)
 		await _close_all()
+	# The Avatar window: calm, then with the Avatar coming (prime era)
+	var AvatarSys = load("res://scripts/core/avatar.gd")
+	AvatarSys.init_era("prime")
+	for hostile in [false, true]:
+		if hostile:
+			GS.settlements.omashu.owner = "player"
+			AvatarSys.state().warned = true
+			AvatarSys.add_infamy(300, Vector2.ZERO)
+			AvatarSys._schedule(AvatarSys.state(), "confront", 10)
+			AvatarSys.state().state = "gathering"
+		var aw = load("res://scripts/ui/avatar_window.gd").new()
+		map.open_window(aw)
+		await get_tree().process_frame
+		var na = await _press_all(aw, skip)
+		print("avatar window (hostile=%s) pressed %d" % [hostile, na])
+		await _close_all()
+	# Seek the Avatar where they are
+	AvatarSys.state().state = "free"
+	AvatarSys.state().warned = false
+	AvatarSys.state().due = {}
+	GS.player.infamy = 0
+	AvatarSys.state().loc = "gaoling"
+	GS.player_party().pos = Data.settlements.gaoling.pos
+	map.open_settlement("gaoling")
+	await get_tree().process_frame
+	var gw = map.modal_layer.get_child(0)
+	for b in gw.find_children("*", "Button", true, false):
+		if b.text.findn("audience") >= 0:
+			b.pressed.emit()
+			print("sought an audience with the Avatar")
+			break
+	await get_tree().process_frame
+	await _close_all()
 	# Encounters with each kind of party
 	var kinds_done := {}
 	for id in GS.parties.keys():

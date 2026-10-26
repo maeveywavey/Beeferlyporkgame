@@ -13,6 +13,7 @@ const Economy = preload("res://scripts/core/economy.gd")
 const Quests = preload("res://scripts/core/quests.gd")
 const AutoResolve = preload("res://scripts/core/auto_resolve.gd")
 const Story = preload("res://scripts/story/story.gd")
+const AvatarSys = preload("res://scripts/core/avatar.gd")
 
 const SAVE_PATH := "user://savegame.sav"
 const AUTOSAVE_PATH := "user://autosave.sav"
@@ -20,7 +21,6 @@ const SETTINGS_PATH := "user://settings.cfg"
 
 const SEASONS := ["Winter", "Spring", "Summer", "Autumn"]
 const DAYS_PER_SEASON := 90
-const START_YEAR := 11      # the eleventh year since the Avatar drowned
 
 const SKILLS := ["ironflesh", "power_strike", "weapon_mastery", "archery", "athletics", "riding",
 	"bending", "leadership", "trade", "tactics", "healing", "pathfinding", "trainer"]
@@ -184,6 +184,16 @@ const BACKGROUNDS := {
 		"equip": {"weapon": "jian", "armor": "peasant_clothes", "helmet": "straw_hat"},
 		"troops": [["merc_archer", 2]], "goods": {"tea": 4, "rice": 6},
 		"desc": "You have hauled goods from one end of the world to the other on credit from the Cheng family. Three wars are bad for most people. You are trying not to be the kind of person they are good for."},
+	"air_nomad": {"name": "Air Nomad Wanderer", "start": "southern_air_temple", "bends": ["air", ""], "standing": "commoner",
+		"attrs": {"agi": 1, "int": 1}, "skills": {"athletics": 1, "healing": 1}, "gold": 250,
+		"equip": {"weapon": "staff", "armor": "nomad_robes"}, "rel": {"air_nomads": 10},
+		"troops": [["an_novice", 2]], "goods": {"rice": 4, "cabbages": 4},
+		"desc": "The Southern Air Temple raised you to believe all people are one people. At sixteen you took a glider and went to find out whether the world agreed. It mostly does not. You have kept the vows so far. The temple will hear if you stop."},
+	"temple_courier": {"name": "Temple Courier", "start": "eastern_air_temple", "bends": ["air", ""], "standing": "citizen",
+		"attrs": {"agi": 1, "cha": 1}, "skills": {"pathfinding": 2, "riding": 1}, "gold": 400,
+		"equip": {"weapon": "staff", "armor": "nomad_robes"}, "rel": {"air_nomads": 5},
+		"troops": [["an_novice", 1]], "goods": {"tea": 2, "rice": 6},
+		"desc": "For six years you carried letters between the four temples and every court that would receive a monk: by bison, on foot, once on a very confused ostrich horse. Every gate opens for a temple courier. You have started to wonder what is in the letters."},
 	"kyoshi": {"name": "Kyoshi Island Trainee", "start": "kyoshi_island", "bends": [""], "standing": "commoner",
 		"attrs": {"agi": 2}, "skills": {"weapon_mastery": 2, "athletics": 1}, "gold": 250,
 		"equip": {"weapon": "kyoshi_fans", "armor": "kyoshi_armor"},
@@ -191,10 +201,13 @@ const BACKGROUNDS := {
 		"desc": "Trained in the dojo of Kyoshi Island, you leave with your fans and face paint. Captain Oyama gave you one instruction: defend those who cannot defend themselves, and never confuse that with conquest."},
 }
 
-func create_player(pname: String, background: String, bend: String, skin: Color, hair: Color) -> Dictionary:
+func create_player(pname: String, background: String, bend: String, skin: Color, hair: Color, era: String = "quiet") -> Dictionary:
 	var bg: Dictionary = BACKGROUNDS[background]
+	# Every player is a non-bender or a bender of exactly one element. The
+	# Avatar is someone else (scripts/core/avatar.gd).
+	assert(bend in ["", "fire", "water", "earth", "air"], "the player is never the Avatar")
 	var p := {
-		"name": pname, "background": background, "bend": bend,
+		"name": pname, "background": background, "bend": bend, "era": era, "infamy": 0, "techniques": [],
 		"attrs": {"str": 5, "agi": 5, "int": 5, "cha": 5},
 		"skills": {}, "level": 1, "xp": 0, "attr_points": 2, "skill_points": 4,
 		"hp": 1, "gold": bg.gold, "renown": 0, "honor": 0, "morale": 70.0, "victory_morale": 0.0,
@@ -243,6 +256,7 @@ func new_game(p: Dictionary) -> void:
 	next_id = 1
 	pending_battle = {}
 	player = p
+	AvatarSys.init_era(String(p.get("era", "quiet")))
 	# Kingdom relations: the three wars of the Quiet Years, everyone else at peace.
 	for a in Data.KINGDOMS:
 		for b in Data.KINGDOMS:
@@ -300,7 +314,11 @@ func new_game(p: Dictionary) -> void:
 	player.hp = max_hp()
 	sim.reset_clock()
 	game_active = true
-	log_msg("Winter of the eleventh Quiet Year. Eleven years since the Avatar drowned; somewhere a child who will be the next one does not yet know it. Until then, the world must manage on its own.", Color(1, 0.85, 0.5))
+	match AvatarSys.era():
+		"quiet": log_msg("Winter of the eleventh Quiet Year. Eleven years since the Avatar drowned; somewhere a child who will be the next one does not yet know it. Until then, the world must manage on its own.", Color(1, 0.85, 0.5))
+		"young": log_msg("Winter. On Whaletail Island, a sixteen-year-old named Siku has been told she is the Avatar, and has three elements to learn. The world's masters are waiting to see who she comes to.", Color(1, 0.85, 0.5))
+		"prime": log_msg("Winter of the twenty-third year of Avatar Lei Shan. The Avatar is everywhere at once: in council halls, in siege camps, in the Spirit World. Everywhere except where you are.", Color(1, 0.85, 0.5))
+		"elder": log_msg("Winter. Avatar Akane is eighty-four and has not left the Boiling Lake Hamlet since autumn. The sages say she walks the Spirit World more than this one. The world has learned to manage, mostly.", Color(1, 0.85, 0.5))
 
 func _make_garrison(culture: String, size: int) -> Array:
 	var r := []
@@ -417,9 +435,14 @@ func is_comet() -> bool:
 	return _cosmic_active("comet")
 
 func day_name(d: int) -> String:
-	var year := START_YEAR + int(d / 360)
+	var info: Dictionary = AvatarSys.era_info()
 	var season_name: String = SEASONS[int(d / DAYS_PER_SEASON) % 4]
-	return "%s, day %d, Quiet Year %d" % [season_name, d % DAYS_PER_SEASON + 1, year]
+	var year: int = int(info.year0) + int(d / 360)
+	if AvatarSys.era() == "quiet":
+		if AvatarSys.known():
+			return "%s, day %d, Year %d of Avatar %s" % [season_name, d % DAYS_PER_SEASON + 1, year - 16, flags.avatar.name]
+		return "%s, day %d, Quiet Year %d" % [season_name, d % DAYS_PER_SEASON + 1, year]
+	return "%s, day %d, Year %d of Avatar %s" % [season_name, d % DAYS_PER_SEASON + 1, year, flags.get("avatar", {}).get("name", "")]
 
 func date_string() -> String:
 	return "%s — %02d:00" % [day_name(day()), int(hour_of_day())]
@@ -501,6 +524,9 @@ func at_war(a: String, b: String) -> bool:
 	return relations.get(_rel_key(a, b), "peace") == "war"
 
 func parties_hostile(a: Dictionary, b: Dictionary) -> bool:
+	# The Avatar's company quarrels with no one but the player it came for
+	if a.get("faction", "") == "avatar" or b.get("faction", "") == "avatar":
+		return a.id == "player" or b.id == "player"
 	return at_war(party_faction(a), party_faction(b))
 
 func declare_war(a: String, b: String) -> void:
@@ -615,6 +641,7 @@ func _duel_outcome(won: bool, lid: String, champion: String) -> void:
 	var lines := []
 	if won:
 		add_renown(20)
+		flags.duel_wins = int(flags.get("duel_wins", 0)) + (1 if champion == "" else 0)
 		player.honor = int(player.get("honor", 0)) + 2
 		change_lord_rel(lid, 10)
 		change_faction_rel("fire_nation", 3)
@@ -754,6 +781,27 @@ func release_lord(lid: String, ransomed: bool) -> void:
 		player.honor = player.get("honor", 0) + 2
 		log_msg("You released %s. They will remember your mercy." % Data.lords[lid].name, Color(0.6, 1, 0.6))
 
+## Execute a captive lord. The world does not forget it (see the Avatar's
+## tyrant motive in scripts/core/avatar.gd).
+func execute_lord(lid: String) -> void:
+	player.captive_lords.erase(lid)
+	var lr: Dictionary = lords[lid]
+	lr.held = false
+	lr.party = ""
+	lr.respawn_at = INF
+	lr.retired = true
+	for sid in settlements:
+		if settlements[sid].owner == lid:
+			var others: Array = faction_lords(settlements[sid].faction).filter(func(x): return x != lid and not lords[x].get("retired", false))
+			settlements[sid].owner = others.pick_random() if not others.is_empty() else ""
+	change_faction_rel(lr.faction, -30)
+	for other in faction_lords(lr.faction):
+		change_lord_rel(other, -25)
+	player.honor = int(player.get("honor", 0)) - 10
+	AvatarSys.add_infamy(60, player_party().pos, "executing " + Data.lords[lid].name)
+	Story.react("execute")
+	log_msg("You executed %s. The %s will never forgive it." % [Data.lords[lid].name, Data.factions[lr.faction].name], Color(1, 0.4, 0.3))
+
 func lord_ransom(lid: String) -> int:
 	return 400 + int(Data.lords[lid].troops * 6)
 
@@ -798,6 +846,8 @@ func finish_arena(won: bool, round_i: int, player_hp: float) -> void:
 		give_player_xp(100 + round_i * 150)
 		flags.arena_round = round_i + 1
 		lines.append("You defeated %s! The crowd roars. (+%d gold)" % [f.name, f.prize])
+		if player.get("bend", "") != "":
+			flags.duel_wins = int(flags.get("duel_wins", 0)) + 1
 		if round_i == Data.arena_fighters.size() - 1:
 			lines.append("You are the new champion of the Stone Pit! Madam Gu is already printing posters.")
 			add_renown(30)
@@ -956,6 +1006,8 @@ func _player_defeated(b: Dictionary) -> void:
 		if not att.is_empty() and parties.has(att[0]):
 			sim.capture_settlement(b.siege, parties[att[0]].faction, parties[att[0]].lord)
 	player.captive_until = hours + 24.0 + randf() * 48.0
+	if AvatarSys.on_player_defeated(b.get("enemies", [])):
+		player.captive_until = hours + 72.0
 	for pid in b.get("enemies", []):
 		if parties.has(pid):
 			parties[pid].target_party = ""
@@ -1021,6 +1073,9 @@ func load_game(path: String = SAVE_PATH) -> bool:
 	flags = data.flags
 	next_id = data.next_id
 	pending_battle = {}
+	AvatarSys.ensure()
+	if player.get("companions", []).has("avatar"):
+		AvatarSys.register_companion()
 	sim.reset_clock()
 	game_active = true
 	state_loaded.emit()

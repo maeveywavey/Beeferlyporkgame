@@ -7,6 +7,7 @@ const UnitVisual = preload("res://scripts/battle/unit_visual.gd")
 const Forms = preload("res://scripts/battle/forms.gd")
 const Looks = preload("res://scripts/actors/looks.gd")
 const Bending = preload("res://scripts/battle/bending.gd")
+const AvatarSys = preload("res://scripts/core/avatar.gd")
 
 const DIRS := ["left", "right", "overhead", "thrust"]
 
@@ -40,6 +41,13 @@ var max_chi := 100.0
 var chi_regen := 10.0
 var healer := false
 var chi_blocker := false
+# The Avatar bends every element they have mastered, and once per battle may
+# enter the Avatar State (scripts/core/avatar.gd)
+var avatar_elements: Array = []
+var avatar_rot_t := 0.0
+var avatar_state_t := 0.0
+var avatar_state_used := false
+var avatar_state_able := true
 var mount_id := ""
 var mount_hp := 0.0
 var mount_max := 0.0
@@ -107,11 +115,37 @@ func setup_troop(tid: String, p_team: int, key: String) -> void:
 	bend = t.bend
 	bend_power = t.bend_power
 	healer = t.healer
+	chi_blocker = t.get("chi_blocker", false)
 	mount_id = t.mount
 	foot_speed = 4.2 + t.tier * 0.15
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
+	if tid == "avatar":
+		_make_avatar()
+		_finish_setup(AvatarSys.look())
+		return
 	_finish_setup(Looks.troop_look(tid, rng))
+
+## Stage of life decides the Avatar's strength and control of the Avatar State.
+func _make_avatar() -> void:
+	var st: String = AvatarSys.stage()
+	display_name = AvatarSys.display_name().capitalize()
+	is_hero = true
+	max_hp = {"young": 380.0, "prime": 650.0, "elder": 480.0}.get(st, 450.0)
+	armor = 20.0
+	bend_power = {"young": 2.2, "prime": 3.2, "elder": 2.9}.get(st, 2.6)
+	skill = {"young": 0.8, "prime": 0.97, "elder": 0.92}.get(st, 0.9)
+	dmg_mult = 1.4
+	foot_speed = {"young": 5.6, "prime": 5.4, "elder": 4.2}.get(st, 5.0)
+	_set_avatar_elements(AvatarSys.elements())
+	# A young Avatar cannot yet call the Avatar State at will
+	avatar_state_able = st != "young" or randf() < 0.5
+
+func _set_avatar_elements(els: Array) -> void:
+	avatar_elements = els.duplicate()
+	if avatar_elements.is_empty():
+		avatar_elements = ["air"]
+	bend = avatar_elements[0]
 
 func setup_lord(lid: String, p_team: int, key: String) -> void:
 	var l: Dictionary = Data.lords[lid]
@@ -168,6 +202,9 @@ func setup_companion(cid: String, p_team: int) -> void:
 	var cs: Dictionary = GS.companion_state(cid)
 	bend = cs.get("bend", c.bend)
 	bend_power = float(cs.get("power", c.power)) + float(cs.get("power_bonus", 0.0))
+	if bend == "avatar":
+		_set_avatar_elements(AvatarSys.elements())
+		avatar_state_able = false
 	healer = c.get("healer", false)
 	chi_blocker = c.get("chi_blocker", false)
 	mount_id = c.get("mount", "")
@@ -308,6 +345,8 @@ func tick(delta: float) -> void:
 			return
 	if bend != "":
 		chi = minf(max_chi, chi + chi_regen * delta)
+	if not avatar_elements.is_empty():
+		_update_avatar(delta)
 	_update_action(delta)
 	_update_form(delta)
 	var desired := Vector3.ZERO
@@ -512,6 +551,10 @@ func cast(slot: String, point: Vector3) -> bool:
 	_set_action("cast", 0.3)
 	cast_anim = 0.35
 	UnitVisual.cast(self, slot)
+	if not avatar_elements.is_empty():
+		var c: Dictionary = get_meta("casts", {})
+		c[bend] = int(c.get(bend, 0)) + 1
+		set_meta("casts", c)
 	battle.execute_bending(self, a, point)
 	return true
 
@@ -546,9 +589,36 @@ func receive_melee(attacker, dmg: float, dtype: String, dir: String) -> bool:
 			battle.hud_note("Your chi has been blocked!")
 	return true
 
+## The Avatar rotates through their elements; at the edge of defeat the past
+## lives answer once: the Avatar State.
+func _update_avatar(delta: float) -> void:
+	avatar_rot_t -= delta
+	if avatar_rot_t <= 0.0 and action == "":
+		bend = avatar_elements.pick_random()
+		avatar_rot_t = randf_range(2.5, 5.0)
+	if avatar_state_t > 0.0:
+		avatar_state_t -= delta
+		for k in cooldowns.keys():
+			cooldowns[k] = maxf(0.0, cooldowns[k] - delta * 1.5)
+		chi = max_chi
+		if avatar_state_t <= 0.0:
+			bend_power /= 1.5
+			UnitVisual.avatar_glow(self, false)
+	elif not avatar_state_used and avatar_state_able and hp < max_hp * 0.35 and alive:
+		avatar_state_used = true
+		avatar_state_t = 10.0
+		hp = minf(max_hp, hp + max_hp * 0.25)
+		bend_power *= 1.5
+		UnitVisual.avatar_glow(self, true)
+		if battle != null and battle.has_method("avatar_state"):
+			battle.avatar_state(self)
+
 func apply_damage(amount: float, attacker, dtype: String, push: Vector3, knockback: float, ignore_armor: bool = false) -> void:
 	if not alive:
 		return
+	if avatar_state_t > 0.0:
+		amount *= 0.4
+		knockback *= 0.2
 	var a := 0.0 if ignore_armor else armor
 	if dtype == "blunt":
 		a *= 0.6

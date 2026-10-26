@@ -55,6 +55,11 @@ var factions := {
 		"trim": Color(0.95, 0.7, 0.3), "culture": "earth", "king": "", "capital": "",
 		"desc": "Sworn daofei who rob the Earth Kingdom's tax barges and feed Ba Sing Se's Lower Ring with the grain. Heroes to the hungry, murderers to the Dai Li.",
 	},
+	"avatar": {
+		"name": "The Avatar's Company", "short": "The Avatar", "color": Color(0.92, 0.9, 0.75),
+		"trim": Color(0.6, 0.85, 1.0), "culture": "air", "king": "", "capital": "",
+		"desc": "The Avatar and those who travel with them: friends, teachers and volunteers from every nation.",
+	},
 	"neutral": {
 		"name": "Neutral", "short": "Neutral", "color": Color(0.8, 0.8, 0.8),
 		"trim": Color(1, 1, 1), "culture": "air", "king": "", "capital": "",
@@ -328,6 +333,13 @@ func _init_troops() -> void:
 
 	# Generic lord stand-ins (stats are overwritten from the lord definition)
 	_t("lord_unit", "Lord", "earth", 5, {"hero": true})
+	# The Avatar (stats, name and look come from scripts/core/avatar.gd)
+	_t("avatar", "The Avatar", "air", 6, {"hero": true, "bend": "avatar", "bend_power": 2.6, "weapon": "staff", "hp": 300, "armor": 14, "skill": 95,
+		"look": {"body": Color(0.9, 0.85, 0.7), "trim": Color(0.95, 0.9, 0.6), "helmet": "none"}})
+	# Chi-blockers: non-benders who strike pressure points; a bender they hit
+	# cannot bend for a while. Hired as a precaution against the Avatar.
+	_t("chi_blocker", "Chi-Blocker", "earth", 3, {"weapon": "fists", "chi_blocker": true, "hp": 60, "armor": 6, "skill": 70,
+		"look": {"body": Color(0.35, 0.3, 0.38), "trim": Color(0.75, 0.2, 0.25), "helmet": "none"}})
 
 # ---------------------------------------------------------------------------
 # Items
@@ -356,6 +368,7 @@ var items := {
 	"throwing_knives": {"name": "Throwing Knives", "slot": "ranged", "dmg": 19, "ammo": 8, "accuracy": 0.75, "proj_speed": 32.0, "price": 120, "model": "knife"},
 	# body armour
 	"peasant_clothes": {"name": "Peasant Clothes", "slot": "armor", "armor": 3, "price": 20},
+	"nomad_robes": {"name": "Air Nomad Robes", "slot": "armor", "armor": 4, "price": 60},
 	"water_parka": {"name": "Water Tribe Parka", "slot": "armor", "armor": 8, "price": 120},
 	"fur_armor": {"name": "Fur and Bone Armour", "slot": "armor", "armor": 15, "price": 420},
 	"ek_armor": {"name": "Earth Kingdom Lamellar", "slot": "armor", "armor": 17, "price": 520},
@@ -420,6 +433,7 @@ var lords := {
 	"haoren": {"name": "Fire Lord Haoren", "faction": "fire_nation", "bend": "fire", "power": 2.6, "weapon": "fists", "hp": 200, "troops": 120, "home": "caldera", "king": true, "aggression": 0.25,
 		"look": {"sex": "m", "hair": "Hair_SimpleParted", "hair_color": GREY, "beard": true},
 		"bio": "Wants peace; fears being remembered as the man who let the Avatar die. He was the Avatar's friend in boyhood and still keeps a chipped Pai Sho tile they played with.",
+		"bio_sandbox": "Wants peace; fears being remembered as the Fire Lord who could not end a war the Avatar had to end for him. He keeps a chipped Pai Sho tile from a friend who died young.",
 		"line": "Sit. Everyone who comes before me wants something, and most of them want a war. Which are you?"},
 	"ryoko": {"name": "Crown Princess Ryoko", "faction": "fire_nation", "bend": "fire", "power": 2.5, "weapon": "fists", "hp": 180, "troops": 70, "home": "caldera", "aggression": 0.35,
 		"look": {"sex": "f", "hair": "Hair_Buns"},
@@ -428,6 +442,7 @@ var lords := {
 	"kuro": {"name": "Admiral Tenzai Kuro", "faction": "fire_nation", "bend": "fire", "power": 2.0, "weapon": "dao", "hp": 170, "troops": 90, "home": "fire_navy_harbor", "aggression": 0.85,
 		"look": {"sex": "m", "hair": "Hair_Buzzed", "beard": true},
 		"bio": "Wants the colonies, and the fortune he has made in them; fears the truth about the night the Avatar drowned. Generous to his sailors and utterly self-justifying.",
+		"bio_sandbox": "Wants the colonies, and the fortune he has made in them; fears the day the Avatar takes an interest in his ledgers. Generous to his sailors and utterly self-justifying.",
 		"line": "Every sailor in my fleet eats because I made hard choices. Remember that before you judge me."},
 	"ito": {"name": "General Masaru Ito", "faction": "fire_nation", "bend": "", "power": 1.0, "weapon": "dao", "hp": 160, "troops": 90, "home": "pohuai", "aggression": 0.5,
 		"look": {"sex": "m", "hair": "Hair_Buzzed", "hair_color": GREY},
@@ -736,6 +751,35 @@ var bandit_spawns := [
 	{"pos": Vector2(420, 670), "troops": ["fn_deserter"], "faction": "bandits", "name": "Deserters"},
 	{"pos": Vector2(1010, 490), "troops": ["red_lantern", "red_lantern", "red_lantern_elder"], "faction": "red_lanterns", "name": "Red Lantern Brothers"},
 ]
+
+## A tavern rumour suited to the era: the Drowned Testament's rumours belong
+## to the Quiet Years; sandbox eras gossip about a living Avatar instead.
+func rumor() -> String:
+	var e: String = get_node("/root/GS").flags.get("era", "quiet")
+	if e == "quiet":
+		return rumors.pick_random()
+	var pool: Array = rumors.filter(func(r): return not (r.contains("drown") or r.contains("new Avatar") or r.contains("Lantern")))
+	pool.append_array(era_rumors.get(e, []))
+	return pool.pick_random()
+
+const era_rumors := {
+	"young": [
+		"The new Avatar's a Southern girl. Sixteen. They say she threw up on the Fire Sages' boat and then apologised to the boat.",
+		"Every earthbending master in the Kingdom is pretending not to hope the Avatar picks them. My cousin's teacher bought a new robe. Just in case.",
+		"The Avatar was at a fishing village last week, arguing with a dead man. Out loud. The fishermen took sides.",
+	],
+	"prime": [
+		"Avatar Lei Shan slept in a hayloft in Chin Village last month and paid for it by fixing every roof. People are hoping he comes back. Their roofs, I mean.",
+		"They say the Avatar walked into a siege camp, sat down between the lines, and asked both generals what their mothers would think. It worked. That's the frightening part.",
+		"The Avatar's husband makes pots in the Jade Terraces and won't move to a temple. Says the Avatar can come home for dinner like everyone else.",
+		"You never find the Avatar. The Avatar finds you. Pray it's for the good reason.",
+	],
+	"elder": [
+		"Avatar Akane hasn't left the Boiling Lake Hamlet since spring. The sages say she spends her nights in the Spirit World, arguing with a river.",
+		"The old Avatar only travels for real evil now. Last time she came out, a warlord's castle became a very nice orchard.",
+		"My grandfather met Avatar Akane when she was young. He says she was terrifying. He says she's still terrifying, just slower.",
+	],
+}
 
 var rumors := [
 	"Eleven years since the Avatar drowned, and still nobody will say whose fault it was. Everyone knows, of course. Everyone knows something different.",

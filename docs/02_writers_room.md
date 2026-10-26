@@ -292,6 +292,12 @@ Each outcome changes the Lower Ring's prosperity and the daofei's attitude.
 ### 6.2 Can the player become the Avatar, or find them?
 * **Lantern:** Fans will want to find the child.
 * **Compass:** Never. The Avatar's identity stays unknown. The game is about the people the Avatar will inherit. **Locked: no.**
+* **Revision (expansion cycle, producer mandate):** The player still never becomes the Avatar. The Avatar is now a persistent NPC who ages with the calendar, and life stage governs involvement:
+  * **The Quiet Years child** stays untold, unnamed and out of reach until sixteen. This keeps every decision above intact for the story campaign.
+  * **Three sandbox eras** show the Avatar at sixteen (Siku), thirty-eight (Lei Shan) and eighty-four (Akane).
+  * **Reasons to come to the player.** The Avatar is hard to find and approaches for only four reasons: great power used well, great power used cruelly, top-1% mastery of an element a young Avatar still needs, and local cruelty when the Avatar is already near.
+  * **Locked:** the Avatar is never killed. Defeated, they withdraw and return.
+  * Full design in `docs/07_avatar_and_dlcs.md`.
 
 ### 6.3 Firebending and breath
 * **Compass lore historian:** In the original series fire comes from the breath and from life energy, not anger, and the Sun Warriors' teaching restored that. Juro's arc should honour this without copying the Sun Warrior scene. **Locked:** Juro relearns from a Fire Sage's breath exercises, and the dragon element is cut.

@@ -1,5 +1,5 @@
 extends Node
-## Runs battles headlessly. Args after "--": [field|siege|arena|duel|big|bend] [element]
+## Runs battles headlessly. Args after "--": [field|siege|arena|duel|big|bend|avatar] [element|era]
 const Roster = preload("res://scripts/core/roster.gd")
 var B
 var mode := "field"
@@ -17,7 +17,8 @@ func _ready() -> void:
 	B = load("res://scripts/battle/battle.gd")
 	B.autotest = mode != "bend"
 	var bg := {"fire": "fn_deserter", "earth": "ek_refugee", "water": "swt_warrior", "": "kyoshi"}
-	var p := GS.create_player("Tester", bg.get(elem, "ek_refugee"), elem, Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
+	var bend_arg := "earth" if mode == "avatar" else elem
+	var p := GS.create_player("Tester", bg.get(bend_arg, "ek_refugee"), bend_arg, Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 	GS.new_game(p)
 	GS.player.skills.bending = 6
 	GS.player.equip.ranged = "short_bow"
@@ -46,6 +47,18 @@ func _ready() -> void:
 		return
 	if mode == "duel":
 		GS.start_duel("daisuke")
+		return
+	if mode == "avatar":
+		# The Avatar's company against a fortified, trapped seat (elem = era)
+		var AvatarSys = load("res://scripts/core/avatar.gd")
+		AvatarSys.init_era(elem if elem in ["young", "prime", "elder"] else "prime")
+		GS.settlements.pohuai.owner = "player"
+		GS.settlements.pohuai.avatar_fort = 1
+		GS.settlements.pohuai.avatar_traps = 2
+		GS.player_party().pos = Data.settlements.pohuai.pos
+		Roster.add(GS.player_party().roster, "chi_blocker", 6)
+		AvatarSys.spawn_company()
+		AvatarSys.start_battle()
 		return
 	get_tree().change_scene_to_file("res://scenes/battle.tscn")
 	if mode == "bend":

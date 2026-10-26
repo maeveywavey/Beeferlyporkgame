@@ -30,7 +30,7 @@ const SPAWNS := {
 }
 
 const TRIGGERS := [
-	{"on": "daily", "dlg": "ms_prologue", "if": {"day": 2}},
+	{"on": "daily", "dlg": "ms_prologue", "if": {"day": 2, "era": "quiet"}},
 	{"on": "daily", "dlg": "ms_norbu_dies", "if": {"flag": "ms_norbu_fight", "not_flag": "ms_norbu_saved", "days_since": ["ms_norbu_fight_day", 2]}},
 	{"on": "daily", "dlg": "ms_assassins", "if": {"pages": 3, "not_flag": "ms_truth_decided"}, "chance": 0.15, "do": [["spawn", "kuro_agents"]]},
 	{"on": "daily", "dlg": "ms_refugees_raided", "if": {"flag": "refugees_betrayed", "days_since": ["refugees_betrayed", 10]}},
@@ -276,7 +276,7 @@ const DIALOGUES := {
 	}},
 	"ms_refugees_raided": {"title": "The Mountain Road", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "News comes on the wind, the way bad news does. Fire Navy marines were waiting on the monks' mountain road. Forty refugees and two monks did not reach the temple. Nobody knows how the Navy knew the route. You know.",
-			"do": [["rel", "air_nomads", -30], ["approval", "pemba", -40], ["approval", "nima", -10], ["honor", -5]]},
+			"do": [["rel", "air_nomads", -30], ["approval", "pemba", -40], ["approval", "nima", -10], ["honor", -5], ["infamy", 40, "the mountain road"]]},
 	}},
 
 	# -----------------------------------------------------------------------
