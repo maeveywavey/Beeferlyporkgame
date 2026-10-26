@@ -322,8 +322,12 @@ static func spawn(sp_id: String) -> String:
 	var p := GS.make_party("", sp.name, "bandit", sp.get("faction", "bandits"), pos)
 	p.story = sp_id
 	p.anchor = pos
+	# Some ambushes scale to the party they ambush, so a fresh start isn't a wipe
+	var scale := 1.0
+	if sp.get("scale", false):
+		scale = clampf(float(GS.party_size()) / 12.0, 0.45, 1.5)
 	for t in sp.troops:
-		Roster.add(p.roster, t[0], int(t[1]))
+		Roster.add(p.roster, t[0], maxi(1, int(round(int(t[1]) * scale))))
 	p.gold = int(sp.get("gold", 200))
 	p.target_party = "player"
 	p.moving = true

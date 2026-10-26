@@ -1075,7 +1075,7 @@ func _lightning_fx(a: Vector3, b: Vector3) -> void:
 			seg.look_at(p1, Vector3.UP if absf((p1 - p0).normalized().y) < 0.99 else Vector3.RIGHT)
 	var light := OmniLight3D.new()
 	light.light_color = Color(0.7, 0.85, 1.0)
-	light.light_energy = 6.0
+	light.light_energy = 1.2 if GS.settings.get("reduce_flashing", false) else 6.0
 	light.omni_range = 20.0
 	root.add_child(light)
 	light.position = b

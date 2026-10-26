@@ -4,7 +4,7 @@ extends "res://scripts/ui/window_base.gd"
 var map
 
 func _init() -> void:
-	window_size = Vector2(640, 480)
+	window_size = Vector2(700, 640)
 
 func build() -> void:
 	set_title("Settings")
@@ -80,7 +80,28 @@ func build() -> void:
 		GS.settings.music = v
 		GS.apply_settings())
 	g.add_child(mv)
-	content.add_child(UI.spacer(20))
+	# Accessibility
+	g.add_child(UI.label("Text and interface size"))
+	var us := HSlider.new()
+	us.min_value = 0.8
+	us.max_value = 1.5
+	us.step = 0.05
+	us.value = float(GS.settings.get("ui_scale", 1.0))
+	us.custom_minimum_size.x = 220
+	us.value_changed.connect(func(v): GS.settings.ui_scale = v)
+	g.add_child(us)
+	g.add_child(UI.label("Plain speech (show Shen Mu's lines without the stutter)"))
+	var ps := CheckBox.new()
+	ps.button_pressed = GS.settings.get("plain_speech", false)
+	ps.toggled.connect(func(v): GS.settings.plain_speech = v)
+	g.add_child(ps)
+	g.add_child(UI.label("Reduce flashing (lightning, bright bursts)"))
+	var rf := CheckBox.new()
+	rf.button_pressed = GS.settings.get("reduce_flashing", false)
+	rf.toggled.connect(func(v): GS.settings.reduce_flashing = v)
+	g.add_child(rf)
+	content.add_child(UI.rich("[i]Size applies when you press Save & Close. Story choices always show their requirements; nothing in this game is timed except battles.[/i]", 580))
+	content.add_child(UI.spacer(10))
 	var b := UI.hbox()
 	content.add_child(b)
 	b.add_child(UI.expand())

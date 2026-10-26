@@ -136,7 +136,7 @@ func _ready() -> void:
 				var mm = Engine.get_main_loop().current_scene
 				mm.page = "create"
 				mm._build())
-		"world", "town", "party", "encounter", "char", "factions", "trade", "far", "inv":
+		"world", "town", "party", "encounter", "char", "factions", "trade", "far", "inv", "quests", "society":
 			var p := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 			GS.new_game(p)
 			GS.flags.seen_help = true
@@ -224,6 +224,15 @@ static func _open(mode: String) -> void:
 		"char": map._open_character()
 		"factions": map._open_factions()
 		"inv": map._open_inventory()
+		"quests":
+			var Story = load("res://scripts/story/story.gd")
+			Story.apply([["journal", "ms_main", "The Drowned Testament", "Brother Norbu gave you a page of the drowned Avatar's logbook. Take it to Abbess Tsering at the Eastern Air Temple."], ["journal", "cq_hana", "Hana: The Settled Stones", "Go with Hana to the Wenlong district of Ba Sing Se's Lower Ring."]])
+			map._open_quests()
+		"society":
+			var fw = load("res://scripts/ui/faction_window.gd").new()
+			fw.selected = "northern_water"
+			fw.show_society = true
+			map.open_window(fw)
 		"far":
 			map.cam_dist = 600.0
 		"trade":

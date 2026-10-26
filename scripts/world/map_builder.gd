@@ -111,9 +111,11 @@ static func terrain_mesh() -> ArrayMesh:
 static func build_terrain(parent: Node3D) -> void:
 	var mi := MeshInstance3D.new()
 	mi.mesh = terrain_mesh()
-	var m := StandardMaterial3D.new()
-	m.vertex_color_use_as_albedo = true
-	m.roughness = 1.0
+	# painted like the series' map backgrounds: vertex colours plus soft brushwork
+	var m: ShaderMaterial = load("res://scripts/town/arch.gd").material(false).duplicate()
+	m.set_shader_parameter("brush_scale", 0.03)
+	m.set_shader_parameter("brush_strength", 0.12)
+	m.set_shader_parameter("shadow_threshold", -0.3)   # only the steepest slopes fall into shade
 	mi.material_override = m
 	parent.add_child(mi)
 	# Sea
@@ -165,57 +167,67 @@ static func build_vegetation(parent: Node3D) -> void:
 					rocks.append([Vector3(p.x, h, p.y), rng.randf_range(0.8, 2.0), b])
 				else:
 					trees.append([Vector3(p.x, h, p.y), rng.randf_range(0.8, 1.4), b])
-	# Trees
-	var cone := CylinderMesh.new()
-	cone.top_radius = 0.0
-	cone.bottom_radius = 1.3
-	cone.height = 3.6
-	cone.radial_segments = 6
-	cone.rings = 1
-	var tm := StandardMaterial3D.new()
-	tm.vertex_color_use_as_albedo = true
-	tm.roughness = 1.0
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.mesh = cone
-	mm.instance_count = trees.size()
-	for i in trees.size():
-		var t: Array = trees[i]
-		var s: float = t[1]
-		var xf := Transform3D(Basis().scaled(Vector3(s, s, s)), t[0] + Vector3(0, 1.8 * s, 0))
-		mm.set_instance_transform(i, xf)
-		var col := Color(0.14, 0.32, 0.14)
+	# Trees and rocks: CC0 nature-kit meshes in multimeshes, one per species
+	var species := {}
+	for t in trees:
+		var names: Array
 		match t[2]:
-			"swamp": col = Color(0.2, 0.26, 0.14)
-			"volcanic": col = Color(0.25, 0.2, 0.15)
-			"highland": col = Color(0.2, 0.36, 0.2)
-		mm.set_instance_color(i, col.lightened(rng.randf_range(-0.1, 0.15)))
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	mmi.material_override = tm
-	parent.add_child(mmi)
-	# Rocks
-	var rock := SphereMesh.new()
-	rock.radius = 1.0
-	rock.height = 1.4
-	rock.radial_segments = 6
-	rock.rings = 3
-	var rmm := MultiMesh.new()
-	rmm.transform_format = MultiMesh.TRANSFORM_3D
-	rmm.use_colors = true
-	rmm.mesh = rock
-	rmm.instance_count = rocks.size()
-	for i in rocks.size():
-		var r: Array = rocks[i]
-		var s: float = r[1]
-		var xf := Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * 0.8, s)), r[0])
-		rmm.set_instance_transform(i, xf)
-		rmm.set_instance_color(i, Color(0.45, 0.42, 0.38) if r[2] == "mountain" else Color(0.85, 0.9, 0.95))
-	var rmi := MultiMeshInstance3D.new()
-	rmi.multimesh = rmm
-	rmi.material_override = tm
-	parent.add_child(rmi)
+			"forest": names = ["CommonTree_1", "CommonTree_3", "Pine_1"]
+			"swamp": names = ["TwistedTree_2", "TwistedTree_4"]
+			"volcanic": names = ["DeadTree_4", "DeadTree_1"]
+			"highland": names = ["Pine_2", "Pine_4"]
+			_: names = ["CommonTree_1", "CommonTree_5"]
+		var nm: String = names[rng.randi() % names.size()]
+		if not species.has(nm):
+			species[nm] = []
+		species[nm].append(t)
+	for r in rocks:
+		var rn: String = ["Rock_Medium_1", "Rock_Medium_2", "Rock_Medium_3"][rng.randi() % 3]
+		if not species.has(rn):
+			species[rn] = []
+		species[rn].append(r)
+	for nm in species:
+		var src := _nature_mesh(nm)
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = src[0]
+		var list: Array = species[nm]
+		mm.instance_count = list.size()
+		var is_rock: bool = nm.begins_with("Rock")
+		for i in list.size():
+			var t2: Array = list[i]
+			var sc: float = t2[1] * (0.3 if not is_rock else 0.55)
+			var xf = Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * sc), t2[0]) * src[1]
+			mm.set_instance_transform(i, xf)
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		parent.add_child(mmi)
+
+static var _nature_cache := {}
+
+## First mesh of a nature-kit model with toon materials, and its local transform.
+static func _nature_mesh(name: String) -> Array:
+	if _nature_cache.has(name):
+		return _nature_cache[name]
+	var inst: Node3D = load("res://assets/nature/%s.gltf" % name).instantiate()
+	var mi: MeshInstance3D = inst.find_children("*", "MeshInstance3D", true, false)[0]
+	var mesh: ArrayMesh = mi.mesh.duplicate()
+	var CBs = load("res://scripts/actors/character_builder.gd")
+	for i in mesh.get_surface_count():
+		mesh.surface_set_material(i, CBs.toon_from(mesh.surface_get_material(i), {"saturation": 1.1, "outline": false}))
+	var xf: Transform3D = inst.transform.affine_inverse() * mi.global_transform if mi.is_inside_tree() else _rel_xf(inst, mi)
+	inst.free()
+	_nature_cache[name] = [mesh, xf]
+	return _nature_cache[name]
+
+static func _rel_xf(root: Node3D, n: Node3D) -> Transform3D:
+	var xf := Transform3D.IDENTITY
+	var cur: Node = n
+	while cur != null and cur != root:
+		if cur is Node3D:
+			xf = (cur as Node3D).transform * xf
+		cur = cur.get_parent()
+	return xf
 
 # ---------------------------------------------------------------------------
 # Settlements
@@ -239,88 +251,81 @@ static func _house(parent: Node3D, pal: Dictionary, pos: Vector3, size: float, i
 		parent.add_child(roof(size * 1.25, size * 1.0, size * 0.5, pal.roof, pos + Vector3(0, size * 0.95, 0)))
 
 static func build_settlement(sid: String) -> Node3D:
+	var Arch = load("res://scripts/town/arch.gd")
 	var d: Dictionary = Data.settlements[sid]
 	var root := Node3D.new()
 	root.name = sid
 	var culture: String = d.culture
-	var pal := culture_palette(culture)
-	var igloo := culture in ["north", "south"]
+	var ice := culture in ["north", "south"]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(sid)
+	var k := 0.45   # miniature scale: settlements are drawn larger than life so they read
+	var mini := func(n: Node3D, pos: Vector3, sc: float) -> void:
+		n.position = pos
+		n.scale = Vector3.ONE * sc
+		root.add_child(n)
+	var house := func(pos: Vector3, w: float, dd: float, floors: int, rot: float) -> void:
+		var n: Node3D
+		if ice:
+			n = Arch.ice_dome(minf(w, dd) * 0.55, rot)
+		elif culture == "swamp":
+			n = Arch.stilt_hut(w, dd, rot)
+		elif culture == "air":
+			n = Arch.air_tower(1.6, 5.0 + floors * 2.0)
+		else:
+			n = Arch.hall(culture, w, dd, floors, rot)
+		mini.call(n, pos, k)
 	match d.type:
 		"town":
-			# ring wall
 			var r := 6.5
-			var segs := 10
-			for i in segs:
-				var a := TAU * i / segs
-				var p := Vector3(cos(a) * r, 1.0, sin(a) * r)
-				var w := box(Vector3(4.3, 2.0, 0.6), pal.wall, p)
-				w.rotation.y = -a + PI / 2.0
-				root.add_child(w)
-				root.add_child(cyl(0.6, 0.7, 2.8, pal.wall, Vector3(cos(a + PI / segs) * r, 1.4, sin(a + PI / segs) * r), 8))
-			for i in 9:
-				var a2 := rng.randf() * TAU
-				var rr := rng.randf_range(1.5, 4.8)
-				_house(root, pal, Vector3(cos(a2) * rr, 0, sin(a2) * rr), rng.randf_range(1.2, 1.8), igloo)
-			# central tower / palace
-			if igloo:
-				root.add_child(sphere(2.4, pal.house, Vector3.ZERO, true))
-				root.add_child(cyl(0.3, 0.6, 6.0, pal.house, Vector3(0, 3.0, 0), 8))
-			else:
-				for lvl in 3:
-					var s := 3.0 - lvl * 0.8
-					var y := lvl * 1.8
-					root.add_child(box(Vector3(s, 1.4, s), pal.house, Vector3(0, y + 0.7, 0)))
-					root.add_child(roof(s * 1.5, s * 1.5, 0.8, pal.roof, Vector3(0, y + 1.8, 0)))
-		"castle":
-			var s := 4.5
-			for i in 4:
-				var corner := Vector3((1 if i % 2 == 0 else -1) * s, 0, (1 if i < 2 else -1) * s)
-				root.add_child(cyl(0.9, 1.0, 4.0, pal.wall, corner + Vector3(0, 2.0, 0), 8))
-				if not igloo:
-					root.add_child(cyl(0.0, 1.3, 1.2, pal.roof, corner + Vector3(0, 4.6, 0), 8))
-			root.add_child(box(Vector3(s * 2, 2.6, 0.7), pal.wall, Vector3(0, 1.3, s)))
-			root.add_child(box(Vector3(s * 2, 2.6, 0.7), pal.wall, Vector3(0, 1.3, -s)))
-			root.add_child(box(Vector3(0.7, 2.6, s * 2), pal.wall, Vector3(s, 1.3, 0)))
-			root.add_child(box(Vector3(0.7, 2.6, s * 2), pal.wall, Vector3(-s, 1.3, 0)))
-			root.add_child(box(Vector3(3, 4.5, 3), pal.wall.darkened(0.1), Vector3(0, 2.25, 0)))
-			if not igloo:
-				root.add_child(roof(4.2, 4.2, 1.4, pal.roof, Vector3(0, 5.2, 0)))
-		"village":
+			for i in 8:
+				var a := TAU * i / 8.0
+				var wall = Arch.wall(culture, 17.0, 6.0, -a + PI / 2.0)
+				mini.call(wall, Vector3(cos(a + PI / 8.0) * r, 0, sin(a + PI / 8.0) * r), k)
+			house.call(Vector3(0, 0, -1.0), 14.0, 10.0, 3, 0.0)
 			for i in 6:
-				var a3 := rng.randf() * TAU
-				var rr2 := rng.randf_range(1.0, 4.5)
-				_house(root, pal, Vector3(cos(a3) * rr2, 0, sin(a3) * rr2), rng.randf_range(0.9, 1.3), igloo)
-			# fields
-			if not igloo and culture != "swamp":
-				for i in 3:
-					var fp := Vector3(rng.randf_range(-6, 6), 0.05, rng.randf_range(-6, 6))
-					root.add_child(box(Vector3(3, 0.1, 2), Color(0.65, 0.6, 0.25), fp))
-		"temple", "ruin":
-			if d.type == "temple":
-				for i in 4:
-					var a4 := TAU * i / 4.0
-					var p2 := Vector3(cos(a4) * 2.5, 0, sin(a4) * 2.5)
-					var h := rng.randf_range(4.0, 7.5)
-					root.add_child(cyl(0.7, 0.9, h, pal.wall, p2 + Vector3(0, h / 2.0, 0), 10))
-					root.add_child(cyl(0.0, 1.3, 2.2, pal.roof, p2 + Vector3(0, h + 1.1, 0), 10))
-				root.add_child(cyl(1.2, 1.6, 9.0, pal.wall, Vector3(0, 4.5, 0), 10))
-				root.add_child(cyl(0.0, 2.0, 3.0, pal.roof, Vector3(0, 10.5, 0), 10))
-			elif sid == "wan_shi_tong":
-				root.add_child(cyl(1.0, 1.4, 7.0, Color(0.45, 0.35, 0.25), Vector3(0, 3.5, 0), 8))
-				root.add_child(cyl(0.0, 2.0, 2.5, Color(0.3, 0.25, 0.2), Vector3(0, 8.2, 0), 8))
+				var a2 := TAU * (i + 0.5) / 6.0
+				house.call(Vector3(cos(a2) * 3.8, 0, sin(a2) * 3.8), rng.randf_range(6.0, 8.0), 5.5, 1 + int(rng.randf() < 0.3), round(a2 / (PI * 0.5)) * PI * 0.5)
+		"castle":
+			for i in 4:
+				var a3 := TAU * i / 4.0 + PI / 4.0
+				var wall2 = Arch.wall(culture, 18.0, 6.0, -a3 + PI / 2.0 + PI / 4.0)
+				mini.call(wall2, Vector3(cos(a3 + PI / 4.0) * 4.2, 0, sin(a3 + PI / 4.0) * 4.2), k)
+			house.call(Vector3.ZERO, 11.0, 9.0, 3, 0.0)
+		"village":
+			for i in 5:
+				var a4 := TAU * i / 5.0 + rng.randf() * 0.4
+				var rr := rng.randf_range(1.5, 4.0)
+				house.call(Vector3(cos(a4) * rr, 0, sin(a4) * rr), rng.randf_range(5.5, 7.0), 4.8, 1, round(a4 / (PI * 0.5)) * PI * 0.5)
+			if not ice and culture != "swamp":
+				for i in 2:
+					var fp := Vector3(rng.randf_range(-6, 6), 0.02, rng.randf_range(-6, 6))
+					mini.call(Arch.paddy(10.0, 7.0, culture in ["earth", "fire", "kyoshi", "omashu"]), fp, k)
+		"temple":
+			var hall = Arch.hall("air", 14.0, 10.0, 3, 0.0, {"floor_h": 3.0})
+			mini.call(hall, Vector3(0, 0, -0.5), k)
+			for i in 4:
+				var a5 := TAU * i / 4.0 + PI / 4.0
+				mini.call(Arch.air_tower(2.4, 9.0 + i), Vector3(cos(a5) * 4.0, 0, sin(a5) * 4.0), k)
+		"ruin":
+			if sid == "wan_shi_tong":
+				mini.call(Arch.air_tower(3.0, 14.0), Vector3.ZERO, k)
 			elif sid == "red_lantern_den":
-				for i in 5:
-					var tp := Vector3(rng.randf_range(-4, 4), 0, rng.randf_range(-4, 4))
-					root.add_child(cyl(0.4, 0.5, 7.0, Color(0.35, 0.25, 0.15), tp + Vector3(0, 3.5, 0), 6))
-					root.add_child(sphere(2.0, Color(0.15, 0.35, 0.15), tp + Vector3(0, 7.5, 0)))
-					root.add_child(box(Vector3(2.0, 0.8, 2.0), Color(0.5, 0.38, 0.22), tp + Vector3(0, 5.5, 0)))
+				for i in 4:
+					var a6 := TAU * i / 4.0
+					mini.call(Arch.stilt_hut(5.0, 4.0, a6), Vector3(cos(a6) * 3.0, 0, sin(a6) * 3.0), k)
+					var ln = Arch.lantern(Color(0.95, 0.2, 0.12))
+					mini.call(ln, Vector3(cos(a6) * 4.5, 0, sin(a6) * 4.5), k * 1.5)
 			else:
-				for i in 6:
+				var b = Arch.Builder.new()
+				for i in 7:
 					var bp := Vector3(rng.randf_range(-5, 5), 0, rng.randf_range(-5, 5))
 					var bh := rng.randf_range(0.6, 2.5)
-					root.add_child(box(Vector3(rng.randf_range(1, 3), bh, 0.6), Color(0.45, 0.43, 0.4), bp + Vector3(0, bh / 2.0, 0), Vector3(0, rng.randf() * 180, 0)))
+					b.box(bp + Vector3(0, bh / 2.0, 0), Vector3(rng.randf_range(1, 3), bh, 0.6), Color(0.6, 0.57, 0.52), rng.randf() * PI)
+				var mi := MeshInstance3D.new()
+				mi.mesh = b.commit()
+				mi.material_override = Arch.material(true)
+				root.add_child(mi)
 	return root
 
 ## Banner showing a settlement's current faction; returned so it can be recoloured.

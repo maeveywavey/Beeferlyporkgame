@@ -443,7 +443,21 @@ func _update_parties(delta: float) -> void:
 			actor.speed = 1.4 if (p.moving and GS.hours >= p.get("wait_until", 0.0)) else 0.0
 			actor.set_process(visible_now)
 
+var _story_marks := {}
+var _story_marks_t := 0.0
+
+## Settlements where a story beat is waiting get a gold star on the map.
+func _refresh_story_marks() -> void:
+	_story_marks = {}
+	for sid in Data.settlements:
+		if not Story.settlement_options(sid).is_empty():
+			_story_marks[sid] = true
+
 func _update_labels() -> void:
+	_story_marks_t -= get_process_delta_time()
+	if _story_marks_t <= 0.0:
+		_story_marks_t = 1.0
+		_refresh_story_marks()
 	var vp := get_viewport().get_visible_rect().size
 	var show_villages := cam_dist < 260.0
 	for sid in settlement_labels:
@@ -456,7 +470,7 @@ func _update_labels() -> void:
 		var sp := camera.unproject_position(wp)
 		l.visible = sp.x > -100 and sp.x < vp.x + 100 and sp.y > -50 and sp.y < vp.y + 50
 		var s: Dictionary = GS.settlements[sid]
-		var txt: String = d.name
+		var txt: String = ("★ " if _story_marks.has(sid) else "") + d.name
 		if not s.siege.is_empty():
 			txt += " (besieged)"
 		elif s.looted_until > GS.hours:
@@ -464,7 +478,7 @@ func _update_labels() -> void:
 		if l.text != txt:
 			l.text = txt
 		var fc: Color = Data.factions.get(s.faction, Data.factions.neutral).color
-		l.add_theme_color_override("font_color", Color(1, 0.97, 0.88).lerp(fc.lightened(0.4), 0.45))
+		l.add_theme_color_override("font_color", Color(1, 0.85, 0.3) if _story_marks.has(sid) else Color(1, 0.97, 0.88).lerp(fc.lightened(0.4), 0.45))
 		l.position = sp - Vector2(l.size.x / 2.0, l.size.y)
 	# Party labels for visible lords, the player and nearby parties
 	for id in party_nodes:
@@ -495,6 +509,29 @@ func _update_labels() -> void:
 			col = Color(1, 0.8, 0.4)
 		l.add_theme_color_override("font_color", col)
 		l.position = camera.unproject_position(wp) - Vector2(l.size.x / 2.0, l.size.y)
+	_declutter()
+
+## Nudge overlapping map labels apart so stacked armies stay readable.
+func _declutter() -> void:
+	var ls := []
+	for l in settlement_labels.values() + party_labels.values():
+		if l.visible:
+			ls.append(l)
+	ls.sort_custom(func(a, b): return a.position.y > b.position.y)
+	var placed := []
+	for l in ls:
+		var r := Rect2(l.position, l.size)
+		var guard := 0
+		var moved := true
+		while moved and guard < 8:
+			moved = false
+			guard += 1
+			for q in placed:
+				if r.intersects(q.grow(-1.0)):
+					r.position.y = q.position.y - r.size.y
+					moved = true
+		l.position = r.position
+		placed.append(r)
 
 func _update_hud(captive: bool) -> void:
 	var pl: Dictionary = GS.player

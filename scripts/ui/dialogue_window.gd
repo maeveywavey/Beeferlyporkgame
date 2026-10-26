@@ -55,6 +55,8 @@ func build() -> void:
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(right)
 	var text := Story.fmt(node.get("text", ""))
+	if who == "shen_mu" and GS.settings.get("plain_speech", false):
+		text = _plain(text)
 	if who == "narrator":
 		text = "[i]%s[/i]" % text
 	elif not Story.npc(who).get("portrait", true):
@@ -79,6 +81,12 @@ func build() -> void:
 			if not okc and c.has("hint"):
 				label += "  [%s]" % c.hint
 			right.add_child(UI.option(label, _go.bind(c.get("next", ""), c.get("do", []), c.get("goto", "")), okc))
+
+## Remove written stutter ("d-don't" -> "don't") for players who find it hard to read.
+static func _plain(t: String) -> String:
+	var re := RegEx.new()
+	re.compile("(?i)\\b(\\w{1,2})-(?=\\1)")
+	return re.sub(t, "", true)
 
 func _go(next: String, effects: Array, goto: String = "") -> void:
 	Story.apply(effects, map)

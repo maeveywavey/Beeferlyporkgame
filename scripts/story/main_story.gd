@@ -15,11 +15,11 @@ const NPCS := {
 }
 
 const SPAWNS := {
-	"norbu_hunters": {"name": "Daofei Hunters", "troops": [["mountain_bandit", 6], ["pirate", 3]], "gold": 150,
+	"norbu_hunters": {"name": "Daofei Hunters", "scale": true, "troops": [["mountain_bandit", 6], ["pirate", 3]], "gold": 150,
 		"on_defeat": [["flag", "ms_norbu_saved", true], ["queue", "ms_norbu_lives"]]},
 	"shiyo_fleet": {"name": "Old Mother Shiyo's Crew", "troops": [["pirate", 18], ["pirate_captain", 4]], "gold": 900,
 		"on_defeat": [["flag", "ms_got2", true], ["page", 2], ["journal_done", "ms_page2", "You took Page II from Old Mother Shiyo's sea chest. She will tell the story differently."]]},
-	"kuro_agents": {"name": "Men Without Banners", "troops": [["fn_veteran", 8], ["fn_firebender", 5], ["fn_archer", 4]], "gold": 400,
+	"kuro_agents": {"name": "Men Without Banners", "scale": true, "troops": [["fn_veteran", 8], ["fn_firebender", 5], ["fn_archer", 4]], "gold": 400,
 		"on_defeat": [["flag", "kuro_implicated", true], ["queue", "ms_agents_beaten"]]},
 	"kuro_rebels": {"name": "Kuro's Last Fleet", "faction": "bandits", "troops": [["fn_veteran", 30], ["fn_imperial_fb", 12], ["fn_yuyan", 10], ["fn_rhino_rider", 8]], "gold": 3000,
 		"on_defeat": [["flag", "kuro_defeated", true], ["queue", "ms_kuro_falls"]]},
@@ -263,7 +263,7 @@ const DIALOGUES := {
 	}},
 	"ms_decide": {"title": "What the Truth Is For", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "The logbook sits in its oilcloth. Everyone who knows you have it wants something from it. The Avatar asked for one thing: let it be an ending.", "choices": [
-			{"text": "Convene a Council of Nations on Kyoshi Island and read it aloud to everyone at once.", "next": "told", "if": {"renown": 300, "peace_with": 3}, "hint": "needs 300 renown and peace with at least three nations"},
+			{"text": "Convene a Council of Nations on Kyoshi Island and read it aloud to everyone at once.", "next": "told", "if": {"renown": 220, "peace_with": 3}, "hint": "needs 220 renown and peace with at least three nations"},
 			{"text": "Take it to Fire Lord Haoren. It clears his nation's name, and he will reward the one who brings it.", "next": "sold_fire"},
 			{"text": "Take it to Earth Queen Hualing. It gives her the means to break her regent.", "next": "sold_earth"},
 			{"text": "Take it to King Feng Tao. Proof of Ba Sing Se's guilt would make Omashu's freedom unanswerable.", "next": "sold_omashu"},
@@ -295,7 +295,7 @@ const DIALOGUES := {
 		"a": {"who": "kyoshi_delegate", "expr": "determined", "text": "Every nation sent someone. The Fire Lord sent his daughter. The Earth Queen came herself, which nearly gave her regent a stroke. The North sent Iluq, the South sent Siqiniq, and Omashu sent Jiang Wei and a great deal of luggage. The floor is yours.", "next": "b"},
 		"b": {"who": "narrator", "text": "You read the logbook aloud, all six pages, start to finish. Nobody speaks. When you reach the last entry, Princess Ryoko puts her hand over her mouth. Queen Hualing does not move at all.", "choices": [
 			{"text": "Lay out the evidence: the rudder pin, the rescue log, and the testimony you've gathered.", "next": "proof", "if": {"call": "has_evidence"}, "hint": "needs corroboration: Kuro's ledgers, the Dai Li's testimony, or Kuro's seal", "hide": false},
-			{"text": "Speak from the heart. Ask them to let it be an ending.", "next": "heart", "if": {"renown": 450}, "hint": "needs 450 renown to sway them without corroboration"},
+			{"text": "Speak from the heart. Ask them to let it be an ending.", "next": "heart", "if": {"renown": 380}, "hint": "needs 380 renown to sway them without corroboration"},
 			{"text": "There is not enough here to convince them yet. Adjourn.", "next": "adjourn"},
 		]},
 		"proof": {"who": "narrator", "text": "The evidence is laid on the table: the sawn pin, the sealed log, and everything your companions risked to find. Kuro's envoy calls it forgery and is ignored. Wu Jian's chair, it is noticed, is empty.", "next": "accord"},

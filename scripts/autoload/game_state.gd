@@ -64,6 +64,7 @@ var game_active := false
 var settings := {
 	"battle_size": 80, "difficulty": 1, "auto_block": true, "mouse_sens": 0.25,
 	"invert_y": false, "volume": 0.7, "music": 0.5, "fullscreen": false,
+	"ui_scale": 1.0, "plain_speech": false, "reduce_flashing": false,
 }
 
 var sim
@@ -123,6 +124,8 @@ func save_settings() -> void:
 	apply_settings()
 
 func apply_settings() -> void:
+	if is_inside_tree():
+		get_tree().root.content_scale_factor = clampf(float(settings.get("ui_scale", 1.0)), 0.75, 1.6)
 	var bus := AudioServer.get_bus_index("Master")
 	AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(0.001, float(settings.volume))))
 	var music := get_node_or_null("/root/Music")

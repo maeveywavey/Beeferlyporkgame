@@ -28,6 +28,9 @@ func _ready() -> void:
 	for k in ["kept", "sold_fire", "sold_earth", "sold_omashu", "buried", "burned"]:
 		_play_main(k)
 	_play_companions()
+	var plain: String = load("res://scripts/ui/dialogue_window.gd")._plain("I d-don't k-know. I-I mean, sh-she's fine. Re-entry is a word.")
+	if plain != "I don't know. I mean, she's fine. Re-entry is a word.":
+		_err("plain speech filter: " + plain)
 	await _window_test()
 	print("STORY TEST DONE, errors: ", errors)
 	get_tree().quit()

@@ -189,7 +189,7 @@ static func _companion_line(cid: String, stayed: bool) -> String:
 			return "went back to the Lower Ring and her map. She never found Bo Lai. She stopped looking, eventually, and was surprised how much lighter it felt."
 		"juro":
 			if f.call("juro_lantern"):
-				return "goes back to Tieshan every autumn for the lantern festival. Mi-sun never forgives him. Every year, she hands him her lantern to light."
+				return "goes back to Tieshan every autumn for the lantern festival. Mi-sun never forgives him. Every year, she hands him her lantern to light.%s" % (" You go with him. His letters to you are still terrible." if f.call("romance_juro") else "")
 			if f.call("juro_fire"):
 				return "builds bridges now, the kind that hold. His fire is small and blue at the heart, and he mostly uses it to light his father's kiln."
 			return "never got his fire back. He built the Accord's first shared harbour on the Ember Coast instead, and it's still standing."
@@ -227,7 +227,7 @@ static func _companion_line(cid: String, stayed: bool) -> String:
 			return "sailed off with a new letter of marque from someone. She sends postcards. They are mostly insults."
 		"kesi":
 			if f.call("kesi_swamp"):
-				return "and her clan live in the Foggy Swamp now. They complain about the damp every day. Their children learn storm-sign and swampbending both."
+				return "and her clan live in the Foggy Swamp now. They complain about the damp every day. Their children learn storm-sign and swampbending both.%s" % (" She still signs 'near' to you across every crowded room." if f.call("romance_kesi") else "")
 			if f.call("kesi_wells"):
 				return "guides caravans through the Si Wong. The raids stopped. Her clan signs her name-sign at every meeting."
 			if f.call("kesi_fought"):
