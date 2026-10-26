@@ -315,7 +315,11 @@ func _build_ruin(o: VBoxContainer) -> void:
 # ---------------------------------------------------------------------------
 func _ring_access(ring: String) -> bool:
 	match ring:
-		"middle": return GS.standing_rank() >= 1 or GS.player.get("permits", {}).has("middle_ring")
+		"middle":
+			# The Dai Li remember a vault thief; papers and bribes stop working
+			if GS.flags.get("dai_li_enemy", false) and not GS.flags.get("wu_defeated", false) and GS.settlements[sid].owner != "player":
+				return GS.standing_rank() >= 2
+			return GS.standing_rank() >= 1 or GS.player.get("permits", {}).has("middle_ring")
 		"upper": return GS.standing_rank() >= 2 or GS.flags.get("upper_invite", false) or GS.lords.get("hualing", {}).get("relation", 0) >= 10
 	return true
 
@@ -346,8 +350,10 @@ func _build_rings(o: VBoxContainer) -> void:
 				GS.player.permits = {}
 			GS.player.permits["middle_ring"] = true
 			note = "The clerk stamps your papers with the patience of a man who has stamped a hundred thousand of them. You may pass the Middle Ring gate."
-			refresh(), GS.player.gold >= 300))
+			refresh(), GS.player.gold >= 300 and not GS.flags.get("dai_li_enemy", false)))
 		o.add_child(UI.option("Bribe the gate guard (60 gold — the Dai Li may notice)", _bribe_gate))
+		if GS.flags.get("dai_li_enemy", false):
+			o.add_child(UI.rich("[i]The clerk's ledger has your description in it, underlined twice. Until the Grand Secretary falls, only Gentry standing will get you through.[/i]", 740))
 	o.add_child(UI.spacer(4))
 	if _ring_access("upper"):
 		o.add_child(UI.rich("[b]The Upper Ring[/b] — gardens, silent streets and the palace. Servants bow to you as if you belong here.", 740))
@@ -362,7 +368,7 @@ func _build_rings(o: VBoxContainer) -> void:
 func _bribe_gate() -> void:
 	if GS.player.gold < 60:
 		note = UI.color_text("You can't afford it.", UI.RED)
-	elif randf() < 0.25:
+	elif randf() < 0.25 or GS.flags.get("dai_li_enemy", false):
 		GS.add_gold(-60)
 		GS.change_faction_rel("earth_kingdom", -5)
 		GS.change_lord_rel("shu_fan", -5)

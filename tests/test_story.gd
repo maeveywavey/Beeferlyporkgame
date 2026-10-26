@@ -10,7 +10,7 @@ const OPS := ["approval", "flag", "flag_day", "gold", "renown", "honor", "xp", "
 	"journal_done", "join", "leave", "away", "companion_mod", "spawn", "close_windows", "wait", "prosperity", "item", "troops",
 	"heal", "queue", "page", "log", "skill_points", "standing", "call"]
 const CONDS := ["flag", "not_flag", "flags", "eq", "has_page", "companion", "no_companion", "gold", "standing", "approval", "rel",
-	"bend", "renown", "skill", "day", "days_since", "pages", "at", "owns", "peace_with", "pronouns", "call"]
+	"bend", "renown", "skill", "day", "days_since", "pages", "at", "owns", "peace_with", "pronouns", "call", "near_faction"]
 const EXPRS := ["neutral", "happy", "laugh", "smirk", "sad", "grief", "angry", "furious", "surprised", "afraid", "determined",
 	"thoughtful", "tender", "embarrassed", "pain", "sleep"]
 

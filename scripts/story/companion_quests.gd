@@ -182,7 +182,7 @@ const DIALOGUES := {
 	# Nima — The Two Paths
 	# -----------------------------------------------------------------------
 	"cq_nima_start": {"title": "Nima", "start": "a", "nodes": {
-		"a": {"who": "nima", "expr": "angry", "text": "A letter from my sister. Kaya was caught practising forms behind the healing huts. My forms. The ones I taught myself. Master Aklaq has forbidden her from the training ice. She's seven.", "next": "b"},
+		"a": {"who": "nima", "expr": "angry", "text": "A letter from my sister. She keeps Kaya while I'm away, and Kaya was caught practising forms behind the healing huts. My forms. The ones I taught myself. Master Aklaq has forbidden her from the training ice. She's seven.", "next": "b"},
 		"b": {"who": "nima", "expr": "thoughtful", "text": "I'm not angry at Aklaq. That's what's maddening. He isn't cruel. He believes the law keeps healers alive. He watched a famine war nearly kill every one of us when he was a boy. He has a good argument. It's just wrong.", "next": "c"},
 		"c": {"who": "nima", "expr": "determined", "text": "I want to go home and change the law. Or fight him for it. Or take Kaya south, where nobody cares what a girl does with water. I haven't decided. I'd like you there when I do.", "choices": [
 			{"text": "\"Then we're going north.\"", "next": "d", "do": [["approval", "nima", 5]]},

@@ -155,6 +155,11 @@ static func _ok1(k: String, v) -> bool:
 			return _peace_count() >= int(v)
 		"pronouns":
 			return v.has(GS.player.get("look", {}).get("pronouns", "they"))
+		"near_faction":
+			for sid in Data.settlements:
+				if GS.settlements[sid].faction == v and _nearest(sid) <= 140.0:
+					return true
+			return false
 		"call":
 			return callv_bool(v)
 	return true
@@ -304,6 +309,7 @@ static func give_page(n: int) -> void:
 		return
 	GS.flags.pages.append(n)
 	GS.flags.pages.sort()
+	GS.add_renown(8)   # word gets around: someone is collecting the Avatar's pages
 	GS.log_msg("You recovered page %s of the Avatar's logbook (%d of 6)." % [["", "I", "II", "III", "IV", "V", "VI"][n], GS.flags.pages.size()], Color(1, 0.85, 0.4))
 	queue("page_%d" % n)
 	if GS.flags.pages.size() >= 6 and not flag("ms_truth"):

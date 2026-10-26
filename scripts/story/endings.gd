@@ -13,6 +13,10 @@ static func apply(kind: String) -> void:
 	S.set_flag("ms_ended", true)
 	S.set_flag("ending", kind)
 	S.set_flag("ms_truth_decided", true)
+	# A promise to the Earth Queen: hear it first, or hear it from a rumour
+	if S.flag("queen_ally") and not S.flag("ms_queen_told") and kind != "sold_earth" and kind != "told":
+		GS.change_lord_rel("hualing", -25)
+		GS.log_msg("Earth Queen Hualing learns what was in the logbook from a rumour in the Middle Ring. She does not write to you again.", Color(1, 0.65, 0.45))
 	match kind:
 		"told":
 			S.set_flag("ending_told", true)
@@ -30,6 +34,13 @@ static func apply(kind: String) -> void:
 			_retire_lord("wu_jian")
 			_rebel_army("kuro_rebels", "fire_navy_harbor")
 			_rebel_army("wu_loyalists", "ba_sing_se")
+			if S.flag("wu_weakened"):
+				# Bo Lai's testimony cost Wu half the Dai Li who would have followed him
+				var wid: String = S.flag("spawn_wu_loyalists", "")
+				if GS.parties.has(wid):
+					for st in GS.parties[wid].roster:
+						st.n = maxi(1, int(st.n / 2))
+						st.w = mini(st.w, st.n)
 			S.journal("ms_main", "The Drowned Testament", "The Kyoshi Accord is signed. Admiral Kuro and Grand Secretary Wu Jian have fled to raise rebel armies. Defeat Kuro's Last Fleet and Wu Jian's Loyalists to secure the peace.")
 			GS.log_msg("The Kyoshi Accord is signed. Every nation lays down its arms — except two men who have the most to lose.", Color(1, 0.9, 0.5))
 			for cid in ["pemba", "nima", "hana", "juro", "kesi", "shen_mu", "ukiuk"]:
@@ -165,6 +176,8 @@ static func epilogue_text(kind: String) -> String:
 			lines.append("[b]%s[/b] — %s" % [Data.companions[cid].get("short", cid), t])
 	if not lines.is_empty():
 		out += "\n[b]The People You Travelled With[/b]\n" + "\n\n".join(lines) + "\n"
+	if S.flag("wu_paid"):
+		out += "\nGrand Secretary Wu Jian's three thousand gold %s\n" % ("paid for the Council's lamp oil. He wrote to complain, in triplicate." if kind == "told" else "is still in your strongbox. You have never quite been able to spend it.")
 	if S.flag("refugees_betrayed"):
 		out += "\nThe monks rebuilt their mountain road, further east. They never learned who sold it. They prayed for that person anyway.\n"
 	if S.flag("ms_norbu_saved"):
@@ -175,9 +188,17 @@ static func epilogue_text(kind: String) -> String:
 
 static func _companion_line(cid: String, stayed: bool) -> String:
 	var S = _story()
-	var f = func(k): return S.flag(k)
-	if not stayed and not S.flag(cid + "_done"):
+	var done_flag: String = {"shen_mu": "shenmu_done"}.get(cid, cid + "_done")
+	if not stayed and not S.flag(done_flag):
 		return "left your company before the end. You heard of them sometimes, in rumours, always somewhere far away."
+	var line := _companion_fate(cid)
+	if S.flag("secret_given", "") == cid and line != "":
+		line += " They never asked why you told the owl. They never needed to."
+	return line
+
+static func _companion_fate(cid: String) -> String:
+	var S = _story()
+	var f = func(k): return S.flag(k)
 	match cid:
 		"hana":
 			if f.call("hana_spared"):
@@ -214,6 +235,8 @@ static func _companion_line(cid: String, stayed: bool) -> String:
 				return "eats at Kimi's noodle stall every time he passes Shu Jing. She still calls him 'harpoon'. He built her a new roof. %s" % ("He built you a boat with both your names on it." if f.call("romance_ukiuk") else "He builds boats now. Only boats.")
 			return "kept sending money to Shu Jing, unsigned, for the rest of his life."
 		"shen_mu":
+			if f.call("letter_read") and f.call("shenmu_lin"):
+				return "and Lin opened a courier post in Omashu. It has never lost a letter. He seals every one with a hair across the wax now, the way Ryoko did. He never says why."
 			if f.call("shenmu_lin"):
 				return "and Lin opened a courier post in Omashu. It has never lost a letter. The sign over the door is in storm-sign as well as script, because Kesi insisted."
 			if f.call("letter_delivered"):

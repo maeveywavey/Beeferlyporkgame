@@ -23,6 +23,8 @@ const SPAWNS := {
 		"on_defeat": [["flag", "kuro_implicated", true], ["queue", "ms_agents_beaten"]]},
 	"kuro_rebels": {"name": "Kuro's Last Fleet", "faction": "bandits", "troops": [["fn_veteran", 30], ["fn_imperial_fb", 12], ["fn_yuyan", 10], ["fn_rhino_rider", 8]], "gold": 3000,
 		"on_defeat": [["flag", "kuro_defeated", true], ["queue", "ms_kuro_falls"]]},
+	"dai_li_agents": {"name": "Dai Li Agents", "scale": true, "faction": "bandits", "troops": [["ek_dai_li", 6], ["ek_earthbender", 4]], "gold": 250,
+		"on_defeat": [["queue", "ms_dai_li_beaten"]]},
 	"wu_loyalists": {"name": "Wu Jian's Loyalists", "faction": "bandits", "troops": [["ek_dai_li", 14], ["ek_royal_guard", 16], ["ek_earthbender", 20]], "gold": 3000,
 		"on_defeat": [["flag", "wu_defeated", true], ["queue", "ms_wu_falls"]]},
 }
@@ -32,6 +34,8 @@ const TRIGGERS := [
 	{"on": "daily", "dlg": "ms_norbu_dies", "if": {"flag": "ms_norbu_fight", "not_flag": "ms_norbu_saved", "days_since": ["ms_norbu_fight_day", 2]}},
 	{"on": "daily", "dlg": "ms_assassins", "if": {"pages": 3, "not_flag": "ms_truth_decided"}, "chance": 0.15, "do": [["spawn", "kuro_agents"]]},
 	{"on": "daily", "dlg": "ms_refugees_raided", "if": {"flag": "refugees_betrayed", "days_since": ["refugees_betrayed", 10]}},
+	{"on": "daily", "dlg": "ms_dai_li_hunt", "once": false, "if": {"flag": "dai_li_enemy", "not_flag": "wu_defeated", "near_faction": "earth_kingdom", "days_since": ["dai_li_hunt_day", 25]}, "chance": 0.1,
+		"do": [["flag_day", "dai_li_hunt_day"], ["spawn", "dai_li_agents"]]},
 	{"on": "daily", "dlg": "ms_told_epilogue", "if": {"flags": ["kuro_defeated", "wu_defeated", "ending_told"]}},
 ]
 
@@ -44,6 +48,9 @@ const OPTIONS := [
 	{"sid": "ba_sing_se", "text": "Look into the Dai Li vault", "dlg": "ms_vault", "if": {"flag": "ms_act1", "not_flag": "ms_got4"}},
 	{"sid": "fire_navy_harbor", "text": "Find the Admiralty's records room", "dlg": "ms_admiralty", "if": {"flag": "ms_act1", "not_flag": "ms_got5"}},
 	{"sid": "wan_shi_tong", "text": "Descend into the library and find the owl", "dlg": "ms_library", "if": {"flag": "ms_act1", "not_flag": "ms_got6"}},
+	{"sid": "ba_sing_se", "text": "Accept the Grand Secretary's invitation to tea", "dlg": "ms_wu_tea", "if": {"pages": 4, "not_flag": "ms_truth_decided"}, "once": true},
+	{"sid": "fire_navy_harbor", "text": "Dine aboard the Admiral's flagship", "dlg": "ms_kuro_dinner", "if": {"pages": 4, "not_flag": "ms_truth_decided"}, "once": true},
+	{"sid": "ba_sing_se", "text": "Tell the Earth Queen what the pages say, as you promised", "dlg": "ms_queen_first", "if": {"flags": ["queen_ally", "ms_truth"], "not_flag": "ms_queen_told"}},
 	{"sid": "kyoshi_island", "text": "Open the Council of Nations", "dlg": "ms_council", "if": {"eq": ["ms_path", "told"], "not_flag": "ending_told"}},
 	{"sid": "caldera", "text": "Lay the logbook before the Fire Lord", "dlg": "ms_sold_fire", "if": {"eq": ["ms_path", "sold_fire"], "not_flag": "ms_ended"}},
 	{"sid": "ba_sing_se", "text": "Lay the logbook before the Earth Queen", "dlg": "ms_sold_earth", "if": {"eq": ["ms_path", "sold_earth"], "not_flag": "ms_ended"}},
@@ -217,11 +224,55 @@ const DIALOGUES := {
 		"route": {"who": "wan_shi_tong", "text": "The monks' mountain road. Valuable. Many people would pay for it. Some already have. Take your page, and do not wonder too hard about who reads my shelves.",
 			"do": [["call", "refugee_route_betrayed"], ["flag", "ms_got6", true], ["page", 6], ["journal_done", "ms_page6", "You traded the Air Nomads' refugee route to Wan Shi Tong for the page."]]},
 	}},
+	"ms_wu_tea": {"title": "The Grand Secretary", "start": "a", "nodes": {
+		"a": {"who": "narrator", "text": "The invitation is written on paper so fine it is nearly cloth. The Grand Secretary takes tea in a Middle Ring pavilion with no walls, which you understand is meant to tell you that he has nothing to hide, and also that his agents can see you from every roof.", "next": "b"},
+		"b": {"who": "wu_jian", "expr": "neutral", "text": "You collect paper. I admire collectors; I am one. My collection is mostly of people who were going to cause trouble and then, on reflection, did not. Sit. The tea is from the Queen's own terraces. She doesn't know I have it.", "next": "c"},
+		"c": {"who": "wu_jian", "expr": "thoughtful", "text": "Whatever is on those pages describes a storm. Storms are nobody's fault. Pages, however, are always somebody's. I would pay a great deal for the pages to remain about the weather.", "choices": [
+			{"text": "\"You turned the boats back.\"", "next": "boats", "if": {"has_page": 4}, "hide": true},
+			{"text": "\"How much is a great deal?\"", "next": "offer"},
+			{"text": "\"No.\"", "next": "no"},
+		]},
+		"boats": {"who": "wu_jian", "expr": "neutral", "text": "I filed an order that lifeboats return before dark in a storm. Lifeboats returned. The sea did the rest. If you intend to make that a crime, you will have to make filing a crime, and then where would any of us be?", "next": "offer"},
+		"offer": {"who": "wu_jian", "expr": "smirk", "text": "Three thousand gold today. A post in the Middle Ring, if you want one. And whatever the Dai Li have written about you is lost in a fire that, regrettably, has not happened yet.", "choices": [
+			{"text": "Take the money. (He thinks he has bought your silence.)", "next": "take"},
+			{"text": "\"Keep your tea.\"", "next": "no"},
+		]},
+		"take": {"who": "wu_jian", "expr": "happy", "text": "Splendid. I find that people who take money are so much easier to understand than people who don't. Mind the stairs.",
+			"do": [["gold", 3000], ["flag", "wu_paid", true], ["flag", "dai_li_enemy", false], ["lord_rel", "wu_jian", 30], ["approval", "hana", -8], ["approval", "shen_mu", -5], ["approval", "reika", 3]]},
+		"no": {"who": "wu_jian", "expr": "neutral", "text": "Then we are both collectors, and you have made yourself a very interesting item. Mind the stairs. They are steeper going down.",
+			"do": [["lord_rel", "wu_jian", -15], ["flag", "wu_refused", true], ["approval", "hana", 4]]},
+	}},
+	"ms_kuro_dinner": {"title": "The Admiral's Table", "start": "a", "nodes": {
+		"a": {"who": "narrator", "text": "A lieutenant in dress whites finds you on the quay with an invitation to dine aboard the Admiral's flagship. It is not phrased as a question. Dinner is grilled eel and very old wine, served by sailors who all, you notice, look well fed.", "next": "b"},
+		"b": {"who": "kuro", "expr": "neutral", "text": "Every sailor on this coast eats because of the war. I don't say that proudly. I say it because nobody else will. The last time someone tried peace, four thousand sailors stood on a beach with no pay and no ships, and their children learned to steal.", "next": "c"},
+		"c": {"who": "kuro", "expr": "thoughtful", "text": "I don't ask you to stop. I ask you to remember, when you read those pages aloud, that it won't be you who starves. It won't even be me.", "choices": [
+			{"text": "\"You sent men without banners after me.\"", "next": "agents", "if": {"flag": "kuro_implicated"}, "hide": true},
+			{"text": "\"Then pay your sailors to build ships instead of burning them.\"", "next": "honest"},
+			{"text": "\"What would you give me to stop?\"", "next": "price"},
+		]},
+		"agents": {"who": "kuro", "expr": "sad", "text": "I sent men to find out who you were. They found out. I am sorry about the men; I knew most of their mothers. Eat. The eel is the only honest thing on this ship.", "next": "honest"},
+		"honest": {"who": "kuro", "expr": "surprised", "text": "…You would be surprised how few people say that to me. Most of them say it after I'm out of the room. Finish your wine. My lieutenant will see you ashore, which on this ship is a courtesy.",
+			"do": [["lord_rel", "kuro", 5], ["flag", "kuro_dinner_honest", true], ["approval", "reika", 3]]},
+		"price": {"who": "kuro", "expr": "smirk", "text": "A ship. A letter of marque. Five thousand gold when the last page is ash. Come back when you have all six, and send word from this harbour. I'm a patient man. The sea taught me that, too.",
+			"do": [["flag", "kuro_offer", true], ["approval", "juro", -4], ["approval", "pemba", -4]]},
+	}},
+	"ms_queen_first": {"title": "As Promised", "start": "a", "nodes": {
+		"a": {"who": "hualing", "expr": "thoughtful", "text": "You came back. People promise me things every day; almost none of them come back. Read it to me. All of it. Don't summarise. I have been summarised my whole life.", "next": "b"},
+		"b": {"who": "narrator", "text": "You read the six pages aloud in a small room with the shutters closed. When you reach the rescue log, Hualing asks you to read the line about G.S. again, and then a third time.", "next": "c"},
+		"c": {"who": "hualing", "expr": "determined", "text": "Thank you. I will not tell you what to do with it; you kept your promise, and I will keep mine. But whatever you choose, I won't be the last to know again. That was the gift. The rest is yours.",
+			"do": [["flag", "ms_queen_told", true], ["lord_rel", "hualing", 20], ["rel", "earth_kingdom", 5]]},
+	}},
 	"ms_assassins": {"title": "Men Without Banners", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "Your scouts report a column on the road behind you: well-armed, well-fed, and flying no banner at all. Men without banners are always somebody's men."},
 	}},
 	"ms_agents_beaten": {"title": "Men Without Banners", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "Among the dead you find a lacquered pay-chit stamped with a private seal: a wave breaking over a flame. Half the sailors in the Fire Navy would recognise it. It belongs to Admiral Tenzai Kuro.", "do": [["journal", "ms_main", "The Drowned Testament", "Someone sent soldiers without banners after you. Their pay-chits carry Admiral Kuro's private seal. Keep gathering the pages."]]},
+	}},
+	"ms_dai_li_hunt": {"title": "Green Robes", "start": "a", "nodes": {
+		"a": {"who": "narrator", "text": "A farmer at a well will not meet your eyes. Further on, a road you took yesterday has been rebuilt overnight, a little narrower. The Dai Li remember the vault, and they have come to discuss it."},
+	}},
+	"ms_dai_li_beaten": {"title": "Green Robes", "start": "a", "nodes": {
+		"a": {"who": "narrator", "text": "The agents leave no names and no seals, only stone gloves and a written description of you that is unflatteringly accurate. There will be others."},
 	}},
 	"ms_refugees_raided": {"title": "The Mountain Road", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "News comes on the wind, the way bad news does. Fire Navy marines were waiting on the monks' mountain road. Forty refugees and two monks did not reach the temple. Nobody knows how the Navy knew the route. You know.",
@@ -263,7 +314,7 @@ const DIALOGUES := {
 	}},
 	"ms_decide": {"title": "What the Truth Is For", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "The logbook sits in its oilcloth. Everyone who knows you have it wants something from it. The Avatar asked for one thing: let it be an ending.", "choices": [
-			{"text": "Convene a Council of Nations on Kyoshi Island and read it aloud to everyone at once.", "next": "told", "if": {"renown": 220, "peace_with": 3}, "hint": "needs 220 renown and peace with at least three nations"},
+			{"text": "Convene a Council of Nations on Kyoshi Island and read it aloud to everyone at once.", "next": "told", "if": {"renown": 160, "peace_with": 3}, "hint": "needs 160 renown and peace with at least three nations"},
 			{"text": "Take it to Fire Lord Haoren. It clears his nation's name, and he will reward the one who brings it.", "next": "sold_fire"},
 			{"text": "Take it to Earth Queen Hualing. It gives her the means to break her regent.", "next": "sold_earth"},
 			{"text": "Take it to King Feng Tao. Proof of Ba Sing Se's guilt would make Omashu's freedom unanswerable.", "next": "sold_omashu"},
@@ -295,7 +346,7 @@ const DIALOGUES := {
 		"a": {"who": "kyoshi_delegate", "expr": "determined", "text": "Every nation sent someone. The Fire Lord sent his daughter. The Earth Queen came herself, which nearly gave her regent a stroke. The North sent Iluq, the South sent Siqiniq, and Omashu sent Jiang Wei and a great deal of luggage. The floor is yours.", "next": "b"},
 		"b": {"who": "narrator", "text": "You read the logbook aloud, all six pages, start to finish. Nobody speaks. When you reach the last entry, Princess Ryoko puts her hand over her mouth. Queen Hualing does not move at all.", "choices": [
 			{"text": "Lay out the evidence: the rudder pin, the rescue log, and the testimony you've gathered.", "next": "proof", "if": {"call": "has_evidence"}, "hint": "needs corroboration: Kuro's ledgers, the Dai Li's testimony, or Kuro's seal", "hide": false},
-			{"text": "Speak from the heart. Ask them to let it be an ending.", "next": "heart", "if": {"renown": 380}, "hint": "needs 380 renown to sway them without corroboration"},
+			{"text": "Speak from the heart. Ask them to let it be an ending.", "next": "heart", "if": {"renown": 320}, "hint": "needs 320 renown to sway them without corroboration"},
 			{"text": "There is not enough here to convince them yet. Adjourn.", "next": "adjourn"},
 		]},
 		"proof": {"who": "narrator", "text": "The evidence is laid on the table: the sawn pin, the sealed log, and everything your companions risked to find. Kuro's envoy calls it forgery and is ignored. Wu Jian's chair, it is noticed, is empty.", "next": "accord"},
@@ -342,7 +393,7 @@ const DIALOGUES := {
 			"do": [["flag", "ms_path", ""], ["lord_rel", "kuro", -40], ["journal", "ms_main", "The Drowned Testament", "You refused Kuro's offer. Decide again what to do with the truth (open the logbook from the camp menu)."]]},
 	}},
 	"ms_kept": {"title": "For the Next Avatar", "start": "a", "nodes": {
-		"a": {"who": "tsering", "expr": "tender", "text": "You came all this way to give it to someone who isn't born yet — or is, somewhere, and is learning to walk, or to swim, or to stop biting their sister. That is the most Nomad thing I have ever seen a non-Nomad do.", "next": "b"},
+		"a": {"who": "tsering", "expr": "tender", "text": "You came all this way to give it to a child who doesn't know they need it. Ten years old, somewhere, learning to swim or to read or to stop biting their sister. That is the most Nomad thing I have ever seen a non-Nomad do.", "next": "b"},
 		"b": {"who": "tsering", "expr": "thoughtful", "text": "It will be kept. In five years a frightened child will be told what they are, and then they will be given this, and told it was carried by people who wanted nothing from it. The world won't change today. That's all right. The world is very rarely changed today.",
 			"do": [["call", "ending", "kept"]]},
 	}},

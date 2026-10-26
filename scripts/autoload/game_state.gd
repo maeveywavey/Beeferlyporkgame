@@ -579,7 +579,9 @@ func raise_standing(to: String) -> void:
 func agni_kai_champion() -> String:
 	for cid in player.companions:
 		var c: Dictionary = Data.companions.get(cid, {})
-		if c.get("bend", "") == "fire" and not player.get("companion_state", {}).get(cid, {}).get("wounded", false):
+		var cs: Dictionary = player.get("companion_state", {}).get(cid, {})
+		# Juro's regained fire lives in his companion state, not his base data
+		if cs.get("bend", c.get("bend", "")) == "fire" and not cs.get("wounded", false):
 			return cid
 	return ""
 
@@ -593,7 +595,8 @@ func start_duel(lid: String) -> void:
 func champion_duel(lid: String, cid: String) -> bool:
 	var c: Dictionary = Data.companions[cid]
 	var l: Dictionary = Data.lords[lid]
-	var mine := float(c.power) * (float(c.skill) / 100.0) * float(c.hp) / 130.0
+	var pw := float(companion_state(cid).get("power", c.power))
+	var mine := pw * (float(c.skill) / 100.0) * float(c.hp) / 130.0
 	var theirs := float(l.power) * 0.85 * float(l.hp) / 160.0
 	var chance := clampf(0.5 + (mine - theirs) * 0.45, 0.15, 0.85)
 	var won := randf() < chance
