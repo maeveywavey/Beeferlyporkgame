@@ -72,7 +72,7 @@ func build() -> void:
 			lo.erase(slot)
 			refresh(), 140)
 		if cur == "":
-			bb.add_theme_color_override("font_color", UI.GOLD)
+			UI.mark_selected(bb)
 		row.add_child(bb)
 		for id in GS.player.get("techniques", []):
 			if not Tech.TECHNIQUES.has(id) or Tech.TECHNIQUES[id].element != art:
@@ -81,7 +81,7 @@ func build() -> void:
 				lo[slot] = id
 				refresh(), 140)
 			if cur == id:
-				tb.add_theme_color_override("font_color", UI.GOLD)
+				UI.mark_selected(tb)
 			row.add_child(tb)
 	right.add_child(UI.rich("[i]Learned techniques also open new movements in the Bending Forms designer. Known: %d of %d.[/i]" % [GS.player.get("techniques", []).filter(func(x): return Tech.TECHNIQUES.has(x) and Tech.TECHNIQUES[x].element == art).size(), Tech.for_element(art).size()], 340))
 	var b := UI.hbox()

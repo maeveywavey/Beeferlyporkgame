@@ -3,6 +3,7 @@ extends Node3D
 ## advances time and opens the menus for encounters and settlements.
 
 const UI = preload("res://scripts/ui/ui.gd")
+const UISkin = preload("res://scripts/ui/skin.gd")
 const MapBuilder = preload("res://scripts/world/map_builder.gd")
 const Terrain = preload("res://scripts/core/terrain.gd")
 const Roster = preload("res://scripts/core/roster.gd")
@@ -40,6 +41,9 @@ var hud: CanvasLayer
 var labels_layer: Control
 var modal_layer: Control
 var top_label: RichTextLabel
+var date_label: Label
+var season_seal: Control
+var hud_chips := {}
 var log_box: VBoxContainer
 var tooltip: PanelContainer
 var tooltip_label: Label
@@ -151,20 +155,53 @@ func _build_hud() -> void:
 	labels_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	labels_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(labels_layer)
-	# Top bar
+	# Top bar: a lacquer banner with the season's seal, the date, the
+	# party's numbers as labelled chips, and the screens as tablets
 	var top := PanelContainer.new()
 	top.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	top.mouse_filter = Control.MOUSE_FILTER_STOP
+	top.add_theme_stylebox_override("panel", _banner_box())
 	root.add_child(top)
-	var row := UI.hbox(8)
+	var row := UI.hbox(10)
 	top.add_child(row)
-	top_label = UI.rich("", 700)
-	top_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	season_seal = UISkin.seal("冬", 44, UISkin.CINNABAR)
+	row.add_child(season_seal)
+	var dbox := UI.vbox(0)
+	dbox.custom_minimum_size.x = 300
+	row.add_child(dbox)
+	date_label = UI.label("", 19, UISkin.GOLD_PALE)
+	date_label.add_theme_font_override("font", UISkin.font("display"))
+	dbox.add_child(date_label)
+	top_label = UI.rich("", 330)
 	top_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	row.add_child(top_label)
-	for b in [["Camp (T)", _open_camp], ["Party (P)", _open_party], ["Character (C)", _open_character],
-			["Inventory (I)", _open_inventory], ["Quests (J)", _open_quests], ["Factions (N)", _open_factions]]:
-		row.add_child(UI.button(b[0], b[1]))
+	top_label.add_theme_color_override("default_color", Color(0.92, 0.85, 0.72))
+	top_label.add_theme_font_size_override("normal_font_size", 15)
+	top_label.add_theme_font_size_override("italics_font_size", 15)
+	dbox.add_child(top_label)
+	var chips := UI.hbox(12)
+	chips.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(chips)
+	for k in [["gold", "Gold"], ["party", "Party"], ["wounded", "Wounded"], ["prisoners", "Captives"], ["food", "Food"], ["morale", "Morale"], ["renown", "Renown"], ["hp", "Health"]]:
+		var cb := UI.vbox(0)
+		var cap := UI.label(k[1].to_upper(), 11, Color(UISkin.GOLD, 0.9))
+		cap.add_theme_font_override("font", UISkin.font("display_med"))
+		cb.add_child(cap)
+		var val := UI.label("", 18, Color(0.98, 0.93, 0.82))
+		val.add_theme_font_override("font", UISkin.font("bold"))
+		cb.add_child(val)
+		chips.add_child(cb)
+		hud_chips[k[0]] = val
+	for b in [["Camp", "T", _open_camp], ["Party", "P", _open_party], ["Character", "C", _open_character],
+			["Inventory", "I", _open_inventory], ["Quests", "J", _open_quests], ["Nations", "N", _open_factions]]:
+		var tb := UI.button("%s %s" % [b[0], b[1]], b[2])
+		tb.tooltip_text = "%s (%s)" % [b[0], b[1]]
+		tb.add_theme_font_size_override("font_size", 16)
+		for st in ["normal", "hover", "pressed"]:
+			var bx: StyleBoxTexture = UISkin.button_box(st)
+			bx.content_margin_left = 9
+			bx.content_margin_right = 9
+			tb.add_theme_stylebox_override(st, bx)
+		row.add_child(tb)
 	# Bottom-left message log
 	log_box = UI.vbox(2)
 	log_box.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
@@ -179,6 +216,7 @@ func _build_hud() -> void:
 	log_box.offset_bottom = -10
 	# Bottom-right status / time controls
 	var tc := PanelContainer.new()
+	tc.add_theme_stylebox_override("panel", _banner_box())
 	tc.anchor_left = 1.0
 	tc.anchor_right = 1.0
 	tc.anchor_top = 1.0
@@ -190,7 +228,8 @@ func _build_hud() -> void:
 	root.add_child(tc)
 	var trow := UI.hbox(6)
 	tc.add_child(trow)
-	status_label = UI.label("", 16)
+	status_label = UI.label("", 16, Color(0.95, 0.88, 0.74))
+	status_label.add_theme_font_override("font", UISkin.font("italic"))
 	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	trow.add_child(status_label)
 	trow.add_child(UI.button("Wait", func(): start_waiting(-1.0)))
@@ -216,13 +255,28 @@ func _build_hud() -> void:
 		var l := _make_world_label(Data.settlements[sid].name, 15 if Data.settlements[sid].type != "village" else 13)
 		settlement_labels[sid] = l
 
+## The HUD's lacquer band: dark red-brown with a gold rule along its edge.
+func _banner_box() -> StyleBoxFlat:
+	var b := StyleBoxFlat.new()
+	b.bg_color = Color(0.2, 0.07, 0.05, 0.94)
+	b.border_color = UISkin.GOLD
+	b.border_width_bottom = 2
+	b.border_width_top = 2
+	b.set_content_margin_all(8)
+	b.content_margin_left = 14
+	b.content_margin_right = 14
+	b.shadow_color = Color(0, 0, 0, 0.35)
+	b.shadow_size = 6
+	return b
+
 func _make_world_label(text: String, size: int) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", Color(1, 0.97, 0.88))
-	l.add_theme_color_override("font_outline_color", Color(0.1, 0.06, 0.02))
-	l.add_theme_constant_override("outline_size", 5)
+	l.add_theme_font_override("font", UISkin.font("display"))
+	l.add_theme_font_size_override("font_size", size + 2)
+	l.add_theme_color_override("font_color", Color(1, 0.96, 0.86))
+	l.add_theme_color_override("font_outline_color", Color(0.12, 0.05, 0.03))
+	l.add_theme_constant_override("outline_size", 6)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	labels_layer.add_child(l)
 	return l
@@ -537,18 +591,32 @@ func _update_hud(captive: bool) -> void:
 	var pl: Dictionary = GS.player
 	var pp: Dictionary = GS.player_party()
 	var food_days := GS.food_days()
-	var food_col := "2b1d10" if food_days > 3 else "b03020"
-	var t := "[b]%s[/b]  ·  %s" % [GS.date_string(), GS.moon_string()]
+	date_label.text = GS.date_string()
+	var t := "[i]%s[/i]" % GS.moon_string()
 	if GS.is_comet():
-		t += "  ·  [color=#ff5522]COMET[/color]"
+		t += "  ·  [color=#ff8a55]Comet[/color]"
 	if GS.is_eclipse():
-		t += "  ·  [color=#aa88ff]SOLAR ECLIPSE[/color]"
+		t += "  ·  [color=#c6a8ff]Solar eclipse[/color]"
 	if GS.is_lunar_eclipse():
-		t += "  ·  [color=#c06060]LUNAR ECLIPSE[/color]"
-	t += "\nGold [color=#9a6a00]%d[/color]   Party %d/%d   Wounded %d   Prisoners %d   Food [color=#%s]%.1f days[/color]   Morale %d   Renown %d   HP %d/%d" % [
-		pl.gold, GS.party_size(), GS.party_limit(), Roster.wounded(pp.roster), Roster.total(pp.prisoners),
-		food_col, food_days, int(pl.morale), pl.renown, pl.hp, GS.max_hp()]
+		t += "  ·  [color=#ff9090]Lunar eclipse[/color]"
 	top_label.text = t
+	var glyph: String = {"Winter": "冬", "Spring": "春", "Summer": "夏", "Autumn": "秋"}.get(GS.season(), "冬")
+	if season_seal.get_meta("glyph", "") != glyph:
+		var fresh := UISkin.seal(glyph, 44, UISkin.CINNABAR)
+		fresh.set_meta("glyph", glyph)
+		season_seal.replace_by(fresh)
+		season_seal.queue_free()
+		season_seal = fresh
+	var warn := Color(1.0, 0.55, 0.45)
+	var cream := Color(0.98, 0.93, 0.82)
+	_chip("gold", str(pl.gold), Color(1.0, 0.85, 0.45))
+	_chip("party", "%d/%d" % [GS.party_size(), GS.party_limit()], cream)
+	_chip("wounded", str(Roster.wounded(pp.roster)), cream)
+	_chip("prisoners", str(Roster.total(pp.prisoners)), cream)
+	_chip("food", "%.1f days" % food_days, cream if food_days > 3 else warn)
+	_chip("morale", str(int(pl.morale)), cream if pl.morale >= 35 else warn)
+	_chip("renown", str(pl.renown), cream)
+	_chip("hp", "%d/%d" % [pl.hp, GS.max_hp()], cream if pl.hp > GS.max_hp() * 0.35 else warn)
 	var st := ""
 	if captive:
 		st = "You are a captive... (%d h)" % int(pl.captive_until - GS.hours)
@@ -724,15 +792,28 @@ func _pick(screen: Vector2) -> Dictionary:
 func _on_message(text: String, color: Color) -> void:
 	_add_log_line(text, color)
 
+func _chip(key: String, text: String, col: Color) -> void:
+	var l: Label = hud_chips.get(key)
+	if l != null:
+		l.text = text
+		l.add_theme_color_override("font_color", col)
+
+## Log lines sit on a strip of ink with the message's colour as a margin mark.
 func _add_log_line(text: String, color: Color) -> void:
 	if log_box == null:
 		return
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_size_override("font_size", 15)
-	l.add_theme_color_override("font_color", color)
-	l.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	l.add_theme_constant_override("outline_size", 4)
+	l.add_theme_color_override("font_color", Color(0.97, 0.92, 0.82).lerp(color, 0.35))
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.08, 0.05, 0.03, 0.62)
+	bg.border_color = color
+	bg.border_width_left = 3
+	bg.set_content_margin_all(4)
+	bg.content_margin_left = 10
+	bg.set_corner_radius_all(2)
+	l.add_theme_stylebox_override("normal", bg)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.custom_minimum_size.x = 600
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE

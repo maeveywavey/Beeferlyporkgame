@@ -48,7 +48,7 @@ func _close_all() -> void:
 	await get_tree().process_frame
 
 func _run() -> void:
-	var skip := ["Charge", "Fight", "Assault the walls!", "Break the siege", "main menu", "Load", "Back to the map", "Leave", "Done", "X", "Never mind", "Farewell", "Lift", "Wait", "Rest", "Make camp", "Rest for", "Walk around"]
+	var skip := ["Charge", "Fight", "Assault the walls!", "Break the siege", "main menu", "Load", "Back to the map", "Leave", "Done", "X", "×", "Never mind", "Farewell", "Lift", "Wait", "Rest", "Make camp", "Rest for", "Walk around"]
 	# Every window type
 	for wname in ["_open_party", "_open_character", "_open_inventory", "_open_quests", "_open_factions", "_open_camp"]:
 		map.call(wname)

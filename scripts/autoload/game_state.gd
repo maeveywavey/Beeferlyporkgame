@@ -64,7 +64,8 @@ var game_active := false
 var settings := {
 	"battle_size": 80, "difficulty": 1, "auto_block": true, "mouse_sens": 0.25,
 	"invert_y": false, "volume": 0.7, "music": 0.5, "fullscreen": false,
-	"ui_scale": 1.0, "plain_speech": false, "reduce_flashing": false,
+	"ui_scale": 1.0, "plain_speech": false, "reduce_flashing": false, "reduce_motion": false, "readable_font": false,
+	"dlc_fire": true, "dlc_water": true, "dlc_earth": true, "dlc_air": true,
 }
 
 var sim

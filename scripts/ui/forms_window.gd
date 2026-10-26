@@ -100,7 +100,7 @@ func build() -> void:
 			draft.release = r
 			refresh())
 		if draft.release == r:
-			rb.add_theme_color_override("font_color", UI.GOLD)
+			UI.mark_selected(rb)
 		rrow.add_child(rb)
 	# Right: computed stats
 	var right := UI.vbox(4)

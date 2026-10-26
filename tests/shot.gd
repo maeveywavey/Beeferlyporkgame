@@ -140,7 +140,7 @@ func _ready() -> void:
 					mm.c_bend = "air"
 					mm.c_background = "air_nomad"
 				mm._build())
-		"world", "town", "party", "encounter", "char", "factions", "trade", "far", "inv", "quests", "society", "forms", "avatar", "techniques", "work":
+		"world", "town", "party", "encounter", "char", "factions", "trade", "far", "inv", "quests", "society", "forms", "avatar", "techniques", "work", "settings", "talk":
 			var p := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 			GS.new_game(p)
 			GS.flags.seen_help = true
@@ -223,6 +223,11 @@ func _ready() -> void:
 static func _open(mode: String) -> void:
 	var map = Engine.get_main_loop().current_scene
 	match mode:
+		"settings":
+			map.open_window(load("res://scripts/ui/settings_window.gd").new())
+		"talk":
+			GS.player.companions = ["sayuri"]
+			var dw = map.open_dialogue("talk_sayuri")
 		"techniques":
 			GS.player.bend = "water"
 			var Tech = load("res://scripts/battle/techniques.gd")

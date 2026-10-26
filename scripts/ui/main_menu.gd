@@ -2,10 +2,15 @@ extends Control
 ## Title screen and character creation.
 
 const UI = preload("res://scripts/ui/ui.gd")
+const UISkin = preload("res://scripts/ui/skin.gd")
 const SettingsWindow = preload("res://scripts/ui/settings_window.gd")
 
 var panel: PanelContainer
 var body: VBoxContainer
+var center: CenterContainer
+var scroll_root: MarginContainer
+var scroll_panel: PanelContainer
+var scroll_body: VBoxContainer
 var page := "title"
 var c_name := "Lee"
 var c_background := "ek_refugee"
@@ -35,35 +40,44 @@ func _ready() -> void:
 	Music.play("map")
 	theme = UI.theme()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# An ink-wash landscape, painted live (shaders/ink_wash.gdshader)
 	var bg := ColorRect.new()
-	bg.color = Color(0.12, 0.08, 0.06)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var sm := ShaderMaterial.new()
+	sm.shader = load("res://shaders/ink_wash.gdshader")
+	bg.material = sm
 	add_child(bg)
-	var emblem := Control.new()
-	emblem.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	emblem.draw.connect(_draw_emblem.bind(emblem))
-	add_child(emblem)
-	var center := CenterContainer.new()
+	# Title page: a hanging scroll on the left
+	scroll_root = MarginContainer.new()
+	scroll_root.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
+	scroll_root.offset_right = 520
+	for side in ["left", "top", "bottom"]:
+		scroll_root.add_theme_constant_override("margin_" + side, 56 if side == "left" else 48)
+	add_child(scroll_root)
+	scroll_panel = PanelContainer.new()
+	var sp: StyleBoxTexture = UISkin.panel_box(22, 30)
+	sp.modulate_color = Color(1, 1, 1, 0.93)
+	scroll_panel.add_theme_stylebox_override("panel", sp)
+	scroll_root.add_child(scroll_panel)
+	scroll_body = UI.vbox(10)
+	scroll_panel.add_child(scroll_body)
+	# Creation pages: a centred sheet
+	center = CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 	panel = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(900, 600)
+	panel.add_theme_stylebox_override("panel", UISkin.panel_box(22, 24))
 	center.add_child(panel)
 	body = UI.vbox(10)
 	panel.add_child(body)
 	_build()
 
-func _draw_emblem(c: Control) -> void:
-	var sz := c.size
-	var cols := [Color(0.8, 0.25, 0.1, 0.18), Color(0.2, 0.5, 0.2, 0.18), Color(0.2, 0.45, 0.8, 0.18), Color(0.95, 0.85, 0.5, 0.18)]
-	var pos := [Vector2(0.15, 0.25), Vector2(0.85, 0.25), Vector2(0.15, 0.78), Vector2(0.85, 0.78)]
-	for i in 4:
-		c.draw_circle(pos[i] * sz, minf(sz.x, sz.y) * 0.16, cols[i])
-		c.draw_arc(pos[i] * sz, minf(sz.x, sz.y) * 0.18, 0, TAU, 64, Color(cols[i], 0.35), 3.0)
-
 func _build() -> void:
 	UI.clear(body)
+	UI.clear(scroll_body)
+	scroll_root.visible = page == "title"
+	center.visible = page != "title"
 	if page != "create" and _preview_actor != null:
 		_preview_actor.queue_free()
 		_preview_actor = null
@@ -73,34 +87,42 @@ func _build() -> void:
 		"create": _build_create()
 
 func _build_title() -> void:
-	body.add_child(UI.spacer(10))
-	body.add_child(UI.title("AVATAR: MOUNT & BEND", 40))
-	body.add_child(UI.title("The Quiet Years, and after", 20))
-	var intro := UI.rich("[center][i]Water. Earth. Fire. Air. You are not the Avatar. You are one of the millions who live in the world the Avatar is trying to keep in balance.\n\nRaise an army, master your element, serve a nation or carve out your own realm. Rule well and the Avatar may come to sit at your table. Rule cruelly and they will come for you.[/i][/center]", 840)
-	body.add_child(intro)
-	body.add_child(UI.spacer(10))
-	var col := UI.vbox(8)
-	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	body.add_child(col)
+	var b := scroll_body
+	var seals := UI.hbox(10)
+	seals.alignment = BoxContainer.ALIGNMENT_CENTER
+	b.add_child(seals)
+	for e in [["水", UISkin.INDIGO], ["土", UISkin.JADE], ["火", UISkin.CINNABAR], ["空", Color(0.85, 0.6, 0.2)]]:
+		seals.add_child(UISkin.seal(e[0], 46, e[1]))
+	var t := UI.title("Mount & Bend", 50)
+	t.add_theme_color_override("font_color", Color(0.16, 0.08, 0.05))
+	b.add_child(t)
+	var st := UI.label("The Quiet Years, and after", 20, UI.BROWN)
+	st.add_theme_font_override("font", UISkin.font("italic"))
+	st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.add_child(st)
+	b.add_child(UI.sep())
+	b.add_child(UI.rich("[i]Water. Earth. Fire. Air. You are not the Avatar. You are one of the millions who live in the world the Avatar is trying to keep in balance.\n\nRaise an army, master your element, serve a nation or carve out your own realm. Rule well and the Avatar may come to sit at your table. Rule cruelly and they will come for you.[/i]", 420))
+	b.add_child(UI.spacer(6))
 	var has_auto := GS.has_save(GS.AUTOSAVE_PATH)
 	var has_save := GS.has_save(GS.SAVE_PATH)
-	col.add_child(_menu_button("New Game", func():
+	b.add_child(_menu_button("New Game", func():
 		page = "world"
 		_build()))
-	col.add_child(_menu_button("Continue (autosave)", func(): _load(GS.AUTOSAVE_PATH), has_auto))
-	col.add_child(_menu_button("Load Saved Game", func(): _load(GS.SAVE_PATH), has_save))
-	col.add_child(_menu_button("Settings", func():
+	b.add_child(_menu_button("Continue (autosave)", func(): _load(GS.AUTOSAVE_PATH), has_auto))
+	b.add_child(_menu_button("Load Saved Game", func(): _load(GS.SAVE_PATH), has_save))
+	b.add_child(_menu_button("Settings", func():
 		var sw = SettingsWindow.new()
 		add_child(sw)))
-	col.add_child(_menu_button("Quit", func(): get_tree().quit()))
+	b.add_child(_menu_button("Quit", func(): get_tree().quit()))
 	if note != "":
-		body.add_child(UI.rich("[center]%s[/center]" % note, 700))
-	body.add_child(UI.rich("[center][font_size=13]A fan-made game. Avatar: The Last Airbender belongs to its creators.[/font_size][/center]", 700))
+		b.add_child(UI.rich("[center]%s[/center]" % note, 420))
+	b.add_child(UI.expand())
+	b.add_child(UI.rich("[center][font_size=13]A fan-made game. Avatar: The Last Airbender belongs to its creators.[/font_size][/center]", 420))
 
 func _menu_button(text: String, cb: Callable, enabled: bool = true) -> Button:
-	var b := UI.button(text, cb, 320, enabled)
-	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	b.add_theme_font_size_override("font_size", 20)
+	var b := UI.option(text, cb, enabled)
+	b.add_theme_font_override("font", UISkin.font("display_med"))
+	b.add_theme_font_size_override("font_size", 25)
 	return b
 
 func _load(path: String) -> void:
@@ -125,8 +147,7 @@ func _build_world() -> void:
 			c_era = e
 			_build(), 410)
 		if e == c_era:
-			b.add_theme_color_override("font_color", UI.GOLD)
-			b.add_theme_color_override("font_hover_color", UI.GOLD)
+			UI.mark_selected(b)
 		card.add_child(b)
 		card.add_child(UI.rich("[font_size=14]%s[/font_size]" % info.pitch, 410))
 		grid.add_child(card)
@@ -165,8 +186,7 @@ func _build_create() -> void:
 			_build(), 160)
 		b2.tooltip_text = el[2]
 		if el[0] == c_bend:
-			b2.add_theme_color_override("font_color", UI.GOLD)
-			b2.add_theme_color_override("font_hover_color", UI.GOLD)
+			UI.mark_selected(b2)
 		brow.add_child(b2)
 	for el in ELEMENTS:
 		if el[0] == c_bend:
@@ -180,8 +200,7 @@ func _build_create() -> void:
 			c_background = bid
 			_build(), 205)
 		if bid == c_background:
-			b.add_theme_color_override("font_color", UI.GOLD)
-			b.add_theme_color_override("font_hover_color", UI.GOLD)
+			UI.mark_selected(b)
 		grid.add_child(b)
 	var bd2: Dictionary = GS.BACKGROUNDS[c_background]
 	body.add_child(UI.rich("[i]%s[/i]\nStarts at: [b]%s[/b]" % [bd2.desc, Data.settlements[bd2.start].name], 860))
@@ -252,8 +271,7 @@ func _backgrounds_for(el: String) -> Array:
 func _choice_button(text: String, sel: bool, cb: Callable) -> Button:
 	var b := UI.button(text, cb)
 	if sel:
-		b.add_theme_color_override("font_color", UI.GOLD)
-		b.add_theme_color_override("font_hover_color", UI.GOLD)
+		UI.mark_selected(b)
 	return b
 
 ## A turning 3D preview of the character being created.

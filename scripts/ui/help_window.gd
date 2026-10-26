@@ -55,7 +55,7 @@ func build() -> void:
 			tab = i
 			refresh())
 		if i == tab:
-			b.add_theme_color_override("font_color", UI.GOLD)
+			UI.mark_selected(b)
 		tabs.add_child(b)
 	var sc := UI.scroll(440)
 	content.add_child(sc)

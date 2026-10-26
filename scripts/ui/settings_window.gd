@@ -4,12 +4,15 @@ extends "res://scripts/ui/window_base.gd"
 var map
 
 func _init() -> void:
-	window_size = Vector2(700, 640)
+	window_size = Vector2(840, 700)
 
 func build() -> void:
 	set_title("Settings")
+	var sc := UI.scroll(520)
+	content.add_child(sc)
 	var g := UI.grid(2, 20, 12)
-	content.add_child(g)
+	g.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(g)
 	g.add_child(UI.label("Battle size (troops on the field)"))
 	var bs := HSlider.new()
 	bs.min_value = 30
@@ -100,6 +103,18 @@ func build() -> void:
 	rf.button_pressed = GS.settings.get("reduce_flashing", false)
 	rf.toggled.connect(func(v): GS.settings.reduce_flashing = v)
 	g.add_child(rf)
+	g.add_child(UI.label("Reduce motion (no window animations)"))
+	var rm := CheckBox.new()
+	rm.button_pressed = GS.settings.get("reduce_motion", false)
+	rm.toggled.connect(func(v): GS.settings.reduce_motion = v)
+	g.add_child(rm)
+	g.add_child(UI.label("Readable font (Atkinson Hyperlegible; applies to new windows)"))
+	var rdf := CheckBox.new()
+	rdf.button_pressed = GS.settings.get("readable_font", false)
+	rdf.toggled.connect(func(v):
+		GS.settings.readable_font = v
+		UI.reset_theme())
+	g.add_child(rdf)
 	# The element expansions can be switched off individually
 	var DLC = load("res://scripts/dlc/registry.gd")
 	for el in DLC.EXPANSIONS:

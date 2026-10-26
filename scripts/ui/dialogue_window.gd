@@ -17,6 +17,7 @@ var _pivot: Node3D
 var _actors := {}        # speaker id -> Actor
 var _speaker := ""
 var _visited := {}
+var _choice_buttons: Array = []
 
 func _init() -> void:
 	window_size = Vector2(1040, 600)
@@ -41,15 +42,15 @@ func build() -> void:
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(row)
 	# Portrait
-	var left := UI.vbox(4)
+	var left := UI.vbox(0)
 	row.add_child(left)
 	if who != "narrator" and Story.npc(who).get("portrait", true):
-		left.add_child(_portrait(who, node.get("expr", "neutral")))
-		left.add_child(UI.label(_speaker_name(who), 19, UI.BROWN))
+		left.add_child(_framed(_portrait(who, node.get("expr", "neutral"))))
+		left.add_child(_nameplate(_speaker_name(who)))
 	else:
 		_hide_portrait()
 		if who != "narrator":
-			left.add_child(UI.label(_speaker_name(who), 19, UI.BROWN))
+			left.add_child(_nameplate(_speaker_name(who)))
 	# Text and choices
 	var right := UI.vbox(8)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -65,12 +66,19 @@ func build() -> void:
 		text = "[i]%s[/i]" % text   # storm-sign is shown in italics
 	var sc := UI.scroll(300)
 	right.add_child(sc)
-	sc.add_child(UI.rich(text, 660 if who != "narrator" else 980))
+	var body := UI.rich(text, 640 if who != "narrator" else 960)
+	body.add_theme_font_size_override("normal_font_size", 20)
+	body.add_theme_font_size_override("bold_font_size", 20)
+	body.add_theme_font_size_override("italics_font_size", 20)
+	sc.add_child(body)
 	right.add_child(UI.sep())
 	var choices: Array = node.get("choices", [])
+	_choice_buttons = []
 	if choices.is_empty():
 		var nxt: String = node.get("next", "")
-		right.add_child(UI.option("Continue" if nxt != "" else "End conversation", _go.bind(nxt, [])))
+		var cb := UI.option(("Continue" if nxt != "" else "End conversation") + "   (Enter)", _go.bind(nxt, []))
+		right.add_child(cb)
+		_choice_buttons.append(cb)
 	else:
 		for c in choices:
 			var cond: Dictionary = c.get("if", {})
@@ -80,7 +88,57 @@ func build() -> void:
 			var label := Story.fmt(c.text)
 			if not okc and c.has("hint"):
 				label += "  [%s]" % c.hint
-			right.add_child(UI.option(label, _go.bind(c.get("next", ""), c.get("do", []), c.get("goto", "")), okc))
+			# numbered: press 1-9 to choose
+			var ob := UI.option("%d.  %s" % [_choice_buttons.size() + 1, label], _go.bind(c.get("next", ""), c.get("do", []), c.get("goto", "")), okc)
+			right.add_child(ob)
+			_choice_buttons.append(ob)
+
+## Number keys choose, Enter or Space continues.
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	var k: int = event.physical_keycode
+	var idx := -1
+	if k >= KEY_1 and k <= KEY_9:
+		idx = k - KEY_1
+	elif (k == KEY_ENTER or k == KEY_SPACE or k == KEY_KP_ENTER) and _choice_buttons.size() == 1:
+		idx = 0
+	if idx >= 0 and idx < _choice_buttons.size():
+		var b: Button = _choice_buttons[idx]
+		if is_instance_valid(b) and not b.disabled:
+			get_viewport().set_input_as_handled()
+			b.pressed.emit()
+
+## The portrait in a gilt frame.
+func _framed(c: Control) -> Control:
+	var f := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.2, 0.08, 0.05)
+	sb.border_color = UISkin.GOLD
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(3)
+	sb.set_content_margin_all(4)
+	sb.shadow_color = Color(0, 0, 0, 0.3)
+	sb.shadow_size = 5
+	f.add_theme_stylebox_override("panel", sb)
+	f.add_child(c)
+	return f
+
+## A lacquer nameplate under the portrait.
+func _nameplate(n: String) -> Control:
+	var p := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = UISkin.LACQUER
+	sb.border_color = UISkin.GOLD
+	sb.border_width_bottom = 2
+	sb.border_width_top = 1
+	sb.set_content_margin_all(6)
+	p.add_theme_stylebox_override("panel", sb)
+	var l := UI.label(n, 20, UISkin.GOLD_PALE)
+	l.add_theme_font_override("font", UISkin.font("display"))
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	p.add_child(l)
+	return p
 
 ## Remove written stutter ("d-don't" -> "don't") for players who find it hard to read.
 static func _plain(t: String) -> String:
@@ -139,7 +197,7 @@ func _portrait(who: String, expr: String) -> Control:
 		var we := WorldEnvironment.new()
 		var env := Environment.new()
 		env.background_mode = Environment.BG_COLOR
-		env.background_color = Color(0.86, 0.78, 0.62)
+		env.background_color = Color(0.78, 0.66, 0.5)
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		env.ambient_light_color = Color(0.9, 0.86, 0.8)
 		env.ambient_light_energy = 0.55

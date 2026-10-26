@@ -69,12 +69,9 @@ func build() -> void:
 		right.add_child(row)
 		var status := "  [color=#2a6a2a](met)[/color]" if mk.done else ("  [color=#a03020](active)[/color]" if mk.active else "")
 		row.add_child(UI.rich("[b]%s[/b]%s\n%s" % [names[k], status, mk.why], 540))
-		var bar := ProgressBar.new()
-		bar.custom_minimum_size = Vector2(520, 10)
-		bar.show_percentage = false
-		bar.max_value = 1.0
-		bar.value = mk.progress
-		row.add_child(bar)
+		# jade for the good reason, cinnabar for the cruel ones, gold for mastery
+		var col: Color = {"ruler": UI.GREEN, "tyrant": UI.RED, "teacher": UI.GOLD, "local": UI.RED}[k]
+		row.add_child(UI.bar(mk.progress, 1.0, col, 520.0, 10.0))
 	right.add_child(UI.rich("[i]The Avatar is least involved in childhood and old age. Your infamy: [b]%d[/b] (fades with time). Influence: [b]%.1f[/b]. %s[/i]" % [AvatarSys.infamy(), AvatarSys.influence(), AvatarSys.mastery_text()], 540))
 	if AvatarSys.hostile() and st != "child":
 		_build_preparations(right)

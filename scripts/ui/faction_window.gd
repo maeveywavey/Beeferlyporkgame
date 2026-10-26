@@ -21,7 +21,7 @@ func build() -> void:
 			selected = f
 			refresh())
 		if f == selected:
-			b.add_theme_color_override("font_color", UI.GOLD)
+			UI.mark_selected(b)
 		tabs.add_child(b)
 	tabs.add_child(UI.expand())
 	tabs.add_child(UI.button("The Avatar", func():
