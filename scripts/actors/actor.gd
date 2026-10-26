@@ -118,6 +118,8 @@ func set_stance(s: String) -> void:
 	stance = s
 	var node: AnimationNodeAnimation = tree.tree_root.get_node("stance_anim")
 	node.animation = STANCES.get(s, "ual1/Idle")
+	if bend_pose:
+		bend_pose.set_form("ride" if s == "ride" else ("" if bend_pose.form == "ride" else bend_pose.form))
 
 ## Play an upper-body action (attacks, casts, gestures). Works while running.
 func action(anim_name: String, time_scale: float = 1.0, full_body: bool = false) -> void:

@@ -132,7 +132,7 @@ Across 1,620 simulated days the bots hit no state traps, no invariant violations
 ## 4. Still open (known limits)
 
 1. **Creatures:** the ostrich horse is a horse, and the sky bison is a repainted cow on the map. The rhino is a CC0 triceratops, which reads well. Proper hybrid creatures need a modeller (sequel, art studio).
-2. **Riding pose:** riders use a seated pose with the legs forward, not a straddle.
+2. ~~**Riding pose:** riders use a seated pose with the legs forward, not a straddle.~~ **Fixed after the report:** a procedural straddle layer opens the thighs around the barrel and drops the heels.
 3. **Bending motion:** bending uses motion-captured spell and strike clips with procedural martial-arts stance layers (horse stance, front stance, Tai Chi arms, Bagua circling). It is fluid but not form-accurate. Accurate forms are the sequel's headline.
 4. **Ba Sing Se:** the rings are menus inside a single walkable district.
 5. **Interiors:** taverns, halls and the library are menus and dialogues, not interiors.

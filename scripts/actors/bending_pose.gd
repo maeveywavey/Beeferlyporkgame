@@ -106,6 +106,16 @@ func _process_modification() -> void:
 			_rot("upperarm_r", Y, -0.25 * c * w)
 			_rot("hand_l", Z, 0.3 * s * w)
 			_rot("hand_r", Z, -0.3 * s * w)
+		"ride":
+			# straddle the saddle: thighs open around the barrel, knees lower,
+			# heels down, torso upright over the seat
+			_rot("thigh_l", Z, 0.55 * w)
+			_rot("thigh_r", Z, -0.55 * w)
+			_rot("thigh_l", X, 0.35 * w)
+			_rot("thigh_r", X, 0.35 * w)
+			_rot("calf_l", X, -0.25 * w)
+			_rot("calf_r", X, -0.25 * w)
+			_rot("spine_01", X, -0.08 * w)
 		"air":
 			# light bounce and circular torso twist with open palms
 			var bounce := absf(sin(_t * 4.0))

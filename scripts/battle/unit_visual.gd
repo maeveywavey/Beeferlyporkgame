@@ -283,7 +283,7 @@ static func animate(unit, delta: float) -> void:
 		var element: String = unit.bend if unit.bend != "blue_fire" else "fire"
 		if element == "sand":
 			element = "earth"
-		a.bend_pose.set_form(element if unit.bend != "" and engaged and spd < 2.0 and not unit.mounted() else "")
+		a.bend_pose.set_form("ride" if unit.mounted() else (element if unit.bend != "" and engaged and spd < 2.0 else ""))
 	if unit.parts.has("ranged"):
 		unit.parts.ranged.visible = unit.action == "aim" or (unit.is_player and unit.battle.player_ranged_mode)
 	if unit.parts.has("glow"):
