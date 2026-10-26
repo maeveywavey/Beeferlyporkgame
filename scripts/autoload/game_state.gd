@@ -212,6 +212,11 @@ func create_player(pname: String, background: String, bend: String, skin: Color,
 		p.skills[s] += bg.skills[s]
 	if bend != "":
 		p.skills.bending = 2
+		# every bender starts with one form of their art's martial basis
+		var Forms = load("res://scripts/battle/forms.gd")
+		var f: Dictionary = Forms.starter(Forms.art_of(bend))
+		p.forms = [] if f.is_empty() else [f]
+		p.form_f = 0 if not f.is_empty() else -1
 	for slot in bg.equip:
 		p.equip[slot] = bg.equip[slot]
 	for f in bg.get("rel", {}):

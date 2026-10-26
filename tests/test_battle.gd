@@ -74,6 +74,9 @@ func _drive() -> void:
 		for slot in ["q", "e", "r"]:
 			if pu.cast(slot, t.chest()):
 				casts[slot] = casts.get(slot, 0) + 1
+		if i % 6 == 0 and not GS.player.get("forms", []).is_empty():
+			if pu.cast_form(GS.player.forms[0]) == "":
+				casts["form"] = casts.get("form", 0) + 1
 		if d.length() < 2.5:
 			pu.start_attack("overhead")
 		if i % 20 == 0:

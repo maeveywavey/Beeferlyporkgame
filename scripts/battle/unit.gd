@@ -4,6 +4,7 @@ extends Node3D
 ## queries, projectiles and bookkeeping.
 
 const UnitVisual = preload("res://scripts/battle/unit_visual.gd")
+const Forms = preload("res://scripts/battle/forms.gd")
 const Looks = preload("res://scripts/actors/looks.gd")
 const Bending = preload("res://scripts/battle/bending.gd")
 
@@ -60,6 +61,11 @@ var action_total := 0.0
 var attack_dir := "right"
 var block_dir := "right"
 var cooldowns := {}
+# A bending form in progress: movements still to play, then the release
+var form_seq: Array = []
+var form_step_t := 0.0
+var form_release_t := -1.0
+var form_ability: Dictionary = {}
 var target = null
 var retarget_t := 0.0
 var think_t := 0.0
@@ -303,6 +309,7 @@ func tick(delta: float) -> void:
 	if bend != "":
 		chi = minf(max_chi, chi + chi_regen * delta)
 	_update_action(delta)
+	_update_form(delta)
 	var desired := Vector3.ZERO
 	if is_player and battle.player_controlled:
 		desired = battle.player_move_vector() * speed()
@@ -442,6 +449,58 @@ func release_aim(point: Vector3) -> bool:
 	return true
 
 ## Use a bending ability towards a world point.
+## Perform a designed form: each movement plays in turn (with its stance
+## emphasis), then the element is released.
+func cast_form(form: Dictionary) -> String:
+	if bend == "" or bend_block_t > 0.0 or bend_mult() <= 0.01:
+		return "You cannot bend right now."
+	if not form_seq.is_empty() or action in ["windup", "stagger", "aim"]:
+		return "busy"
+	var ev := Forms.evaluate(form)
+	if not ev.valid:
+		return "That form is not valid: " + ", ".join(ev.errors)
+	if chi < ev.ability.cost:
+		return "Not enough chi for %s." % form.get("name", "the form")
+	if cooldowns.get("f", 0.0) > 0.0:
+		return "busy"
+	chi -= ev.ability.cost
+	cooldowns["f"] = ev.ability.cd + ev.windup
+	form_ability = ev.ability
+	form_seq = []
+	for id in form.moves:
+		form_seq.append(Forms.move(form.art, id))
+	form_step_t = 0.0
+	form_release_t = -1.0
+	_set_action("cast", ev.windup + 0.2)
+	if parts.actor.bend_pose:
+		parts.actor.bend_pose.set_form(Forms.art_of(bend))
+	form["uses"] = int(form.get("uses", 0)) + 1
+	return ""
+
+func _update_form(delta: float) -> void:
+	if form_release_t >= 0.0:
+		form_release_t -= delta
+		if form_release_t < 0.0:
+			var point: Vector3 = battle.aim_point() if is_player and battle.player_controlled else (target.chest() if target != null and is_instance_valid(target) else position + forward() * 10.0)
+			cast_anim = 0.35
+			battle.execute_bending(self, form_ability, point)
+		return
+	if form_seq.is_empty():
+		return
+	form_step_t -= delta
+	if form_step_t > 0.0:
+		return
+	var m: Dictionary = form_seq.pop_front()
+	var a = parts.actor
+	var clip_len: float = a.action_length(m.anim)
+	var full: bool = m.anim in ["ual2/NinjaJump_Land", "ual1/Jump_Land", "ual1/Roll"]
+	a.action(m.anim, clampf(clip_len / maxf(0.2, m.dur), 0.6, 3.0), full)
+	if m.pulse != "" and a.bend_pose:
+		a.bend_pose.pulse(m.pulse)
+	form_step_t = m.dur
+	if form_seq.is_empty():
+		form_release_t = m.dur * 0.6
+
 func cast(slot: String, point: Vector3) -> bool:
 	if not can_bend(slot):
 		return false

@@ -28,6 +28,16 @@ func _ready() -> void:
 	for k in ["kept", "sold_fire", "sold_earth", "sold_omashu", "buried", "burned"]:
 		_play_main(k)
 	_play_companions()
+	# Bending forms: starters are valid and model good breathing; rules bite
+	var Forms = load("res://scripts/battle/forms.gd")
+	for art in ["fire", "earth", "water", "air"]:
+		var ev: Dictionary = Forms.evaluate(Forms.starter(art))
+		if not ev.valid or not ev.notes.is_empty():
+			_err("starter form %s: %s %s" % [art, ev.errors, ev.notes])
+		print("form %s: power %.0f windup %.2f chi %.0f props %s" % [art, ev.power, ev.windup, ev.chi, ev.props])
+	var bad: Dictionary = Forms.evaluate({"art": "earth", "moves": ["e_tiger", "e_root"], "release": "strike"})
+	if bad.valid:
+		_err("broken stance chain accepted")
 	var plain: String = load("res://scripts/ui/dialogue_window.gd")._plain("I d-don't k-know. I-I mean, sh-she's fine. Re-entry is a word.")
 	if plain != "I don't know. I mean, she's fine. Re-entry is a word.":
 		_err("plain speech filter: " + plain)

@@ -58,6 +58,9 @@ func build() -> void:
 		right.add_child(row2)
 	var b := UI.hbox()
 	content.add_child(b)
+	if GS.player.bend != "":
+		b.add_child(UI.button("Bending Forms", func():
+			map.open_window(load("res://scripts/ui/forms_window.gd").new()), 180))
 	b.add_child(UI.expand())
 	b.add_child(UI.button("Done", close, 120))
 

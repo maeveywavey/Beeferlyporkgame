@@ -1327,6 +1327,23 @@ func _unhandled_input(event: InputEvent) -> void:
 				_player_cast("e")
 			KEY_R:
 				_player_cast("r")
+			KEY_F:
+				_player_form()
+
+## F: the player's own bending form (Character -> Bending Forms).
+func _player_form() -> void:
+	var pu = player_unit
+	var forms: Array = GS.player.get("forms", [])
+	var idx: int = int(GS.player.get("form_f", -1))
+	if pu.bend == "":
+		hud_note("You are not a bender.")
+		return
+	if idx < 0 or idx >= forms.size():
+		hud_note("No form is set on F. Design one under Character -> Bending Forms.")
+		return
+	var msg: String = pu.cast_form(forms[idx])
+	if msg != "" and msg != "busy":
+		hud_note(msg)
 
 func _player_cast(slot: String) -> void:
 	var pu = player_unit
@@ -1563,6 +1580,11 @@ func _update_hud(delta: float) -> void:
 				elif pu.chi < a.cost:
 					st = "chi"
 				parts.append("%s %s [%s]" % [slot.to_upper(), a.name, st])
+			var fi: int = int(GS.player.get("form_f", -1))
+			var fl: Array = GS.player.get("forms", [])
+			if fi >= 0 and fi < fl.size():
+				var fst := "ready" if pu.cooldowns.get("f", 0.0) <= 0.0 else "%.1fs" % pu.cooldowns.f
+				parts.append("F %s [%s]" % [fl[fi].name, fst])
 			txt += "\n" + "   ".join(parts)
 		info_label.text = txt
 		crosshair.visible = pu.alive and not paused

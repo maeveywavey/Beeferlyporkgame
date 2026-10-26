@@ -136,7 +136,7 @@ func _ready() -> void:
 				var mm = Engine.get_main_loop().current_scene
 				mm.page = "create"
 				mm._build())
-		"world", "town", "party", "encounter", "char", "factions", "trade", "far", "inv", "quests", "society":
+		"world", "town", "party", "encounter", "char", "factions", "trade", "far", "inv", "quests", "society", "forms":
 			var p := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 			GS.new_game(p)
 			GS.flags.seen_help = true
@@ -228,6 +228,15 @@ static func _open(mode: String) -> void:
 			var Story = load("res://scripts/story/story.gd")
 			Story.apply([["journal", "ms_main", "The Drowned Testament", "Brother Norbu gave you a page of the drowned Avatar's logbook. Take it to Abbess Tsering at the Eastern Air Temple."], ["journal", "cq_hana", "Hana: The Settled Stones", "Go with Hana to the Wenlong district of Ba Sing Se's Lower Ring."]])
 			map._open_quests()
+		"forms":
+			GS.player.bend = "water"
+			GS.player.forms = [load("res://scripts/battle/forms.gd").starter("water")]
+			GS.player.form_f = 0
+			var fw2 = load("res://scripts/ui/forms_window.gd").new()
+			map.open_window(fw2)
+			fw2.draft = GS.player.forms[0].duplicate(true)
+			fw2.editing = 0
+			fw2.call_deferred("refresh")
 		"society":
 			var fw = load("res://scripts/ui/faction_window.gd").new()
 			fw.selected = "northern_water"
