@@ -441,10 +441,17 @@ static func _world_acts(A: Dictionary, st: String, sid: String) -> void:
 			GS.sim._end_siege(sid, false)
 			GS.log_msg("%s walks into the siege camp at %s and sits down between the lines. By evening the besiegers have gone home." % [display_name().capitalize(), name], Color(0.85, 0.9, 1))
 			return
-	var broker: float = {"young": 0.06, "prime": 0.15, "elder": 0.08}.get(st, 0.0)
-	if randf() < broker:
+	# The Avatar cannot end every war: one truce a season at most, and only
+	# for wars that have already run long (tuned after pre-launch bot runs,
+	# docs/08_sequel_release.md §2.3, which found every war ended by day 220)
+	var broker: float = {"young": 0.03, "prime": 0.07, "elder": 0.04}.get(st, 0.0)
+	if randf() < broker and GS.day() - int(A.get("broker_day", -999)) >= 90:
 		for k in Data.KINGDOMS:
-			if k != s.faction and GS.at_war(s.faction, k) and s.faction in Data.KINGDOMS:
+			var ia: int = Data.KINGDOMS.find(s.faction)
+			var ib: int = Data.KINGDOMS.find(k)
+			var since: int = int(GS.flags.get("rel_since_" + (s.faction + "|" + k if ia < ib else k + "|" + s.faction), GS.day()))
+			if k != s.faction and GS.at_war(s.faction, k) and s.faction in Data.KINGDOMS and GS.day() - since >= 60:
+				A.broker_day = GS.day()
 				GS.make_peace(s.faction, k)
 				GS.log_msg("At %s, %s brings envoys of the %s and the %s to the same table. They sign a truce before anyone can think better of it." % [name, display_name(), Data.factions[s.faction].name, Data.factions[k].name], Color(0.85, 0.9, 1))
 				break

@@ -14,10 +14,17 @@ func _ready() -> void:
 	if get_tree().current_scene == self:
 		get_tree().root.add_child.call_deferred(load("res://tests/test_personas.gd").new())
 		return
-	for seed in 6:
-		_play("chaos", seed, 160)
-	_play("story", 101, 220)
-	_play("warlord", 202, 220)
+	Story.no_scene_change = true
+	var only_sandbox := OS.get_cmdline_user_args().has("sandbox")
+	if not only_sandbox:
+		for seed in 6:
+			_play("chaos", seed, 160)
+		_play("story", 101, 220)
+		_play("warlord", 202, 220)
+	# Sandbox eras: a cruel warlord under a prime Avatar, a kind bender under a young one
+	_play("warlord", 303, 220, "prime")
+	_play("story", 404, 220, "young")
+	_play("chaos", 505, 160, "elder")
 	print("---- ISSUES (%d) ----" % issues.size())
 	var seen := {}
 	for i in issues:
@@ -31,12 +38,12 @@ func _issue(s: String) -> void:
 	issues.append(s)
 
 # ---------------------------------------------------------------------------
-func _play(persona: String, seed: int, days: int) -> void:
+func _play(persona: String, seed: int, days: int, era: String = "quiet") -> void:
 	seed(seed)
 	var bgs := GS.BACKGROUNDS.keys()
 	var bg: String = bgs[seed % bgs.size()]
 	var bends: Array = GS.BACKGROUNDS[bg].bends
-	var p := GS.create_player("Bot", bg, bends[0], Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
+	var p := GS.create_player("Bot", bg, bends[0], Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1), era)
 	p.look.pronouns = ["he", "she", "they"][seed % 3]
 	GS.new_game(p)
 	GS.flags.seen_help = true
@@ -51,6 +58,8 @@ func _play(persona: String, seed: int, days: int) -> void:
 		# companions: hire whoever is in a tavern nearby now and then
 		if d % 6 == 0 and GS.player.companions.size() < (8 if persona != "chaos" else 4):
 			for cid in Data.companions:
+				if Data.companions[cid].get("story_only", false):
+					continue
 				if not GS.player.companions.has(cid) and randf() < 0.35:
 					GS.player.companions.append(cid)
 					GS.companion_state(cid).approval = 10
@@ -89,6 +98,10 @@ func _play(persona: String, seed: int, days: int) -> void:
 	print("%s#%d (%s, %s): %d days in %d ms — beats %d, choices %d, pages %d, ending '%s', companions %d, quests done %s, open journal %s, gold %d, renown %d, wars %s" % [
 		persona, seed, bg, GS.player.look.pronouns, days, Time.get_ticks_msec() - t0, beats, choices_made, pages, Story.flag("ending", ""),
 		GS.player.companions.size(), done, open_q, GS.player.gold, GS.player.renown, _wars()])
+	var A: Dictionary = GS.flags.get("avatar", {})
+	print("    era %s, Avatar %s (%s): attitude %d, warned %s, court %s, defeats %d, sightings %d; infamy %d, influence %.1f, techniques %d" % [era,
+		A.get("name", "?"), load("res://scripts/core/avatar.gd").stage(), int(A.get("attitude", 0)), A.get("warned", false), A.get("court_done", false),
+		int(A.get("defeats", 0)), A.get("seen", []).size(), int(GS.player.get("infamy", 0)), load("res://scripts/core/avatar.gd").influence(), GS.player.get("techniques", []).size()])
 
 func _wars() -> String:
 	var out := []
