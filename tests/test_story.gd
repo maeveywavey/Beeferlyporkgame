@@ -8,11 +8,15 @@ const Roster = preload("res://scripts/core/roster.gd")
 
 const OPS := ["approval", "flag", "flag_day", "gold", "renown", "honor", "xp", "rel", "lord_rel", "peace", "war", "journal",
 	"journal_done", "join", "leave", "away", "companion_mod", "spawn", "close_windows", "wait", "prosperity", "item", "troops",
-	"heal", "queue", "page", "log", "skill_points", "standing", "call", "infamy", "av_attitude"]
+	"heal", "queue", "page", "log", "skill_points", "standing", "call", "infamy", "av_attitude", "learn", "master", "comp_tech", "good"]
 const CONDS := ["flag", "not_flag", "flags", "eq", "has_page", "companion", "no_companion", "gold", "standing", "approval", "rel",
-	"bend", "renown", "skill", "day", "days_since", "pages", "at", "owns", "peace_with", "pronouns", "call", "near_faction", "era"]
+	"bend", "renown", "skill", "day", "days_since", "pages", "at", "owns", "peace_with", "pronouns", "call", "near_faction", "era", "tech", "no_tech", "bends", "master", "season", "cosmic", "forms_uses", "duel_wins", "techs"]
 const EXPRS := ["neutral", "happy", "laugh", "smirk", "sad", "grief", "angry", "furious", "surprised", "afraid", "determined",
 	"thoughtful", "tender", "embarrassed", "pain", "sleep"]
+
+const CALLS := ["has_wounded", "any_companion", "has_evidence", "pemba_or_nima", "nima_wins", "nima_loses", "av_hostage", "av_seat", "av_no_seat",
+	"av_young", "av_prime", "av_elder", "av_ruler", "av_friend", "av_not_friend", "av_kept", "av_not_kept", "av_wars", "av_intel",
+	"not_master", "not_air", "wx_can_share", "ex_academy_ok", "fx_ember_clean", "fx_ember_dirty"]
 
 var errors := 0
 
@@ -111,6 +115,10 @@ func _check_effects(where: String, effects: Array) -> void:
 			_err("%s: unknown spawn %s" % [where, e[1]])
 		if e[0] == "queue" and not Story.has_dialogue(e[1]):
 			_err("%s: queue missing %s" % [where, e[1]])
+		if e[0] == "learn" and not load("res://scripts/battle/techniques.gd").TECHNIQUES.has(e[1]):
+			_err("%s: unknown technique %s" % [where, e[1]])
+		if e[0] == "item" and not Data.items.has(e[1]):
+			_err("%s: unknown item %s" % [where, e[1]])
 
 func _check_cond(where: String, cond: Dictionary) -> void:
 	for k in cond:
@@ -118,6 +126,10 @@ func _check_cond(where: String, cond: Dictionary) -> void:
 			_err("%s: unknown condition %s" % [where, k])
 		if k in ["companion", "no_companion"] and cond[k] != "" and not Data.companions.has(cond[k]):
 			_err("%s: unknown companion %s" % [where, cond[k]])
+		if k in ["tech", "no_tech"] and not load("res://scripts/battle/techniques.gd").TECHNIQUES.has(cond[k]):
+			_err("%s: unknown technique %s" % [where, cond[k]])
+		if k == "call" and not cond[k] in CALLS:
+			_err("%s: unknown call condition %s" % [where, cond[k]])
 
 # ---------------------------------------------------------------------------
 ## Walk a dialogue, choosing the first enabled choice whose text contains

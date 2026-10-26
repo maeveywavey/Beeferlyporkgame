@@ -19,7 +19,8 @@ func _talk(id: String) -> void:
 ## Banter between two companions who are both present, each pair heard once.
 func _fire() -> void:
 	var Story = load("res://scripts/story/story.gd")
-	var pairs := [["hana", "ukiuk"], ["juro", "reika"], ["kesi", "pemba"], ["nima", "shen_mu"], ["hana", "pemba"], ["juro", "nima"], ["reika", "ukiuk"], ["kesi", "shen_mu"]]
+	var pairs := [["hana", "ukiuk"], ["juro", "reika"], ["kesi", "pemba"], ["nima", "shen_mu"], ["hana", "pemba"], ["juro", "nima"], ["reika", "ukiuk"], ["kesi", "shen_mu"],
+		["reika", "sayuri"], ["huan", "kesi"], ["gao_ming", "hana"], ["pemba", "yangzom"], ["juro", "sayuri"], ["huan", "nima"], ["gao_ming", "shen_mu"], ["ukiuk", "yangzom"]]
 	pairs.shuffle()
 	for pr in pairs:
 		var id: String = "banter_%s_%s" % [pr[0], pr[1]]
@@ -51,6 +52,9 @@ func build() -> void:
 		content.add_child(UI.option("Sit by the fire with everyone", _fire))
 	if not Story.pages().is_empty():
 		content.add_child(UI.option("Read the Avatar's logbook (%d of 6 pages)" % Story.pages().size(), _talk.bind("ms_logbook")))
+	content.add_child(UI.option("Bending around camp (cook, warm, scout, ice roads, meditation)", func():
+		var w = load("res://scripts/ui/bending_work_window.gd").new()
+		map.open_window(w)))
 	content.add_child(UI.option("Think about the Avatar (who, where, and what would bring them to you)", func():
 		map.open_window(load("res://scripts/ui/avatar_window.gd").new())))
 	content.add_child(UI.option("Save game", func():

@@ -188,7 +188,7 @@ static func epilogue_text(kind: String) -> String:
 
 static func _companion_line(cid: String, stayed: bool) -> String:
 	var S = _story()
-	var done_flag: String = {"shen_mu": "shenmu_done"}.get(cid, cid + "_done")
+	var done_flag: String = {"shen_mu": "shenmu_done", "gao_ming": "gao_done"}.get(cid, cid + "_done")
 	if not stayed and not S.flag(done_flag):
 		return "left your company before the end. You heard of them sometimes, in rumours, always somewhere far away."
 	var line := _companion_fate(cid)
@@ -248,6 +248,26 @@ static func _companion_fate(cid: String) -> String:
 			if f.call("reika_kept"):
 				return "got rich. She bought a bigger ship and a bigger hat and never seemed to enjoy either."
 			return "sailed off with a new letter of marque from someone. She sends postcards. They are mostly insults."
+		"sayuri":
+			if f.call("daisuke_humbled"):
+				return "teaches again, in a hall on Ember Island, with Daisuke Ren as her most argumentative assistant. %s" % ("She still writes her name in the air when she fights. You still read it." if f.call("romance_sayuri") else "Her knee hurts when it rains. She duels anyway, briefly.")
+			return "retired to Caldera and taught her neighbours' children to light lamps with their breath. It was, she said, the best teaching she ever did."
+		"huan":
+			if f.call("huan_river"):
+				return "goes home to the swamp, which is wetter than ever and very pleased about it. Farmers from the Jade Terraces come down every spring to thank the banyan. Huan translates."
+			if f.call("huan_done"):
+				return "sits with the great banyan most evenings. The swamp, he says, remembers you fondly. Mostly."
+			return "went home to the swamp and told the trees about the world. They were not impressed. He was."
+		"gao_ming":
+			if f.call("gao_broken"):
+				return "organised three more mines without you. When people ask about the jade strike, he says it taught him who to trust."
+			if f.call("gao_deal") or f.call("gao_strike"):
+				return "went home to Lian, who is going to build a mine nobody dies in. %s" % ("She interviewed you at length. You passed, narrowly." if f.call("romance_gao_ming") else "He sends you her letters. She corrects his spelling in every one.")
+			return "went back to the seams. The roofs there are a little safer for his having been in the world."
+		"yangzom":
+			if f.call("yangzom_done"):
+				return "finished the map of the Thirty-Six Winds four years later, at the bottom of the world. %s" % ("Wind thirty-six is labelled with your name. The penguins disapprove." if f.call("romance_yangzom") else "There is a small breeze on it named after you.")
+			return "is still charting the winds. She sends letters that arrive by unusual routes, mostly from the sky."
 		"kesi":
 			if f.call("kesi_swamp"):
 				return "and her clan live in the Foggy Swamp now. They complain about the damp every day. Their children learn storm-sign and swampbending both.%s" % (" She still signs 'near' to you across every crowded room." if f.call("romance_kesi") else "")

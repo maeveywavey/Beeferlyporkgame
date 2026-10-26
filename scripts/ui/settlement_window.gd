@@ -7,6 +7,7 @@ const Economy = preload("res://scripts/core/economy.gd")
 const Quests = preload("res://scripts/core/quests.gd")
 const AutoResolve = preload("res://scripts/core/auto_resolve.gd")
 const AvatarSys = preload("res://scripts/core/avatar.gd")
+const BendingWork = preload("res://scripts/core/bending_work.gd")
 
 var sid := ""
 var map
@@ -96,6 +97,10 @@ func _build_main(o: VBoxContainer) -> void:
 		if d.type == "village":
 			if s.looted_until < GS.hours:
 				o.add_child(UI.option("Raid the village (dishonourable)", _raid))
+				if BendingWork.blocker("scorch", sid) == "":
+					o.add_child(UI.option("Scorch their fields with firebending (cruel; infamy)", func():
+						note = BendingWork.perform("scorch", sid)
+						refresh()))
 			o.add_child(UI.option("Leave", close))
 		else:
 			o.add_child(UI.rich("The gates are shut against you. Archers watch you from the walls.", 740))
@@ -148,9 +153,22 @@ func _build_main(o: VBoxContainer) -> void:
 			o.add_child(UI.option("Speak with the village elder (work)", _ask_work))
 	if s.owner == "player" and d.type != "village":
 		o.add_child(UI.option("Manage the garrison", func(): _open(_mk("res://scripts/ui/garrison_window.gd"))))
+	_work_option(o)
 	o.add_child(UI.option("Rest here for a day (heal faster)", _rest.bind(24.0)))
 	o.add_child(UI.option("Wait here until healed", _rest.bind(-2.0), Roster.wounded(GS.player_party().roster) > 0 or GS.player.hp < GS.max_hp()))
 	o.add_child(UI.option("Leave", close))
+
+## Bending at work (element expansions): offered wherever some job fits.
+func _work_option(o: VBoxContainer) -> void:
+	var n := 0
+	for id in BendingWork.available(sid):
+		if BendingWork.blocker(id, sid) == "":
+			n += 1
+	if not BendingWork.available(sid).is_empty():
+		o.add_child(UI.option("Put bending to work (%d job%s here)" % [n, "" if n == 1 else "s"], func():
+			var w = load("res://scripts/ui/bending_work_window.gd").new()
+			w.sid = sid
+			_open(w)))
 
 func _seek_avatar() -> void:
 	AvatarSys.state().audience_day = GS.day()
@@ -454,6 +472,7 @@ func _build_temple(o: VBoxContainer) -> void:
 		GS.player.hp = GS.max_hp()
 		_rest(24.0)))
 	o.add_child(UI.option("Buy supplies from the temple stores", func(): _open(_mk("res://scripts/ui/trade_window.gd"))))
+	_work_option(o)
 	o.add_child(UI.option("Donate to the refugees (100 gold)", func():
 		GS.add_gold(-100)
 		GS.change_faction_rel("air_nomads", 3)

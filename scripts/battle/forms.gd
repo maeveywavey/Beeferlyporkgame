@@ -25,6 +25,11 @@ const MOVES := {
 		{"id": "f_rise", "name": "Rising Dragon Palm", "in": "drop", "out": "front", "anim": "ual1/Spell_Simple_Shoot", "pulse": "lunge", "dur": 0.5, "power": 7, "chi": 6, "breath": "out", "tags": ["rising", "linear"]},
 		{"id": "f_step", "name": "Empty Step Feint", "in": "front", "out": "empty", "anim": "ual2/Sword_Regular_A", "pulse": "", "dur": 0.4, "power": 2, "chi": 2, "breath": "in", "tags": ["evasive"]},
 		{"id": "f_empty", "name": "Leaping Flame Kick", "in": "empty", "out": "front", "anim": "ual2/NinjaJump_Land", "pulse": "stomp", "dur": 0.7, "power": 8, "chi": 7, "breath": "out", "tags": ["rising"]},
+		# Expansion movements (Embers of the First Flame); "req" is the technique that teaches them
+		{"id": "f_whip_palm", "name": "Whipping Palm (Bian Zhang)", "in": "front", "out": "horse", "anim": "ual2/Sword_Regular_B", "pulse": "sweep", "dur": 0.5, "power": 8, "chi": 6, "breath": "out", "tags": ["linear", "circle"], "req": "f_whip"},
+		{"id": "f_furnace", "name": "Furnace Breath (Lian Qi)", "in": "horse", "out": "horse", "anim": "ual1/Spell_Simple_Enter", "pulse": "", "dur": 0.6, "power": 3, "chi": 1, "breath": "hold", "tags": ["breath"], "req": "f_breath_fire"},
+		{"id": "f_tornado", "name": "Tornado Kick (Xuanfeng Jiao)", "in": "empty", "out": "drop", "anim": "ual2/NinjaJump_Land", "pulse": "stomp", "dur": 0.75, "power": 9, "chi": 7, "breath": "out", "tags": ["rising", "circle"], "req": "f_jets"},
+		{"id": "f_dragon_tail", "name": "Dragon Swings Its Tail", "in": "drop", "out": "front", "anim": "ual2/Melee_Hook", "pulse": "sweep", "dur": 0.6, "power": 8, "chi": 6, "breath": "out", "tags": ["circle"], "req": "f_ring"},
 	],
 	"earth": [
 		{"id": "e_root", "name": "Rooting the Horse", "in": "horse", "out": "horse", "anim": "ual1/Jump_Land", "pulse": "stomp", "dur": 0.7, "power": 4, "chi": 3, "breath": "in", "tags": ["rooted"]},
@@ -34,6 +39,11 @@ const MOVES := {
 		{"id": "e_cat", "name": "Cat Step Guard", "in": "bow", "out": "cat", "anim": "ual2/Sword_Block", "pulse": "", "dur": 0.45, "power": 2, "chi": 2, "breath": "in", "tags": ["evasive"]},
 		{"id": "e_crane", "name": "Crane Beak Strike", "in": "cat", "out": "crane", "anim": "ual1/Punch_Jab", "pulse": "lunge", "dur": 0.45, "power": 5, "chi": 4, "breath": "out", "tags": ["linear"]},
 		{"id": "e_drop", "name": "Crane Drops to Horse", "in": "crane", "out": "horse", "anim": "ual2/NinjaJump_Land", "pulse": "stomp", "dur": 0.7, "power": 7, "chi": 5, "breath": "out", "tags": ["rooted"]},
+		# Expansion movements (Roots of the Mountain)
+		{"id": "e_bridge", "name": "Iron Bridge (Tit Kiu)", "in": "horse", "out": "horse", "anim": "ual2/Sword_Block", "pulse": "push", "dur": 0.8, "power": 5, "chi": 3, "breath": "hold", "tags": ["rooted"], "req": "e_armor"},
+		{"id": "e_double_tiger", "name": "Double Tiger Claws (Seung Fu Jaau)", "in": "bow", "out": "bow", "anim": "ual1/Push", "pulse": "push", "dur": 0.55, "power": 8, "chi": 5, "breath": "out", "tags": ["linear", "rooted"], "req": "e_gloves"},
+		{"id": "e_butterfly", "name": "Butterfly Palms (Wu Dip Jeung)", "in": "bow", "out": "horse", "anim": "ual1/Push", "pulse": "push", "dur": 0.7, "power": 9, "chi": 7, "breath": "out", "tags": ["rooted", "rising"], "req": "e_boulder"},
+		{"id": "e_listen", "name": "Listening Horse", "in": "horse", "out": "cat", "anim": "ual1/Spell_Simple_Enter", "pulse": "", "dur": 0.5, "power": 2, "chi": 1, "breath": "in", "tags": ["rooted", "evasive"], "req": "e_seismic"},
 	],
 	"water": [
 		{"id": "w_open", "name": "Commencing Form", "in": "wuji", "out": "wuji", "anim": "ual1/Spell_Simple_Enter", "pulse": "", "dur": 0.6, "power": 2, "chi": 1, "breath": "in", "tags": ["circle"]},
@@ -44,6 +54,11 @@ const MOVES := {
 		{"id": "w_part", "name": "Parting the Wild Horse's Mane", "in": "whip", "out": "empty", "anim": "ual2/Melee_Hook", "pulse": "sweep", "dur": 0.55, "power": 6, "chi": 5, "breath": "in", "tags": ["circle"]},
 		{"id": "w_wave", "name": "Wave Hands Like Clouds", "in": "empty", "out": "wuji", "anim": "ual2/Sword_Regular_C", "pulse": "sweep", "dur": 0.7, "power": 6, "chi": 5, "breath": "out", "tags": ["circle"]},
 		{"id": "w_return", "name": "Return to the Tide", "in": "empty", "out": "bow", "anim": "ual1/Interact", "pulse": "push", "dur": 0.6, "power": 4, "chi": 3, "breath": "hold", "tags": ["circle", "evasive"]},
+		# Expansion movements (The Turning Tide)
+		{"id": "w_sparrow", "name": "Grasp the Sparrow's Tail", "in": "wuji", "out": "bow", "anim": "ual2/Sword_Regular_C", "pulse": "sweep", "dur": 0.8, "power": 6, "chi": 4, "breath": "in", "tags": ["circle"], "req": "w_octopus"},
+		{"id": "w_needle", "name": "Needle at the Sea Bottom", "in": "empty", "out": "empty", "anim": "ual2/Sword_Regular_A", "pulse": "push", "dur": 0.55, "power": 7, "chi": 5, "breath": "out", "tags": ["linear"], "req": "w_ice_prison"},
+		{"id": "w_fan", "name": "Fan Through the Back", "in": "bow", "out": "whip", "anim": "ual1/Push", "pulse": "push", "dur": 0.6, "power": 8, "chi": 6, "breath": "out", "tags": ["linear", "circle"], "req": "w_surge"},
+		{"id": "w_snake", "name": "Snake Creeps Down", "in": "whip", "out": "empty", "anim": "ual2/NinjaJump_Land", "pulse": "stomp", "dur": 0.65, "power": 5, "chi": 3, "breath": "in", "tags": ["circle", "evasive"], "req": "w_vines"},
 	],
 	"air": [
 		{"id": "a_walk", "name": "Circle Walking", "in": "circle", "out": "circle", "anim": "ual1/Walk", "pulse": "", "dur": 0.5, "power": 2, "chi": 1, "breath": "in", "tags": ["evasive", "circle"]},
@@ -54,6 +69,11 @@ const MOVES := {
 		{"id": "a_push", "name": "Pushing the Mountain", "in": "palm", "out": "rooster", "anim": "ual1/Push", "pulse": "push", "dur": 0.7, "power": 7, "chi": 5, "breath": "out", "tags": ["linear"]},
 		{"id": "a_rooster", "name": "Golden Rooster Stands", "in": "rooster", "out": "circle", "anim": "ual2/NinjaJump_Land", "pulse": "stomp", "dur": 0.7, "power": 7, "chi": 6, "breath": "out", "tags": ["rising"]},
 		{"id": "a_slip", "name": "Slipping the Wind", "in": "twist", "out": "palm", "anim": "ual2/Melee_Hook", "pulse": "sweep", "dur": 0.4, "power": 4, "chi": 3, "breath": "hold", "tags": ["evasive", "circle"]},
+		# Expansion movements (The Thirty-Six Winds)
+		{"id": "a_swim", "name": "Swimming Body (You Shen)", "in": "circle", "out": "twist", "anim": "ual1/Roll", "pulse": "", "dur": 0.55, "power": 4, "chi": 2, "breath": "in", "tags": ["evasive", "circle"], "req": "a_glider"},
+		{"id": "a_lion", "name": "Lion Opens Its Mouth", "in": "palm", "out": "circle", "anim": "ual1/Push", "pulse": "push", "dur": 0.6, "power": 8, "chi": 6, "breath": "out", "tags": ["circle"], "req": "a_vortex"},
+		{"id": "a_dragon_turn", "name": "Yellow Dragon Turns Over", "in": "twist", "out": "rooster", "anim": "ual2/Sword_Regular_C", "pulse": "sweep", "dur": 0.65, "power": 6, "chi": 4, "breath": "out", "tags": ["circle", "rising"], "req": "a_shield"},
+		{"id": "a_still", "name": "Standing Like a Post (Zhan Zhuang)", "in": "rooster", "out": "palm", "anim": "ual1/Spell_Simple_Enter", "pulse": "", "dur": 0.6, "power": 2, "chi": 1, "breath": "hold", "tags": ["evasive"], "req": "a_breath"},
 	],
 }
 
@@ -81,12 +101,17 @@ static func move(art: String, id: String) -> Dictionary:
 			return m
 	return {}
 
-## Which movements can follow `last` (stance continuity).
-static func next_moves(art: String, last_id: String) -> Array:
+## Which movements can follow `last` (stance continuity). Expansion movements
+## appear only once their technique is learned (`known`), and only while their
+## expansion is switched on.
+static func next_moves(art: String, last_id: String, known: Array = []) -> Array:
+	var pool: Array = MOVES.get(art, []).filter(func(m): return not m.has("req") or (known.has(m.req) and DLC.enabled(art)))
 	if last_id == "":
-		return MOVES.get(art, [])
+		return pool
 	var last := move(art, last_id)
-	return MOVES.get(art, []).filter(func(m): return m.in == last.out)
+	return pool.filter(func(m): return m.in == last.out)
+
+const DLC = preload("res://scripts/dlc/registry.gd")
 
 ## Compute a form's stats and properties from its movements.
 ## form: {"name", "art", "moves": [ids], "release", "uses"}

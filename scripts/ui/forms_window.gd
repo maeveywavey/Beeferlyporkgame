@@ -85,7 +85,7 @@ func build() -> void:
 		mid.add_child(UI.label("Next movement" + ("" if last == "" else " (from %s)" % Forms.STANCES[art][Forms.move(art, last).out].split(" (")[0]), 16, UI.BROWN))
 		var grid := UI.grid(2, 6, 4)
 		mid.add_child(grid)
-		for m2 in Forms.next_moves(art, last):
+		for m2 in Forms.next_moves(art, last, GS.player.get("techniques", [])):
 			var b := UI.button("%s  (P%d · %.2fs · chi %d)" % [m2.name, m2.power, m2.dur, m2.chi], func():
 				draft.moves.append(m2.id)
 				refresh(), 300)

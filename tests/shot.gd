@@ -130,13 +130,17 @@ func _ready() -> void:
 	match mode:
 		"menu":
 			get_tree().change_scene_to_file.call_deferred("res://scenes/main_menu.tscn")
-		"create":
+		"create", "era":
 			get_tree().change_scene_to_file.call_deferred("res://scenes/main_menu.tscn")
+			var pg := "create" if mode == "create" else "world"
 			get_tree().create_timer(0.5).timeout.connect(func():
 				var mm = Engine.get_main_loop().current_scene
-				mm.page = "create"
+				mm.page = pg
+				if pg == "create":
+					mm.c_bend = "air"
+					mm.c_background = "air_nomad"
 				mm._build())
-		"world", "town", "party", "encounter", "char", "factions", "trade", "far", "inv", "quests", "society", "forms":
+		"world", "town", "party", "encounter", "char", "factions", "trade", "far", "inv", "quests", "society", "forms", "avatar", "techniques", "work":
 			var p := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 			GS.new_game(p)
 			GS.flags.seen_help = true
@@ -219,6 +223,29 @@ func _ready() -> void:
 static func _open(mode: String) -> void:
 	var map = Engine.get_main_loop().current_scene
 	match mode:
+		"techniques":
+			GS.player.bend = "water"
+			var Tech = load("res://scripts/battle/techniques.gd")
+			for id in ["w_octopus", "w_ice_lance", "w_vines", "w_chi_heal"]:
+				Tech.learn(id)
+			GS.player.master_title = ""
+			map.open_window(load("res://scripts/ui/techniques_window.gd").new())
+		"work":
+			GS.player.bend = "fire"
+			GS.player.companions = ["nima", "hana", "pemba"]
+			var ww = load("res://scripts/ui/bending_work_window.gd").new()
+			ww.sid = "senlin"
+			map.open_window(ww)
+		"avatar":
+			var AvatarSys = load("res://scripts/core/avatar.gd")
+			AvatarSys.init_era("prime")
+			GS.settlements.omashu.owner = "player"
+			AvatarSys.state().warned = true
+			AvatarSys.state().seen = [{"sid": "gaoling", "day": -2}, {"sid": "eastern_air_temple", "day": -9}]
+			AvatarSys.add_infamy(180, Vector2(900, 700))
+			AvatarSys._schedule(AvatarSys.state(), "confront", 9)
+			AvatarSys.state().state = "gathering"
+			map.open_window(load("res://scripts/ui/avatar_window.gd").new())
 		"town": map.open_settlement("omashu")
 		"party": map._open_party()
 		"char": map._open_character()

@@ -637,6 +637,8 @@ func finish_duel(won: bool, lid: String, player_hp: float) -> void:
 func _duel_outcome(won: bool, lid: String, champion: String) -> void:
 	var l: Dictionary = Data.lords[lid]
 	flags["agni_kai_" + lid] = day()
+	if won and champion == "":
+		flags["agni_won_" + lid] = true
 	var who: String = player.name if champion == "" else champion
 	var lines := []
 	if won:
@@ -693,7 +695,11 @@ func max_hp() -> int:
 	return 50 + player.attrs.str * 2 + player.skills.ironflesh * 4 + player.level * 2
 
 func max_chi() -> float:
-	return 60.0 + player.attrs.int * 3.0 + player.skills.bending * 8.0
+	var c: float = 60.0 + player.attrs.int * 3.0 + player.skills.bending * 8.0
+	var b: Dictionary = player.get("buffs", {}).get("chi", {})
+	if not b.is_empty() and float(b.until) > hours:
+		c *= float(b.mult)
+	return c
 
 func party_limit() -> int:
 	var l: int = 12 + skill("leadership") * 5 + player.attrs.cha + int(player.renown / 25)

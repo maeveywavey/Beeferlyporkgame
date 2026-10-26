@@ -15,8 +15,8 @@ func _ready() -> void:
 	if args.size() > 1:
 		elem = args[1]
 	B = load("res://scripts/battle/battle.gd")
-	B.autotest = mode != "bend"
-	var bg := {"fire": "fn_deserter", "earth": "ek_refugee", "water": "swt_warrior", "": "kyoshi"}
+	B.autotest = not mode in ["bend", "tech"]
+	var bg := {"fire": "fn_deserter", "earth": "ek_refugee", "water": "swt_warrior", "air": "air_nomad", "": "kyoshi"}
 	var bend_arg := "earth" if mode == "avatar" else elem
 	var p := GS.create_player("Tester", bg.get(bend_arg, "ek_refugee"), bend_arg, Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 	GS.new_game(p)
@@ -60,8 +60,14 @@ func _ready() -> void:
 		AvatarSys.spawn_company()
 		AvatarSys.start_battle()
 		return
+	if mode == "tech":
+		# every expansion technique of the element, cycled through Q/E/R
+		var Tech = load("res://scripts/battle/techniques.gd")
+		for id in Tech.for_element(elem):
+			Tech.learn(id)
+		GS.player.companions = ["sayuri", "huan", "gao_ming", "yangzom"]
 	get_tree().change_scene_to_file("res://scenes/battle.tscn")
-	if mode == "bend":
+	if mode == "bend" or mode == "tech":
 		await get_tree().create_timer(0.5).timeout
 		await _drive()
 
@@ -70,6 +76,9 @@ func _drive() -> void:
 	var pu = b.player_unit
 	Engine.time_scale = 2.0
 	var casts := {}
+	if mode == "tech":
+		pu.max_hp = 6000.0
+		pu.hp = 6000.0
 	for i in 240:
 		await get_tree().create_timer(0.25).timeout
 		if not is_instance_valid(pu) or not pu.alive or b.battle_over:
@@ -84,9 +93,16 @@ func _drive() -> void:
 		pu.target = t
 		if d.length() > 12.0:
 			pu.position += d.normalized() * 1.5
+		if mode == "tech" and i % 12 == 0:
+			var ids: Array = GS.player.techniques
+			var k := int(i / 12)
+			pu.loadout = {"q": ids[k % ids.size()], "e": ids[(k + 1) % ids.size()], "r": ids[(k + 2) % ids.size()]}
+			pu.cooldowns.clear()
+			pu.chi = pu.max_chi
 		for slot in ["q", "e", "r"]:
 			if pu.cast(slot, t.chest()):
-				casts[slot] = casts.get(slot, 0) + 1
+				var key: String = pu.ability_for(slot).get("name", slot) if mode == "tech" else slot
+				casts[key] = casts.get(key, 0) + 1
 		if i % 6 == 0 and not GS.player.get("forms", []).is_empty():
 			if pu.cast_form(GS.player.forms[0]) == "":
 				casts["form"] = casts.get("form", 0) + 1

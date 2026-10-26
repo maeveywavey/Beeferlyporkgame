@@ -96,6 +96,21 @@ func _run() -> void:
 		var na = await _press_all(aw, skip)
 		print("avatar window (hostile=%s) pressed %d" % [hostile, na])
 		await _close_all()
+	# Element expansions: techniques and bending work (a firebender with a waterbending companion)
+	GS.player.bend = "fire"
+	GS.player.companions = ["nima"]
+	load("res://scripts/battle/techniques.gd").learn("f_whip")
+	for wp in [["res://scripts/ui/techniques_window.gd", ""], ["res://scripts/ui/bending_work_window.gd", "senlin"], ["res://scripts/ui/bending_work_window.gd", ""]]:
+		var xw = load(wp[0]).new()
+		if wp[1] != "" or wp[0].contains("work"):
+			xw.sid = wp[1]
+		map.open_window(xw)
+		await get_tree().process_frame
+		var nx = await _press_all(xw, skip)
+		print(wp[0].get_file(), " (", wp[1], ") pressed ", nx)
+		await _close_all()
+	GS.player.bend = "earth"
+	GS.player.companions = []
 	# Seek the Avatar where they are
 	AvatarSys.state().state = "free"
 	AvatarSys.state().warned = false

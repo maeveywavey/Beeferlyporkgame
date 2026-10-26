@@ -360,6 +360,7 @@ var items := {
 	"hook_swords": {"name": "Hook Swords", "slot": "weapon", "dmg": 22, "reach": 1.6, "speed": 1.25, "dtype": "cut", "price": 650, "model": "hooks"},
 	"dual_dao": {"name": "Dual Dao", "slot": "weapon", "dmg": 25, "reach": 1.45, "speed": 1.25, "dtype": "cut", "price": 900, "model": "dual_dao"},
 	"guan_dao": {"name": "Guan Dao", "slot": "weapon", "dmg": 30, "reach": 2.5, "speed": 0.78, "dtype": "cut", "price": 750, "model": "guan_dao"},
+	"comet_dao": {"name": "Comet-Forged Dao", "slot": "weapon", "dmg": 31, "reach": 1.55, "speed": 1.15, "dtype": "cut", "price": 5000, "model": "dao"},
 	"space_sword": {"name": "Sky-Iron Sword", "slot": "weapon", "dmg": 34, "reach": 1.7, "speed": 1.15, "dtype": "cut", "price": 6000, "model": "space_sword"},
 	# ranged
 	"short_bow": {"name": "Short Bow", "slot": "ranged", "dmg": 21, "ammo": 24, "accuracy": 0.8, "proj_speed": 45.0, "price": 200, "model": "bow"},
@@ -412,6 +413,7 @@ var goods := {
 	"jade": {"name": "Jade", "price": 280, "food": false},
 	"iron": {"name": "Iron", "price": 110, "food": false},
 	"silk": {"name": "Silk", "price": 190, "food": false},
+	"porcelain": {"name": "Porcelain", "price": 95, "food": false},
 	"furs": {"name": "Furs", "price": 140, "food": false},
 	"spices": {"name": "Spices", "price": 95, "food": false},
 	"herbs": {"name": "Medicinal Herbs", "price": 75, "food": false},
@@ -591,6 +593,27 @@ var companions := {
 		"bonus": {"tactics": 1, "pathfinding": 1}, "perk": "storm_sign", "signs": true, "vlook": {"sex": "f", "accessory": "sand_wrap"},
 		"bio": "A Deaf sandbender tracker, exiled from her clan for refusing to raid a caravan carrying children. She speaks storm-sign, the hand language of the Si Wong.",
 		"pitch": "(signing, while a tavern girl translates) You track badly. I could hear you coming from the next dune — and I can't hear. Hire me."},
+	# --- Element expansion companions (scripts/dlc/) ------------------------
+	"sayuri": {"name": "Master Sayuri Ono", "short": "Sayuri", "pronouns": "she", "culture": "fire", "bend": "fire", "power": 1.7, "weapon": "jian", "hp": 115, "armor": 12, "skill": 92, "cost": 800,
+		"bonus": {"trainer": 2}, "perk": "duellist", "dlc": "fire", "techs": {"q": "f_whip", "e": "f_breath_fire"},
+		"vlook": {"sex": "f", "hair": "Hair_Buns", "hair_color": Color(0.62, 0.6, 0.58), "accessory": "fn_noble", "height": 0.97},
+		"bio": "Fifty-four, a retired Agni Kai champion who never lost a duel she meant to win. An old lightning wound left her with pain that comes and goes like weather, and a cane she can kill a man with. Widow of a Fire Sage archivist named Haruko.",
+		"pitch": "I used to be the most dangerous woman in Caldera. Now I'm the most dangerous woman in this tavern, which is a smaller title but easier to defend. I teach. I also fight, on good days. Today is a good day."},
+	"huan": {"name": "Huan of the Foggy Swamp", "short": "Huan", "pronouns": "he", "culture": "swamp", "bend": "water", "power": 1.5, "weapon": "staff", "hp": 140, "armor": 8, "skill": 70, "cost": 350,
+		"bonus": {"pathfinding": 1, "healing": 1}, "perk": "swampbender", "dlc": "water", "techs": {"q": "w_vines", "e": "w_mist"},
+		"vlook": {"sex": "m", "hair": "Hair_Long", "beard": true, "hair_color": Color(0.2, 0.16, 0.1), "height": 1.08},
+		"bio": "A large, gentle swampbender who finds crowds unbearable and trees easy. Believes the swamp remembers everyone who has ever been in it, and talks to it to keep it company. Ace and aromantic, and comfortable saying so.",
+		"pitch": "The swamp said I should go and see things. I said the swamp should mind its own business. We argued. I lost. So. Here I am. I can bend water, and vines, and fog. I am not very good with doors."},
+	"gao_ming": {"name": "Gao Ming", "short": "Gao Ming", "pronouns": "he", "culture": "earth", "bend": "earth", "power": 1.6, "weapon": "axe", "hp": 150, "armor": 14, "skill": 72, "cost": 500,
+		"bonus": {"trainer": 1, "leadership": 1}, "perk": "miner", "dlc": "earth", "techs": {"e": "e_fissure", "r": "e_armor"},
+		"vlook": {"sex": "m", "hair": "Hair_Buzzed", "beard": true, "accessory": "bandana", "height": 1.03},
+		"bio": "Forty, a jade miner from the Lower Ring and the reason three mines in Gaoling now have shift limits. A widower raising a twelve-year-old daughter, Lian, who writes him letters correcting his spelling. Bisexual, tired, and stubborn in the way bedrock is stubborn.",
+		"pitch": "I dig. I also talk people into things, which my mother says is worse. I can open a seam, hold up a roof, or put a wall where your enemy wanted to walk. I send half my wages home. That's not negotiable."},
+	"yangzom": {"name": "Yangzom", "short": "Yangzom", "pronouns": "she", "culture": "air", "bend": "air", "power": 1.6, "weapon": "staff", "hp": 100, "armor": 6, "skill": 85, "cost": 300, "nonlethal": true,
+		"bonus": {"pathfinding": 2}, "perk": "glider", "dlc": "air", "techs": {"q": "a_ball", "e": "a_glider"},
+		"vlook": {"sex": "f", "hair": "Hair_BuzzedFemale", "accessory": "air_arrow"},
+		"bio": "Twenty-three, a nun of the Western Air Temple who left to finish charting the Thirty-Six Winds, the Nomads' unfinished map of the world's air. Holds the temple's record for the longest glide, and three of its records for being late. Keeps the vow; knocks people into next week instead.",
+		"pitch": "I'm making a map of the wind. All of it. It's going badly, which is exciting. You look like you're going somewhere. Can I come? I don't kill people. I'm extremely good at not killing people."},
 }
 
 # ---------------------------------------------------------------------------
@@ -699,6 +722,8 @@ var settlements := {
 	# Ruins and landmarks
 	"wan_shi_tong": {"name": "Wan Shi Tong's Library", "type": "ruin", "faction": "neutral", "pos": Vector2(1145, 610), "culture": "air",
 		"produces": [], "desc": "The tower of a great library peeks out from the desert sands. Its owl spirit trades knowledge for knowledge, and never at a loss."},
+	"cinder_monastery": {"name": "The Cinder Monastery", "type": "ruin", "faction": "neutral", "pos": Vector2(270, 520), "culture": "fire", "dlc": "fire",
+		"produces": [], "desc": "A monastery of firebending monks high on a dormant volcano. They keep a flame that has not gone out in nine hundred years and argue about whether that is the point."},
 	"taku": {"name": "Ruins of Taku", "type": "ruin", "faction": "neutral", "pos": Vector2(790, 520), "culture": "earth",
 		"produces": [], "desc": "A city emptied by an earthquake two centuries ago. Scavengers and pilgrims share the broken streets."},
 	"red_lantern_den": {"name": "Red Lantern Den", "type": "ruin", "faction": "red_lanterns", "pos": Vector2(1010, 490), "culture": "earth",
@@ -855,7 +880,12 @@ func troop_unlocked(id: String) -> bool:
 
 ## Defensive multiplier for a settlement's walls (great cities hold longer).
 func walls(sid: String) -> float:
-	return float(settlements.get(sid, {}).get("walls", 1.0))
+	# Earthbenders can thicken a fief's walls (Roots of the Mountain masonry)
+	var bonus := 0.0
+	var gs = get_node_or_null("/root/GS")
+	if gs != null and gs.settlements.has(sid):
+		bonus = float(gs.settlements[sid].get("wall_bonus", 0.0))
+	return float(settlements.get(sid, {}).get("walls", 1.0)) + bonus
 
 func troop_wage(id: String) -> int:
 	var t := troop(id)

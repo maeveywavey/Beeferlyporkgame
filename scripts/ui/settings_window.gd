@@ -100,6 +100,14 @@ func build() -> void:
 	rf.button_pressed = GS.settings.get("reduce_flashing", false)
 	rf.toggled.connect(func(v): GS.settings.reduce_flashing = v)
 	g.add_child(rf)
+	# The element expansions can be switched off individually
+	var DLC = load("res://scripts/dlc/registry.gd")
+	for el in DLC.EXPANSIONS:
+		g.add_child(UI.label("Expansion: %s (%s)" % [DLC.EXPANSIONS[el].name, Data.element_name(el)]))
+		var cb := CheckBox.new()
+		cb.button_pressed = GS.settings.get("dlc_" + el, true)
+		cb.toggled.connect(func(v): GS.settings["dlc_" + el] = v)
+		g.add_child(cb)
 	content.add_child(UI.rich("[i]Size applies when you press Save & Close. Story choices always show their requirements; nothing in this game is timed except battles.[/i]", 580))
 	content.add_child(UI.spacer(10))
 	var b := UI.hbox()

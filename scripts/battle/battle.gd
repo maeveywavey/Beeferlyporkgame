@@ -929,19 +929,33 @@ func projectile_hit(pr, u) -> void:
 	var push: Vector3 = pr.vel.normalized()
 	push.y = 0
 	u.apply_damage(pr.dmg, pr.owner_unit, pr.dtype, push.normalized(), pr.knock)
-	match pr.effect:
+	_apply_effect(u, pr.effect, pr.dmg)
+	if is_instance_valid(pr.owner_unit) and pr.owner_unit.is_player:
+		hud_note("Hit %s" % u.display_name)
+
+## Status effects from bending: burn, slow, blind, and the expansions'
+## freeze (held in ice), root (held by stone or vine).
+func _apply_effect(u, effect: String, dmg: float) -> void:
+	if not u.alive:
+		return
+	match effect:
 		"burn":
 			u.burn_t = 2.0
-			u.burn_dps = pr.dmg * 0.12
+			u.burn_dps = dmg * 0.12
 		"slow":
 			u.slow_t = 2.5
 		"blind":
 			u.blind_t = 3.0
-	if is_instance_valid(pr.owner_unit) and pr.owner_unit.is_player:
-		hud_note("Hit %s" % u.display_name)
+		"freeze":
+			u.slow_t = 3.0
+			if not u.mounted():
+				u._set_action("stagger", 2.2)
+			spawn_burst(u.chest(), Color(0.75, 0.9, 1.0), 0.9)
+		"root":
+			u.root_t = 3.0
 
 func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
-	var mult: float = caster.bend_power * caster.bend_mult()
+	var mult: float = caster.bend_power * caster.bend_mult() * float(caster.buff_val("power", 1.0))
 	if caster.is_player:
 		mult *= 1.0 + caster.bend_skill * 0.05
 	var dmg: float = a.get("dmg", 0.0) * mult
@@ -977,11 +991,7 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				d3.y = 0
 				if d3.length() < a.range + e.radius and d3.length() > 0.01 and rad_to_deg(fwd.angle_to(d3.normalized())) < a.angle:
 					e.apply_damage(dmg, caster, "fire" if a.fx in ["fire", "blue_fire"] else "blunt", d3.normalized(), a.knock)
-					if a.get("effect", "") == "burn":
-						e.burn_t = 2.0
-						e.burn_dps = dmg * 0.1
-					elif a.get("effect", "") == "blind":
-						e.blind_t = 3.0
+					_apply_effect(e, a.get("effect", ""), dmg * 0.85)
 			_cone_fx(caster, a)
 		"wall":
 			var center: Vector3 = caster.position + fwd * a.dist
@@ -1007,6 +1017,11 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 			for ally in team_units[caster.team]:
 				if ally.dist_to(caster) < a.range:
 					ally.heal(ally.max_hp * a.amount * (1.0 if ally == caster else 0.7))
+					if a.get("cure", false):
+						ally.burn_t = 0.0
+						ally.slow_t = 0.0
+						ally.root_t = 0.0
+						ally.blind_t = 0.0
 					spawn_burst(ally.chest(), Color(0.4, 0.75, 1.0), 0.8)
 					healed += 1
 			if caster.is_player:
@@ -1023,6 +1038,63 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 							e.airborne = true
 							e.y_vel = 4.0
 			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx))
+		"buff":
+			caster.start_buff(a)
+			spawn_burst(caster.chest(), Bending.fx_color(a.fx), 1.2)
+			if caster.is_player:
+				hud_note("%s (%ds)" % [a.name, int(a.get("dur", 8.0))])
+		"dash":
+			# Travel along the facing; everyone near the path is struck
+			var dir3: Vector3 = point - caster.position
+			dir3.y = 0.0
+			dir3 = dir3.normalized() if dir3.length() > 0.5 else fwd
+			var start: Vector3 = caster.position
+			var end3: Vector3 = start + dir3 * float(a.dist)
+			var endp := resolve_obstacles(Vector2(end3.x, end3.z), caster.radius)
+			end3 = Vector3(endp.x, ground_height(endp.x, endp.y), endp.y)
+			for e in team_units[1 - caster.team].duplicate():
+				var rel2: Vector3 = e.position - start
+				rel2.y = 0.0
+				var along2 := rel2.dot(dir3)
+				if along2 > 0.0 and along2 < float(a.dist) and (rel2 - dir3 * along2).length() < 1.4:
+					e.apply_damage(dmg, caster, "fire" if a.fx == "fire" else "blunt", dir3.rotated(Vector3.UP, PI / 2.0 * signf(randf() - 0.5)), a.knock)
+					_apply_effect(e, a.get("effect", ""), dmg)
+			spawn_burst(start + Vector3(0, 0.6, 0), Bending.fx_color(a.fx), 1.0)
+			caster.position = end3
+			caster.hold_pos = end3
+			spawn_burst(end3 + Vector3(0, 0.6, 0), Bending.fx_color(a.fx), 1.2)
+		"nova":
+			for e in team_units[1 - caster.team].duplicate():
+				var d5: Vector3 = e.position - caster.position
+				d5.y = 0
+				if d5.length() < a.range:
+					var push5: Vector3 = d5.normalized() * (-1.0 if a.get("pull", false) else 1.0)
+					e.apply_damage(dmg, caster, "fire" if a.fx == "fire" else "blunt", push5, a.knock)
+					_apply_effect(e, a.get("effect", ""), dmg)
+			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx))
+			spawn_burst(caster.chest(), Bending.fx_color(a.fx), 1.4)
+		"line":
+			var dir4: Vector3 = point - caster.position
+			dir4.y = 0.0
+			dir4 = dir4.normalized() if dir4.length() > 0.5 else fwd
+			for e in team_units[1 - caster.team].duplicate():
+				var rel4: Vector3 = e.position - caster.position
+				rel4.y = 0.0
+				var along4 := rel4.dot(dir4)
+				if along4 > 0.5 and along4 < float(a.range) and (rel4 - dir4 * along4).length() < float(a.width):
+					e.apply_damage(dmg, caster, "blunt", Vector3.UP * 0.2 + dir4, a.knock)
+					if e.alive and not e.mounted():
+						e._set_action("stagger", a.get("stun", 1.0))
+						if not e.airborne:
+							e.airborne = true
+							e.y_vel = 5.0
+			var steps := int(float(a.range) / 2.0)
+			for k in steps:
+				var pt: Vector3 = caster.position + dir4 * (1.5 + k * 2.0)
+				pt.y = ground_height(pt.x, pt.z)
+				leave_debris(pt)
+				if k % 2 == 0:
+					spawn_burst(pt, Bending.fx_color(a.fx), 0.7)
 		"lightning":
 			var dir2 := (point - from).normalized()
 			var hit = null
@@ -1388,7 +1460,7 @@ func _player_cast(slot: String) -> void:
 	if pu.bend == "":
 		hud_note("You are not a bender.")
 		return
-	var a := Bending.ability(pu.bend, slot)
+	var a: Dictionary = pu.ability_for(slot)
 	if a.is_empty():
 		return
 	if pu.bend_block_t > 0.0:
@@ -1607,7 +1679,7 @@ func _update_hud(delta: float) -> void:
 		if pu.bend != "":
 			var parts := []
 			for slot in ["q", "e", "r"]:
-				var a := Bending.ability(pu.bend, slot)
+				var a: Dictionary = pu.ability_for(slot)
 				if a.is_empty():
 					continue
 				var st := "ready"

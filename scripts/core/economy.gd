@@ -1,6 +1,7 @@
 extends RefCounted
 ## Trade prices, shops, taverns and settlement income.
 
+const DLC = preload("res://scripts/dlc/registry.gd")
 const Roster = preload("res://scripts/core/roster.gd")
 
 static func local_production(sid: String) -> Array:
@@ -153,7 +154,7 @@ static func refresh_tavern(sid: String) -> void:
 	# A wandering companion
 	var free := []
 	for cid in Data.companions:
-		if Data.companions[cid].get("story_only", false):
+		if Data.companions[cid].get("story_only", false) or not DLC.companion_enabled(cid):
 			continue
 		if GS.player.is_empty() or not GS.player.companions.has(cid):
 			var elsewhere := false

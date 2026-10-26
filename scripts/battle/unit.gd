@@ -8,6 +8,7 @@ const Forms = preload("res://scripts/battle/forms.gd")
 const Looks = preload("res://scripts/actors/looks.gd")
 const Bending = preload("res://scripts/battle/bending.gd")
 const AvatarSys = preload("res://scripts/core/avatar.gd")
+const Techniques = preload("res://scripts/battle/techniques.gd")
 
 const DIRS := ["left", "right", "overhead", "thrust"]
 
@@ -48,6 +49,12 @@ var avatar_rot_t := 0.0
 var avatar_state_t := 0.0
 var avatar_state_used := false
 var avatar_state_able := true
+# Expansion techniques: slot -> technique id (player and companions), and a
+# timed buff stance (power, armour, damage reduction, speed, sight)
+var loadout: Dictionary = {}
+var buff: Dictionary = {}
+var buff_t := 0.0
+var root_t := 0.0
 var mount_id := ""
 var mount_hp := 0.0
 var mount_max := 0.0
@@ -205,6 +212,8 @@ func setup_companion(cid: String, p_team: int) -> void:
 	if bend == "avatar":
 		_set_avatar_elements(AvatarSys.elements())
 		avatar_state_able = false
+	loadout = c.get("techs", {}).duplicate()
+	loadout.merge(cs.get("loadout", {}), true)
 	healer = c.get("healer", false)
 	chi_blocker = c.get("chi_blocker", false)
 	mount_id = c.get("mount", "")
@@ -225,8 +234,11 @@ func setup_player(p_team: int) -> void:
 	weapon_id = pl.equip.get("weapon", "fists")
 	if weapon_id == "":
 		weapon_id = "fists"
+	if pl.get("tempered", "") == weapon_id and weapon_id != "fists":
+		dmg_mult *= 1.12   # tempered in bending-fire (Embers of the First Flame)
 	ranged_id = pl.equip.get("ranged", "")
 	bend = pl.bend
+	loadout = pl.get("loadout", {}).duplicate()
 	bend_skill = pl.skills.bending
 	bend_power = 1.0 + bend_skill * 0.08 + pl.attrs.int * 0.01
 	mount_id = pl.equip.get("mount", "")
@@ -277,9 +289,12 @@ func mounted() -> bool:
 	return mount_id != "" and mount_hp > 0.0
 
 func speed() -> float:
+	if root_t > 0.0:
+		return 0.0
 	var s := mount_speed if mounted() else foot_speed
 	if slow_t > 0.0:
 		s *= 0.5
+	s *= float(buff_val("speed", 1.0))
 	if action in ["windup", "recover", "cast"] and not mounted():
 		s *= 0.55
 	if action == "block":
@@ -308,10 +323,28 @@ func bend_mult() -> float:
 		"water": return battle.water_mult
 	return 1.0
 
+## The ability on a slot: a learned technique if one is set and fits the
+## current element, otherwise the art's basic ability.
+func ability_for(slot: String) -> Dictionary:
+	if not loadout.is_empty() and avatar_elements.is_empty():
+		var a := Techniques.loadout_ability(loadout, slot)
+		if not a.is_empty() and Techniques.get_tech(loadout[slot]).element == Forms.art_of(bend):
+			return a
+	return Bending.ability(bend, slot)
+
+func buff_val(key: String, default):
+	return buff.get(key, default) if buff_t > 0.0 else default
+
+func start_buff(a: Dictionary) -> void:
+	buff = a.duplicate()
+	buff_t = float(a.get("dur", 8.0))
+	if parts.has("glow"):
+		parts.glow.visible = true
+
 func can_bend(slot: String) -> bool:
 	if bend == "" or bend_block_t > 0.0 or bend_mult() <= 0.01:
 		return false
-	var a := Bending.ability(bend, slot)
+	var a := ability_for(slot)
 	if a.is_empty():
 		return false
 	if is_player and a.get("min_skill", 0) > bend_skill:
@@ -336,6 +369,13 @@ func tick(delta: float) -> void:
 		cooldowns[k] = maxf(0.0, cooldowns[k] - delta)
 	slow_t = maxf(0.0, slow_t - delta)
 	blind_t = maxf(0.0, blind_t - delta)
+	root_t = maxf(0.0, root_t - delta)
+	if buff_t > 0.0:
+		buff_t -= delta
+		if buff.get("sight", false):
+			blind_t = 0.0
+		if buff_t <= 0.0 and parts.has("glow") and cast_anim <= 0.0:
+			parts.glow.visible = false
 	bend_block_t = maxf(0.0, bend_block_t - delta)
 	cast_anim = maxf(0.0, cast_anim - delta)
 	if burn_t > 0.0:
@@ -344,7 +384,7 @@ func tick(delta: float) -> void:
 		if not alive:
 			return
 	if bend != "":
-		chi = minf(max_chi, chi + chi_regen * delta)
+		chi = minf(max_chi, chi + chi_regen * delta * float(buff_val("regen", 1.0)))
 	if not avatar_elements.is_empty():
 		_update_avatar(delta)
 	_update_action(delta)
@@ -545,7 +585,7 @@ func cast(slot: String, point: Vector3) -> bool:
 		return false
 	if action in ["windup", "stagger", "aim"]:
 		return false
-	var a := Bending.ability(bend, slot)
+	var a := ability_for(slot)
 	chi -= a.cost
 	cooldowns[slot] = a.cd
 	_set_action("cast", 0.3)
@@ -619,7 +659,11 @@ func apply_damage(amount: float, attacker, dtype: String, push: Vector3, knockba
 	if avatar_state_t > 0.0:
 		amount *= 0.4
 		knockback *= 0.2
-	var a := 0.0 if ignore_armor else armor
+	if buff_t > 0.0:
+		amount *= 1.0 - float(buff.get("reduce", 0.0))
+		if buff.get("knock_immune", false):
+			knockback = 0.0
+	var a := 0.0 if ignore_armor else armor + float(buff_val("armor", 0.0))
 	if dtype == "blunt":
 		a *= 0.6
 	var dmg := maxf(amount * 0.25, amount - a * 0.42) if amount > 0.0 else 0.0
@@ -725,7 +769,7 @@ func _ai(delta: float) -> Vector3:
 		if order_pos != Vector3.INF:
 			return _move_towards(order_pos, 1.5)
 	# Healers look after allies first
-	if healer and can_bend("e"):
+	if healer and can_bend("e") and ability_for("e").get("kind", "") == "heal":
 		var hurt = battle.hurt_ally_near(self, 6.0)
 		if hurt != null:
 			cast("e", hurt.position)
@@ -751,30 +795,56 @@ func _ai(delta: float) -> Vector3:
 	return _ai_melee(dist, delta)
 
 func _ai_bend(dist: float) -> Vector3:
-	var q := Bending.ability(bend, "q")
+	var q := ability_for("q")
 	var rng: float = q.get("range", 20.0)
 	# Specials
 	if can_bend("r") and (is_hero or bend_power >= 1.6) and randf() < 0.02:
-		var r := Bending.ability(bend, "r")
+		var r := ability_for("r")
 		# Only great masters (lords and heroes) can generate lightning
 		if r.kind == "lightning" and is_hero and lord_id != "" and bend_power >= 2.5 and dist < r.range and dist > 6.0:
 			cast("r", target.chest())
 			return Vector3.ZERO
-		if r.kind == "quake" and battle.enemies_near(self, r.range) >= 3:
+		if r.kind in ["quake", "nova"] and battle.enemies_near(self, r.range) >= 3:
 			cast("r", position)
 			return Vector3.ZERO
-		if r.kind == "volley" and dist < r.range:
+		if r.kind in ["volley", "line", "projectile"] and dist < r.get("range", 20.0):
 			cast("r", target.chest())
 			return Vector3.ZERO
-	if dist < 5.0 and can_bend("e"):
-		var e := Bending.ability(bend, "e")
-		if e.kind == "cone":
-			cast("e", target.position)
+		if r.kind == "buff" and (hp < max_hp * 0.6 or battle.enemies_near(self, 6.0) >= 2):
+			cast("r", position)
 			return Vector3.ZERO
+	var e := ability_for("e")
+	if can_bend("e") and not e.is_empty():
+		match e.kind:
+			"cone":
+				if dist < float(e.get("range", 6.0)) * 0.9:
+					cast("e", target.position)
+					return Vector3.ZERO
+			"nova":
+				if battle.enemies_near(self, e.range) >= 2:
+					cast("e", position)
+					return Vector3.ZERO
+			"dash":
+				if dist > 4.0 and dist < float(e.dist) and randf() < 0.3:
+					cast("e", target.position)
+					return Vector3.ZERO
+			"line", "projectile":
+				if dist < float(e.get("range", 20.0)) * 0.9 and randf() < 0.25:
+					cast("e", target.chest())
+					return Vector3.ZERO
+			"buff":
+				if hp < max_hp * 0.7 and randf() < 0.2:
+					cast("e", position)
+					return Vector3.ZERO
 	if can_bend("q") and dist < rng * 0.95 and dist > 2.0 and think_t <= 0.0:
 		think_t = randf_range(0.15, 0.6) * (1.3 - skill)
-		cast("q", battle.lead_point(self, target, float(q.get("speed", 30.0))))
-		return Vector3.ZERO
+		if q.kind in ["cone", "nova", "buff"]:
+			if dist < rng * 0.9:
+				cast("q", target.position)
+				return Vector3.ZERO
+		else:
+			cast("q", battle.lead_point(self, target, float(q.get("speed", 30.0))))
+			return Vector3.ZERO
 	# Keep at casting distance while chi recovers
 	if chi >= q.get("cost", 10.0) and dist > 4.5:
 		if dist > rng * 0.8:

@@ -61,6 +61,9 @@ func build() -> void:
 	if GS.player.bend != "":
 		b.add_child(UI.button("Bending Forms", func():
 			map.open_window(load("res://scripts/ui/forms_window.gd").new()), 180))
+		b.add_child(UI.button("Techniques", func():
+			map.open_window(load("res://scripts/ui/techniques_window.gd").new()), 160))
+	b.add_child(UI.rich("[i]%s%s[/i]" % [load("res://scripts/core/avatar.gd").mastery_text(), ("  ·  " + GS.player.master_title) if GS.player.get("master_title", "") != "" else ""], 520))
 	b.add_child(UI.expand())
 	b.add_child(UI.button("Done", close, 120))
 

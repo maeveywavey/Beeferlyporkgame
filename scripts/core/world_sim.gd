@@ -2,6 +2,7 @@ extends RefCounted
 ## World map simulation: party movement and AI, encounters between parties,
 ## sieges, campaigns, spawning, and daily/weekly upkeep.
 
+const BendingWork = preload("res://scripts/core/bending_work.gd")
 const AvatarSys = preload("res://scripts/core/avatar.gd")
 const Roster = preload("res://scripts/core/roster.gd")
 const Terrain = preload("res://scripts/core/terrain.gd")
@@ -51,6 +52,8 @@ func party_speed(p: Dictionary) -> float:
 			base *= 1.08 + GS.skill("pathfinding") * 0.03
 			if GS.player.equip.get("mount", "") != "":
 				base *= 1.05
+			# Ice roads, levelled roads, a glider's eye (bending work)
+			base *= maxf(1.0, BendingWork.buff("swift"))
 		"caravan": base *= 0.8
 		"villager": base *= 0.7
 		"bandit": base *= 0.85
@@ -553,8 +556,10 @@ func _daily_spawns() -> void:
 func _daily_player() -> void:
 	var pp: Dictionary = GS.player_party()
 	var pl: Dictionary = GS.player
-	# Food
+	# Food (a firebender cooking for everyone stretches the stores)
 	var need := int(ceil(GS.party_size() / 10.0))
+	if BendingWork.buff("fed") > 0.0:
+		need = int(ceil(need / 2.0))
 	var food_types := []
 	for g in pl.goods:
 		if Data.goods[g].food and pl.goods[g] > 0:

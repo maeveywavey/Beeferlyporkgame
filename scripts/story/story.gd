@@ -11,6 +11,8 @@ extends RefCounted
 
 const Roster = preload("res://scripts/core/roster.gd")
 const AvatarSys = preload("res://scripts/core/avatar.gd")
+const DLC = preload("res://scripts/dlc/registry.gd")
+const Tech = preload("res://scripts/battle/techniques.gd")
 const SOURCES := [
 	"res://scripts/story/main_story.gd",
 	"res://scripts/story/companion_quests.gd",
@@ -19,6 +21,8 @@ const SOURCES := [
 ]
 
 static var _cache := {}
+## Tests walk dialogues headlessly; effects that would change scene are skipped.
+static var no_scene_change := false
 static var _triggers := []
 static var _options := []
 static var _spawns := {}
@@ -27,13 +31,28 @@ static var _npcs := {}
 static func _load() -> void:
 	if not _cache.is_empty():
 		return
-	for path in SOURCES:
+	var paths: Array = SOURCES.duplicate()
+	var tags := {}
+	for el in DLC.EXPANSIONS:
+		paths.append(DLC.EXPANSIONS[el].story)
+		tags[DLC.EXPANSIONS[el].story] = el
+	for path in paths:
 		var src = load(path)
 		_cache.merge(src.DIALOGUES)
-		_triggers.append_array(src.TRIGGERS)
-		_options.append_array(src.OPTIONS)
 		_spawns.merge(src.SPAWNS)
 		_npcs.merge(src.NPCS)
+		# Expansion triggers and options remember their element, so switching
+		# an expansion off in Settings hides them
+		for t in src.TRIGGERS:
+			var t2: Dictionary = t.duplicate()
+			if tags.has(path):
+				t2.dlc = tags[path]
+			_triggers.append(t2)
+		for o in src.OPTIONS:
+			var o2: Dictionary = o.duplicate()
+			if tags.has(path):
+				o2.dlc = tags[path]
+			_options.append(o2)
 
 static func dialogue(id: String) -> Dictionary:
 	_load()
@@ -179,6 +198,34 @@ static func _ok1(k: String, v) -> bool:
 			return v.has(GS.player.get("look", {}).get("pronouns", "they"))
 		"era":
 			return String(GS.flags.get("era", "quiet")) == v
+		"tech":
+			return Tech.known(v)
+		"no_tech":
+			return not Tech.known(v)
+		"bends":
+			# the player, or a companion in the party, bends this element
+			return load("res://scripts/core/bending_work.gd").doer(v) != ""
+		"master":
+			return GS.player.get("master_title", "") != "" and GS.player.bend == v
+		"season":
+			return GS.season() == v
+		"cosmic":
+			match v:
+				"comet": return GS.is_comet()
+				"lunar": return GS.is_lunar_eclipse()
+				"solar": return GS.is_eclipse()
+				"full_moon": return GS.is_full_moon() and not GS.is_daytime()
+			return false
+		"forms_uses":
+			var u := 0
+			for f in GS.player.get("forms", []):
+				u += int(f.get("uses", 0))
+			return u >= int(v)
+		"duel_wins":
+			return int(GS.flags.get("duel_wins", 0)) >= int(v)
+		"techs":
+			# at least v[1] techniques of element v[0]
+			return GS.player.get("techniques", []).filter(func(x): return Tech.TECHNIQUES.has(x) and Tech.TECHNIQUES[x].element == v[0]).size() >= int(v[1])
 		"near_faction":
 			for sid in Data.settlements:
 				if GS.settlements[sid].faction == v and _nearest(sid) <= 140.0:
@@ -207,6 +254,12 @@ static func callv_bool(name: String) -> bool:
 		"nima_wins": return _nima_wins()
 		"nima_loses": return not _nima_wins()
 		"av_hostage": return AvatarSys.state().get("hostage", false)
+		"not_master": return GS.player.get("master_title", "") == ""
+		"not_air": return GS.player.get("bend", "") != "air"
+		"wx_can_share": return GS.skill("trade") >= 3 or GS.player.gold >= 800
+		"ex_academy_ok": return not flag("hana_spared") and not flag("dai_li_enemy")
+		"fx_ember_clean": return AvatarSys.infamy() <= int(flag("fx_ember_inf", 0))
+		"fx_ember_dirty": return AvatarSys.infamy() > int(flag("fx_ember_inf", 0))
 		"av_seat": return AvatarSys.seat_near() != ""
 		"av_no_seat": return AvatarSys.seat_near() == ""
 		"av_young": return AvatarSys.stage() == "young"
@@ -277,6 +330,17 @@ static func apply(effects: Array, map = null) -> void:
 			"skill_points": GS.player.skill_points += int(e[1])
 			"standing": GS.raise_standing(e[1])
 			"infamy": AvatarSys.add_infamy(int(e[1]), GS.player_party().pos, e[2] if e.size() > 2 else "")
+			"learn": Tech.learn(e[1])
+			"master":
+				GS.player.master_title = Tech.MASTER_TITLES.get(e[1], "Master")
+				GS.log_msg("You are now a %s." % GS.player.master_title, Color(1, 0.9, 0.5))
+			"comp_tech":
+				# a companion's signature technique on a slot
+				var cs: Dictionary = GS.companion_state(e[1])
+				if not cs.has("loadout"):
+					cs.loadout = {}
+				cs.loadout[e[2]] = e[3]
+			"good": GS.add_good(e[1], int(e[2]))
 			"av_attitude":
 				var A: Dictionary = AvatarSys.state()
 				A.attitude = clampi(int(A.get("attitude", 0)) + int(e[1]), -100, 100)
@@ -307,7 +371,17 @@ static func call_effect(name: String, args: Array) -> void:
 			GS.settlements["ba_sing_se"].prosperity = minf(100.0, GS.settlements["ba_sing_se"].prosperity + 6.0)
 		"red_lanterns_enemies":
 			GS.change_faction_rel("red_lanterns", -60)
-		"avatar_battle": AvatarSys.start_battle()
+		"avatar_battle":
+			if not no_scene_change:
+				AvatarSys.start_battle()
+		"fx_ember_infamy": set_flag("fx_ember_inf", AvatarSys.infamy())
+		"wx_pay_share":
+			if GS.skill("trade") < 3:
+				GS.add_gold(-800)
+		"duel":
+			# A story Agni Kai, fought at once (GS.start_duel changes scene)
+			if GS.is_inside_tree() and not no_scene_change:
+				GS.start_duel(args[0])
 		"avatar_defeated": AvatarSys.on_defeated()
 		"avatar_yield":
 			AvatarSys.judgement(true)
@@ -338,7 +412,8 @@ static func call_effect(name: String, args: Array) -> void:
 			GS.flags.infamy_log = []
 		"avatar_local_fight":
 			AvatarSys.spawn_company()
-			AvatarSys.start_battle()
+			if not no_scene_change:
+				AvatarSys.start_battle()
 		"avatar_peace":
 			# The Avatar brokers one truce for a friend who asks
 			for k in Data.KINGDOMS:
@@ -443,6 +518,8 @@ static func fire(event: String, sid: String = "") -> void:
 	for t in _triggers:
 		if t.on != event:
 			continue
+		if t.has("dlc") and not DLC.enabled(t.dlc):
+			continue
 		if t.has("sid") and t.sid != sid:
 			continue
 		var key: String = "trig_" + t.dlg
@@ -464,6 +541,8 @@ static func settlement_options(sid: String) -> Array:
 	for o in _options:
 		if o.sid != sid:
 			continue
+		if o.has("dlc") and not DLC.enabled(o.dlc):
+			continue
 		if o.has("once") and flag("opt_" + o.dlg):
 			continue
 		if ok(o.get("if", {})):
@@ -474,13 +553,15 @@ static func settlement_options(sid: String) -> Array:
 # Companion reactions to what the player does
 # ---------------------------------------------------------------------------
 const REACTIONS := {
-	"raid": {"pemba": -15, "nima": -10, "kesi": -12, "juro": -12, "hana": -6, "ukiuk": -6, "shen_mu": -8, "reika": 2},
-	"donate": {"pemba": 5, "hana": 3, "nima": 2, "kesi": 2},
-	"battle_won": {"ukiuk": 1, "reika": 1},
-	"release_lord": {"pemba": 4, "nima": 2, "juro": 2},
-	"agni_kai_won": {"reika": 3, "juro": 2},
-	"refuse_duel": {"reika": -3},
-	"execute": {"pemba": -30, "nima": -15, "juro": -15, "hana": -10, "kesi": -10, "shen_mu": -15, "ukiuk": -10, "reika": -5},
+	"raid": {"pemba": -15, "nima": -10, "kesi": -12, "juro": -12, "hana": -6, "ukiuk": -6, "shen_mu": -8, "reika": 2,
+		"sayuri": -6, "huan": -12, "gao_ming": -10, "yangzom": -15},
+	"donate": {"pemba": 5, "hana": 3, "nima": 2, "kesi": 2, "huan": 3, "gao_ming": 4, "yangzom": 4},
+	"battle_won": {"ukiuk": 1, "reika": 1, "sayuri": 1},
+	"release_lord": {"pemba": 4, "nima": 2, "juro": 2, "yangzom": 3, "sayuri": 2},
+	"agni_kai_won": {"reika": 3, "juro": 2, "sayuri": 5},
+	"refuse_duel": {"reika": -3, "sayuri": -2},
+	"execute": {"pemba": -30, "nima": -15, "juro": -15, "hana": -10, "kesi": -10, "shen_mu": -15, "ukiuk": -10, "reika": -5,
+		"sayuri": -15, "huan": -20, "gao_ming": -15, "yangzom": -30},
 }
 
 static func _reactions(event: String, _sid: String) -> void:
