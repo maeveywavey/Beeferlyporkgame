@@ -480,7 +480,7 @@ func _update_lighting() -> void:
 	sun.rotation_degrees.x = -25.0 - daylight * 40.0
 
 func _player_sight() -> float:
-	return SIGHT + GS.skill("pathfinding") * 4.0
+	return SIGHT + GS.skill("spotting") * 4.0
 
 ## Parties resting inside a friendly settlement, as in Warband: they are in
 ## the hall or the barracks, not standing on the walls. Refreshed four times a

@@ -347,8 +347,10 @@ func _take_village() -> void:
 func _build_player_siege(o: VBoxContainer) -> void:
 	var s: Dictionary = GS.settlements[sid]
 	var waited: float = GS.hours - GS.player.get("siege_start", GS.hours)
-	var ready := waited >= 12.0
-	o.add_child(UI.rich("Your camp surrounds the walls. Siege ladders: %s" % ("ready" if ready else "%d hours until ready" % int(12.0 - waited)), 740))
+	# Engineers build the ladders sooner
+	var prep: float = maxf(4.0, 12.0 - GS.skill("engineer") * 1.5)
+	var ready := waited >= prep
+	o.add_child(UI.rich("Your camp surrounds the walls. Siege ladders: %s" % ("ready" if ready else "%d hours until ready" % int(ceil(prep - waited))), 740))
 	o.add_child(UI.rich("Defenders: %d in the garrison." % Roster.total(s.garrison), 740))
 	o.add_child(UI.option("Wait and prepare (6 hours)", func():
 		GS.player.inside = ""

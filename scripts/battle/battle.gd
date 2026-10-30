@@ -1547,6 +1547,9 @@ func on_unit_down(u, killer, dtype: String) -> void:
 		feed_msg("%s falls, and is carried from the field by their companions." % u.display_name, Color(0.85, 0.95, 1))
 	else:
 		var chance := 0.5 if u.team == 0 else 0.4
+		# Surgery: the player's surgeons save some who would have died
+		if u.party_key == "player":
+			chance += GS.skill("surgery") * 0.04
 		if dtype == "blunt":
 			chance = 0.9
 		# Pemba never takes a life: their blows only knock people down

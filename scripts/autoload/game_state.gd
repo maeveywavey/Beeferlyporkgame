@@ -47,10 +47,19 @@ const DERIVED := {
 	"ironflesh": ["vig"], "power_strike": ["str"], "trainer": ["str", "int"],
 	"weapon_mastery": ["dex"], "archery": ["dex"], "athletics": ["end"], "riding": ["dex", "end"],
 	"leadership": ["vit", "int"], "trade": ["int", "lck"], "tactics": ["int"], "healing": ["int"],
-	"pathfinding": ["end", "int"],
+	"pathfinding": ["end", "int"], "spotting": ["int", "lck"], "surgery": ["int"],
+	"engineer": ["int"], "prisoner_management": ["vit"],
 }
 const SKILLS := ["ironflesh", "power_strike", "weapon_mastery", "archery", "athletics", "riding",
-	"bending", "leadership", "trade", "tactics", "healing", "pathfinding", "trainer"]
+	"bending", "leadership", "trade", "tactics", "healing", "surgery", "pathfinding", "spotting",
+	"trainer", "engineer", "prisoner_management"]
+## Warband's party skills: the player raises them with party points (one a
+## level), and a companion's knack adds to the party's.
+const PARTY_SKILLS := ["leadership", "trainer", "healing", "surgery", "pathfinding", "spotting",
+	"tactics", "trade", "engineer", "prisoner_management"]
+## Most party points one skill can take: grows with level, as Warband ties
+## skills to their attribute.
+const PARTY_POINT_CAP := 10
 const SKILL_DESC := {
 	"ironflesh": "Extra hit points.",
 	"power_strike": "Melee damage.",
@@ -62,9 +71,13 @@ const SKILL_DESC := {
 	"leadership": "Party size, morale and lower wages.",
 	"trade": "Better prices when trading.",
 	"tactics": "Better auto-resolve results and a larger battle advantage.",
-	"healing": "Wounded troops recover faster and fewer die in battle.",
+	"healing": "Wounded troops recover faster between battles.",
+	"surgery": "Troops struck down in battle are more often only wounded, not killed.",
 	"pathfinding": "Faster travel on the world map.",
+	"spotting": "See parties on the world map from farther away.",
 	"trainer": "Troops in your party gain experience every day.",
+	"engineer": "Siege ladders and towers are ready sooner.",
+	"prisoner_management": "More prisoners can be kept in your train.",
 }
 
 var hours: float = 8.0
@@ -250,7 +263,7 @@ func create_player(pname: String, background: String, bend: String, skin: Color,
 	assert(bend in ["", "fire", "water", "earth", "air"], "the player is never the Avatar")
 	var p := {
 		"name": pname, "background": background, "bend": bend, "era": era, "infamy": 0, "techniques": [],
-		"attrs": {}, "skill_bonus": {}, "level": 1, "xp": 0, "attr_points": 2,
+		"attrs": {}, "skill_bonus": {}, "level": 1, "xp": 0, "attr_points": 2, "party_points": 2,
 		"hp": 1, "gold": bg.gold, "renown": 0, "honor": 0, "morale": 70.0, "victory_morale": 0.0,
 		"equip": {"weapon": "fists", "ranged": "", "armor": "", "helmet": "", "mount": ""},
 		"items": [], "goods": bg.goods.duplicate(), "faction": "", "status": "",
@@ -779,7 +792,7 @@ func skill(name: String) -> int:
 	# Companion bonuses
 	for c in player.companions:
 		var cd: Dictionary = Data.companions.get(c, {})
-		v += int(cd.get("bonus", {}).get(name, 0)) if name in ["healing", "pathfinding", "trainer", "tactics", "leadership", "trade"] else 0
+		v += int(cd.get("bonus", {}).get(name, 0)) if name in PARTY_SKILLS else 0
 	return v
 
 func max_hp() -> int:
@@ -799,7 +812,27 @@ func party_limit() -> int:
 	return l
 
 func prisoner_limit() -> int:
-	return 6 + skill("leadership") * 3
+	return 6 + skill("prisoner_management") * 5 + skill("leadership")
+
+## Party points already put into a skill.
+func party_invested(name: String) -> int:
+	return int(player.get("skill_bonus", {}).get(name, 0))
+
+## How far party points may raise one skill at this level.
+func party_cap() -> int:
+	return mini(PARTY_POINT_CAP, 2 + int(player.level / 2))
+
+func can_raise_party_skill(name: String) -> bool:
+	return name in PARTY_SKILLS and int(player.get("party_points", 0)) > 0 and party_invested(name) < party_cap()
+
+func raise_party_skill(name: String) -> bool:
+	if not can_raise_party_skill(name):
+		return false
+	player.party_points = int(player.party_points) - 1
+	if not player.has("skill_bonus"):
+		player.skill_bonus = {}
+	player.skill_bonus[name] = party_invested(name) + 1
+	return true
 
 func party_size() -> int:
 	return Roster.total(player_party().roster) + player.companions.size() + 1
@@ -813,6 +846,7 @@ func give_player_xp(amount: int) -> void:
 		player.xp -= xp_for_level(player.level)
 		player.level += 1
 		player.attr_points += 2
+		player.party_points = int(player.get("party_points", 0)) + 1
 		log_msg("You have reached level %d! (C to spend points)" % player.level, Color(1, 0.9, 0.4))
 
 func add_gold(amount: int) -> void:

@@ -40,6 +40,24 @@ func build() -> void:
 		l.tooltip_text = GS.ATTR_DESC[a]
 		l.mouse_filter = Control.MOUSE_FILTER_PASS
 		left.add_child(row)
+	# Warband's party skills: one point a level, raised up to a cap that
+	# grows with level; attributes and companions add on top.
+	left.add_child(UI.spacer(6))
+	left.add_child(UI.label("Party skills  (%d to spend, up to %d each)" % [int(pl.get("party_points", 0)), GS.party_cap()], 19, UI.BROWN))
+	for sk in GS.PARTY_SKILLS:
+		var srow := UI.hbox(8)
+		var sl := UI.label(sk.replace("_", " ").capitalize(), 16)
+		sl.custom_minimum_size.x = UI.px(170)
+		sl.tooltip_text = GS.SKILL_DESC.get(sk, "")
+		sl.mouse_filter = Control.MOUSE_FILTER_PASS
+		srow.add_child(sl)
+		var sv := UI.label(str(GS.skill(sk)), 16)
+		sv.custom_minimum_size.x = UI.px(30)
+		srow.add_child(sv)
+		var sb := UI.button("+", _add_party_skill.bind(sk), 34, GS.can_raise_party_skill(sk))
+		sb.tooltip_text = GS.SKILL_DESC.get(sk, "")
+		srow.add_child(sb)
+		left.add_child(srow)
 	# What the attributes add up to
 	var right := UI.vbox(3)
 	cols.add_child(right)
@@ -88,6 +106,10 @@ func _feeds() -> Dictionary:
 		for a in GS.ELEMENT_ATTRS[GS.player.bend]:
 			out[a] += ", %s" % Data.element_name(GS.player.bend).to_lower()
 	return out
+
+func _add_party_skill(sk: String) -> void:
+	if GS.raise_party_skill(sk):
+		refresh()
 
 func _add_attr(a: String) -> void:
 	if GS.player.attr_points <= 0:
