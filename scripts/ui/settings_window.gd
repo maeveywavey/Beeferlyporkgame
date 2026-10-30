@@ -121,6 +121,11 @@ func build() -> void:
 		GS.settings.map_style = ["painted", "atlas", "chart", "ink"][i]
 		load("res://scripts/world/map_builder.gd").apply_style())
 	g.add_child(mst)
+	g.add_child(UI.label("Gore and dismemberment"))
+	var gr := CheckBox.new()
+	gr.button_pressed = GS.settings.get("gore", true)
+	gr.toggled.connect(func(v): GS.settings.gore = v)
+	g.add_child(gr)
 	g.add_child(UI.label("Show political borders on the map"))
 	var bd := CheckBox.new()
 	bd.button_pressed = GS.settings.get("map_borders", true)

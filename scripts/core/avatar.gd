@@ -597,7 +597,11 @@ static func start_battle() -> void:
 		GS.start_battle([pid], [], seat, false)
 	else:
 		GS.start_battle([pid])
-	GS.pending_battle.avatar = {"fort": def.fort, "traps": def.traps, "demoralized": state().get("demoralized", false), "stage": stage()}
+	GS.pending_battle.avatar = {"fort": def.fort, "traps": def.traps, "demoralized": state().get("demoralized", false), "stage": stage(),
+		# conquest, cruelty and defiance have made the Avatar furious
+		"wrath": int(state().get("attitude", 0)) <= -50 and stage() != "child"}
+	# by the sea, the sea answers too
+	GS.pending_battle.coast = load("res://scripts/core/terrain.gd").land_value(GS.player_party().pos) < 12.0
 
 static func dismiss_company() -> void:
 	var pid := company_id()

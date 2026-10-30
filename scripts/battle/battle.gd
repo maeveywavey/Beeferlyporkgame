@@ -56,6 +56,14 @@ var weather: CPUParticles3D
 var weather_kind := ""
 ## What bending leaves on the ground: fire, water, rocks, walls and pillars.
 var field
+## A coastal field: the land falls into the sea beyond shore_x (+x side).
+var coast := false
+var shore_x := 999.0
+const SEA_LEVEL := -0.4
+## Trees that can be torn up: {"node", "p", "ob"}
+var trees: Array = []
+## While true the battle leaves the camera alone (cut-scenes and showcases).
+var cinematic := false
 var _reinforce_t := 2.0
 var _sep_t := 0.0
 var _finished := false
@@ -109,6 +117,8 @@ func _ready() -> void:
 	_plan_landscape()
 	_build_environment()
 	_build_ground()
+	if coast:
+		_build_sea()
 	if arena >= 0 or duel != "":
 		_build_arena()
 	else:
@@ -172,6 +182,12 @@ func _debug_setup() -> void:
 # ---------------------------------------------------------------------------
 func _build_heights() -> void:
 	heights.resize(GRID * GRID)
+	coast = GS.pending_battle.get("coast", false)
+	var shore_noise := FastNoiseLite.new()
+	shore_noise.seed = 77
+	shore_noise.frequency = 0.03
+	if coast:
+		shore_x = 36.0
 	var n := FastNoiseLite.new()
 	n.seed = randi()
 	n.frequency = 0.015
@@ -199,6 +215,14 @@ func _build_heights() -> void:
 			var border := maxf(absf(x), absf(z))
 			if border > 70.0:
 				h += (border - 70.0) * 0.6
+			if coast:
+				# the beach shelves into the sea past the shoreline
+				var sx := shore_x + shore_noise.get_noise_1d(z) * 7.0
+				if x > sx - 6.0:
+					var k := clampf((x - (sx - 6.0)) / 10.0, 0.0, 1.0)
+					h = lerpf(h, -3.5, k)
+				if x > 70.0:
+					h = minf(h, -3.5)
 			if siege != "":
 				var dz := (z - wall_z) * signf(wall_z)
 				if dz > 1.0 and dz < 5.0:
@@ -362,6 +386,25 @@ func _build_environment() -> void:
 	add_child(sun)
 	_build_weather()
 
+## Open sea beyond the shore, for coastal fields.
+var sea: MeshInstance3D
+
+func _build_sea() -> void:
+	sea = MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(260, 400)
+	pm.subdivide_width = 40
+	pm.subdivide_depth = 40
+	sea.mesh = pm
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.16, 0.3, 0.34, 0.86)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.roughness = 0.12
+	m.metallic_specular = 0.7
+	sea.material_override = m
+	add_child(sea)
+	sea.position = Vector3(shore_x + 110.0, SEA_LEVEL, 0)
+
 func _build_weather() -> void:
 	var kind := ""
 	if biome == "snow":
@@ -425,6 +468,8 @@ func _build_props() -> void:
 		if absf(p.x) > 76.0 or absf(p.y) > 46.0:
 			continue
 		var h := ground_height(p.x, p.y)
+		if coast and h < 0.3:
+			continue
 		var node: Node3D
 		match it.kind:
 			"cliff":
@@ -441,7 +486,9 @@ func _build_props() -> void:
 				else:
 					node = Land.tree(biome, "broad", rng, light)
 				node.rotation.y = rng.randf() * TAU
-				obstacles.append({"p": p, "r": 0.5})
+				var ob := {"p": p, "r": 0.5}
+				obstacles.append(ob)
+				trees.append({"node": node, "p": p, "ob": ob})
 			"bush":
 				if dead:
 					continue
@@ -652,6 +699,12 @@ func _apply_avatar_mods(u) -> void:
 
 ## The Avatar State: a shockwave, and every eye on the field turns.
 func avatar_state(u) -> void:
+	# an Avatar who came to stop a tyrant unleashes the elements on their army
+	if GS.pending_battle.get("avatar", {}).get("wrath", false) and u.troop_id == "avatar":
+		var w = load("res://scripts/battle/avatar_wrath.gd").new()
+		w.name = "AvatarWrath"
+		add_child(w)
+		w.start(self, u)
 	if autotest:
 		print("AVATAR STATE: %s at %.0f/%.0f hp, elements %s" % [u.display_name, u.hp, u.max_hp, u.avatar_elements])
 	feed_msg("%s's eyes blaze white. The Avatar State!" % u.display_name, Color(0.8, 0.95, 1))
@@ -724,6 +777,29 @@ func _initial_spawn() -> void:
 		_spawn_wave(t, active_cap[t])
 	if player_unit == null:
 		player_controlled = false
+	# a furious Avatar does not wait to be worn down: once the enemy is close
+	# enough to crush, or after twenty seconds, it enters the Avatar State
+	if GS.pending_battle.get("avatar", {}).get("wrath", false):
+		var tm := Timer.new()
+		tm.wait_time = 0.5
+		add_child(tm)
+		var since := [0.0]
+		tm.timeout.connect(func():
+			since[0] += 0.5
+			for t2 in 2:
+				for u in team_units[t2]:
+					if u.troop_id != "avatar" or not u.alive:
+						continue
+					var near := false
+					for o in team_units[1 - t2]:
+						if o.alive and o.dist_to(u) < 30.0:
+							near = true
+							break
+					if near or since[0] >= 20.0:
+						u.enter_avatar_state(14.0)
+						tm.queue_free()
+						return)
+		tm.start()
 
 func _check_reinforcements(delta: float) -> void:
 	_reinforce_t -= delta
@@ -779,7 +855,8 @@ func _tick_opening(delta: float) -> void:
 			Sfx.play("horn", -8.0)
 
 func _process(delta: float) -> void:
-	_update_camera(delta)
+	if not cinematic:
+		_update_camera(delta)
 	if weather != null and cam != null:
 		weather.global_position = cam.global_position + Vector3(0, 12.0, 0)
 	_update_hud(delta)
@@ -985,6 +1062,7 @@ func melee_strike(att) -> void:
 		dmg *= 1.1
 	if att.mounted():
 		dmg += Vector2(att.vel.x, att.vel.z).length() * 1.4
+	victim.gore_hint = "blade" if w.get("dtype", "cut") == "cut" else ""
 	var landed: bool = victim.receive_melee(att, dmg, w.get("dtype", "cut"), att.attack_dir)
 	if landed:
 		spawn_spark(victim.chest(), Color(0.7, 0.1, 0.1))
@@ -1006,6 +1084,12 @@ func projectile_hit(pr, u) -> void:
 		return
 	var push: Vector3 = pr.vel.normalized()
 	push.y = 0
+	u.gore_hint = {"water": "water_slice", "ice": "water_slice", "fire": "fire", "blue_fire": "fire",
+		"rock": "impale" if pr.radius >= 0.9 else ""}.get(pr.fx, "")
+	# a strong gust throws people into the air
+	if pr.fx == "air" and pr.knock >= 12.0 and not u.mounted() and not u.airborne:
+		u.airborne = true
+		u.y_vel = 7.0 + pr.knock * 0.25
 	u.apply_damage(pr.dmg, pr.owner_unit, pr.dtype, push.normalized(), pr.knock)
 	_apply_effect(u, pr.effect, pr.dmg)
 	if is_instance_valid(pr.owner_unit) and pr.owner_unit.is_player:
@@ -1068,6 +1152,10 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				var d3: Vector3 = e.position - caster.position
 				d3.y = 0
 				if d3.length() < a.range + e.radius and d3.length() > 0.01 and rad_to_deg(fwd.angle_to(d3.normalized())) < a.angle:
+					e.gore_hint = {"fire": "fire", "blue_fire": "fire", "water": "water_slice"}.get(a.fx, "")
+					if a.get("breath", false):
+						e.burn_t = maxf(e.burn_t, 4.0)
+						e.burn_dps = maxf(e.burn_dps, 6.0)
 					e.apply_damage(dmg, caster, "fire" if a.fx in ["fire", "blue_fire"] else "blunt", d3.normalized(), a.knock)
 					_apply_effect(e, a.get("effect", ""), dmg * 0.85)
 					if a.fx == "water":
@@ -1127,12 +1215,14 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				var d4: Vector3 = e.position - caster.position
 				d4.y = 0
 				if d4.length() < a.range:
+					e.gore_hint = "impale" if a.fx == "rock" and randf() < 0.3 else ""
 					e.apply_damage(dmg, caster, "blunt", d4.normalized(), a.knock)
 					if e.alive and not e.mounted():
 						e._set_action("stagger", a.stun)
 						if not e.airborne:
 							e.airborne = true
-							e.y_vel = 4.0
+							# wind throws people far higher than a shaking ground
+							e.y_vel = 12.0 + a.knock * 0.2 if a.fx == "air" else 4.0
 			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx))
 			if field != null:
 				if a.fx == "rock":
@@ -1162,6 +1252,7 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				rel2.y = 0.0
 				var along2 := rel2.dot(dir3)
 				if along2 > 0.0 and along2 < float(a.dist) and (rel2 - dir3 * along2).length() < 1.4:
+					e.gore_hint = "fire" if a.fx in ["fire", "blue_fire"] else ""
 					e.apply_damage(dmg, caster, "fire" if a.fx == "fire" else "blunt", dir3.rotated(Vector3.UP, PI / 2.0 * signf(randf() - 0.5)), a.knock)
 					_apply_effect(e, a.get("effect", ""), dmg)
 			spawn_burst(start + Vector3(0, 0.6, 0), Bending.fx_color(a.fx), 1.0)
@@ -1177,6 +1268,7 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				d5.y = 0
 				if d5.length() < a.range:
 					var push5: Vector3 = d5.normalized() * (-1.0 if a.get("pull", false) else 1.0)
+					e.gore_hint = "fire" if a.fx in ["fire", "blue_fire"] else ""
 					e.apply_damage(dmg, caster, "fire" if a.fx == "fire" else "blunt", push5, a.knock)
 					_apply_effect(e, a.get("effect", ""), dmg)
 			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx))
@@ -1198,6 +1290,7 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				rel4.y = 0.0
 				var along4 := rel4.dot(dir4)
 				if along4 > 0.5 and along4 < float(a.range) and (rel4 - dir4 * along4).length() < float(a.width):
+					e.gore_hint = "impale" if randf() < 0.5 else ""
 					e.apply_damage(dmg, caster, "blunt", Vector3.UP * 0.2 + dir4, a.knock)
 					if e.alive and not e.mounted():
 						e._set_action("stagger", a.get("stun", 1.0))
@@ -1296,6 +1389,7 @@ func _raise_pillar(caster, a: Dictionary, point: Vector3, dmg: float) -> void:
 			var d := Vector2(u.position.x - c.x, u.position.z - c.z)
 			if d.length() < r + u.radius + 0.3:
 				if t != caster.team:
+					u.gore_hint = "impale"
 					u.apply_damage(dmg, caster, "blunt", Vector3(d.x, 0, d.y).normalized(), a.get("knock", 2.0))
 				if u.alive and not u.mounted():
 					u.airborne = true
@@ -1458,7 +1552,7 @@ func on_unit_down(u, killer, dtype: String) -> void:
 		# Pemba never takes a life: their blows only knock people down
 		if killer != null and is_instance_valid(killer) and killer.companion_id != "" and Data.companions.get(killer.companion_id, {}).get("nonlethal", false):
 			chance = 1.0
-		wounded = randf() < chance
+		wounded = randf() < chance and not u.has_meta("gored")
 		if not casualties.has(u.party_key):
 			casualties[u.party_key] = {}
 		var c: Dictionary = casualties[u.party_key]

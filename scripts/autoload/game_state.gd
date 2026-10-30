@@ -90,6 +90,7 @@ var settings := {
 	"dlc_fire": true, "dlc_water": true, "dlc_earth": true, "dlc_air": true,
 	"retro": "heavy",
 	"map_style": "painted",
+	"gore": true,
 }
 
 ## Pixel textures (shaders/ps1.gdshaderinc): texels per metre on every

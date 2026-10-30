@@ -9,6 +9,7 @@ const Looks = preload("res://scripts/actors/looks.gd")
 const Bending = preload("res://scripts/battle/bending.gd")
 const AvatarSys = preload("res://scripts/core/avatar.gd")
 const Techniques = preload("res://scripts/battle/techniques.gd")
+const Gore = preload("res://scripts/battle/gore.gd")
 
 const DIRS := ["left", "right", "overhead", "thrust"]
 
@@ -91,6 +92,13 @@ var burn_t := 0.0
 var burn_dps := 0.0
 ## Soaked by water or rain: burns briefly, conducts lightning.
 var wet_t := 0.0
+## What is hurting this unit right now, for how its death looks (gore.gd):
+## "blade", "water_slice", "impale", "fall", "fire" or "".
+var gore_hint := ""
+## Height held above the ground (the Avatar risen in the Avatar State).
+var levitate := 0.0
+var char_amt := 0.0
+var _fall_v := 0.0
 var blind_t := 0.0
 var bend_block_t := 0.0
 var use_ranged := false
@@ -391,6 +399,11 @@ func tick(delta: float) -> void:
 		if wet_t > 0.0:
 			burn_t = minf(burn_t, 0.4)
 		burn_t -= delta
+		gore_hint = "fire"
+		# burning alive: the body blackens as it burns
+		char_amt = minf(1.0, char_amt + delta * 0.09 * burn_dps / 3.0)
+		if Gore.enabled() and char_amt > 0.05:
+			Gore.char_body(self, char_amt)
 		apply_damage(burn_dps * delta, null, "fire", Vector3.ZERO, 0.0, true)
 		if not alive:
 			return
@@ -424,9 +437,11 @@ func tick(delta: float) -> void:
 		if np.y <= gh:
 			np.y = gh
 			airborne = false
+			var impact := -y_vel
 			y_vel = 0.0
+			_hard_landing(impact)
 	else:
-		np.y = gh
+		np.y = gh + levitate
 	position = np
 	# Facing
 	if not is_player or not battle.player_controlled:
@@ -659,8 +674,15 @@ func _update_avatar(delta: float) -> void:
 			bend_power /= 1.5
 			UnitVisual.avatar_glow(self, false)
 	elif not avatar_state_used and avatar_state_able and hp < max_hp * 0.35 and alive:
+		enter_avatar_state()
+
+## The past lives answer: ten seconds of the Avatar State.
+func enter_avatar_state(duration: float = 10.0) -> void:
+	if avatar_state_used or not alive:
+		return
+	if true:
 		avatar_state_used = true
-		avatar_state_t = 10.0
+		avatar_state_t = duration
 		hp = minf(max_hp, hp + max_hp * 0.25)
 		bend_power *= 1.5
 		UnitVisual.avatar_glow(self, true)
@@ -741,10 +763,31 @@ func die(killer, dtype: String) -> void:
 	if parts.has("glow"):
 		parts.glow.visible = false
 	parts.actor.die()
+	Gore.on_death(battle, self, dtype, gore_hint)
 	Sfx.play_at("death", position, -4.0)
 	battle.on_unit_down(self, killer, dtype)
 
+## Thrown high and coming down hard: bones break. The living limp.
+func _hard_landing(impact: float) -> void:
+	if impact < 11.0:
+		return
+	gore_hint = "fall"
+	apply_damage((impact - 11.0) * 7.0, last_attacker, "blunt", Vector3.ZERO, 0.0, true)
+	if alive and impact > 13.0 and Gore.enabled():
+		Gore.break_limb(self, ["shin_l", "shin_r", "forearm_l", "forearm_r"].pick_random())
+		slow_t = 30.0
+		if is_player:
+			battle.hud_note("You land badly. Something breaks.")
+
 func _animate_death(delta: float) -> void:
+	# a body killed in the air still falls, and breaks when it lands
+	var gh: float = battle.ground_height(position.x, position.z)
+	if position.y > gh + 0.02:
+		_fall_v -= 18.0 * delta
+		position.y = maxf(gh, position.y + _fall_v * delta)
+		if position.y <= gh and -_fall_v > 11.0 and Gore.enabled():
+			Gore.break_limb(self, ["shin_l", "shin_r", "forearm_l", "forearm_r"].pick_random())
+			Gore.bleed(battle, self, 0.6)
 	if fall_t < 1.0:
 		fall_t = minf(1.0, fall_t + delta * 2.5)
 		if parts.has("mount") and mount_hp > 0.0:
@@ -759,6 +802,12 @@ func _ai(delta: float) -> Vector3:
 		return Vector3.ZERO
 	if battle.opening_t > 0.0:
 		return Vector3.ZERO
+	# burning alive, they run and flail
+	if burn_t > 0.0 and char_amt > 0.15 and Gore.enabled():
+		if randf() < delta * 2.0 or vel.length() < 0.5:
+			var a := randf() * TAU
+			return Vector3(cos(a), 0, sin(a)) * speed() * 1.2
+		return vel.normalized() * speed() * 1.2
 	retarget_t -= delta
 	think_t -= delta
 	if target == null or not is_instance_valid(target) or not target.alive or retarget_t <= 0.0:
