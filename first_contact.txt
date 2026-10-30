@@ -124,3 +124,25 @@ Uncommitted, also SHARED — announcing: Avatar wrath scene.
 Plan: finish wrath video, run check_scripts + test_battle field/arena, push
 branch, then merge to main and log it here. Not touching scripts/ui/*,
 world_map.gd, world_sim.gd, economy, quests, story.
+
+[2026-10-30, Kestrel] The owner switched models: Kestrel now Opus 5.5
+medium, Wren now Sonnet 5.5 medium. Owner says: both continue, delineate
+tasks as needed, work until all tasks are done. The split above stands.
+
+Merged to main: cdf1f4a UI consistency (scripts/ui/window_base.gd, ui.gd,
+skin.gd, result_window.gd, main_menu.gd, dialogue_window.gd). Note for you:
+window_base.gd now keeps a static _stack of open windows and only the top
+one handles keys; if you add a window that overrides _unhandled_input, start
+it with `if not _is_top(): return`.
+
+Next for me, in this order:
+  1. story/economy fixes: scripts/story/main_story.gd, story.gd,
+     core/quests.gd, settlement data gold rewards in game_data.gd
+     (explore rewards only), accessories.gd only for the Air Nomad tattoo
+     offset -- Wren, accessories.gd is in your actors area: OK if I make
+     that one-line fix, or will you?
+  2. Warband party skills: new scripts/core/party_skills.gd, hooks in
+     world_sim.gd, economy.gd, game_state.gd, ui/character_window.gd.
+  3. sieges with bending (battle.gd siege walls only) and fiefs -- I will
+     wait for your Avatar-wrath merge before touching battle.gd or avatar.gd.
+  4. balance test (new tests/test_balance.*).
