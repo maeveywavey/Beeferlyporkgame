@@ -40,15 +40,16 @@ func _ready() -> void:
 	get_tree().paused = false
 	b.player_controlled = false
 	b.cinematic = true
+	b.hud.visible = false
 	# the Avatar waits near the shore; the warband stands inland of it
 	for u in b.team_units[1]:
 		if u.troop_id == "avatar":
-			u.position = Vector3(18, 0, -18)
+			u.position = Vector3(10, 0, -14)
 			u.position.y = b.ground_height(u.position.x, u.position.z)
 			u.root_t = 3.0
 	var i := 0
 	for u in b.team_units[0]:
-		u.position = Vector3(-22.0 + (i % 14) * 3.2, 0, -50.0 + int(i / 14) * 2.6)
+		u.position = Vector3(-24.0 + (i % 14) * 3.4, 0, -40.0 - int(i / 14) * 2.6)
 		u.position.y = b.ground_height(u.position.x, u.position.z)
 		i += 1
 
@@ -60,12 +61,12 @@ func _process(delta: float) -> void:
 	for u in b.team_units[1]:
 		if u.troop_id == "avatar":
 			av = u
-	var focus: Vector3 = av.position if av != null else Vector3(18, 0, -18)
+	var focus: Vector3 = av.position if av != null else Vector3(10, 0, -14)
 	# from inland, looking out to sea past the Avatar, circling slowly
-	var ang := -2.2 + t * 0.045
-	var dist := 46.0 - minf(t, 6.0) * 1.5
+	var ang := -2.0 + t * 0.05
+	var dist := 30.0 - minf(t, 6.0) * 0.8
 	var shake: Vector3 = b.cam.position - b.cam.get_meta("base", b.cam.position)
-	var pos := focus + Vector3(cos(ang) * dist, 15.0, sin(ang) * dist)
+	var pos := focus + Vector3(cos(ang) * dist, 8.0, sin(ang) * dist)
 	b.cam.position = pos
 	b.cam.look_at(focus + Vector3(0, 3.0, 0), Vector3.UP)
 	b.cam.position += shake * 0.0

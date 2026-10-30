@@ -251,10 +251,10 @@ func _water_begin() -> void:
 	battle.add_child(_wave)
 	var body := MeshInstance3D.new()
 	var bm := BoxMesh.new()
-	bm.size = Vector3(9.0, 1.0, 190.0)
+	bm.size = Vector3(5.0, 1.0, 190.0)
 	body.mesh = bm
 	var wm := StandardMaterial3D.new()
-	wm.albedo_color = Color(0.18, 0.36, 0.42, 0.82)
+	wm.albedo_color = Color(0.2, 0.42, 0.5, 0.7)
 	wm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	wm.roughness = 0.08
 	wm.metallic_specular = 0.8
@@ -262,9 +262,9 @@ func _water_begin() -> void:
 	_wave.add_child(body)
 	var foam := MeshInstance3D.new()
 	var fm := BoxMesh.new()
-	fm.size = Vector3(10.0, 0.6, 192.0)
+	fm.size = Vector3(1.4, 2.2, 192.0)
 	foam.mesh = fm
-	foam.material_override = _mat(Color(0.86, 0.92, 0.94))
+	foam.material_override = _mat(Color(0.7, 0.8, 0.84))
 	foam.name = "Foam"
 	_wave.add_child(foam)
 	# on a coast the wave comes out of the sea; inland it is drawn up beside the Avatar
