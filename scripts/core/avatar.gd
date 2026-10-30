@@ -639,11 +639,12 @@ static func judgement(yielded: bool = false) -> void:
 		var s: Dictionary = GS.settlements[sid]
 		if s.owner == "player":
 			var f: String = Data.settlements[sid].faction
-			if not f in Data.KINGDOMS:
+			if not Data.factions.has(f) or f == "player":
 				f = "earth_kingdom"
-			s.owner = ""
+			var home_lord: String = Data.settlements[sid].get("owner", "")
+			s.owner = home_lord if GS.lords.get(home_lord, {}).get("faction", "") == f else ""
 			s.faction = f
-			s.garrison = GS._make_garrison(Data.settlements[sid].culture, 60)
+			s.garrison = GS._make_garrison(Data.settlements[sid].get("troops_culture", Data.settlements[sid].culture), 60)
 			freed.append(Data.settlements[sid].name)
 	for lid in GS.player.get("captive_lords", []).duplicate():
 		GS.release_lord(lid, false)

@@ -11,14 +11,28 @@ What happened, which the game never states outright (`docs/canon.md` §9): the A
 
 Somewhere, a child is the new Avatar. The sages of that child's nation have begun quietly testing children, as they always do, and say nothing; the game never says which nation. When the child is sixteen they will be told. Until then there is no bridge between the nations, and the people call this time **the Quiet Years**.
 
-**The conflicts at the start of the game**
+**The factions.** The world is divided far more finely than the four nations' names suggest. The Factions menu (N on the world map) lists them all, grouped by region.
+
+| Region | Who holds it |
+|---|---|
+| **The Fire Islands** | The **Royal House of the Fire Lord** holds Caldera, the Boiling Lake, Crescent Island and, through its Admiralty, the Strait Isles. Its lands and levies roughly equal those of all the other clans together, as a shogunate's did among the daimyo. Five **clans** rule their own islands and owe the throne ceremony and ships: **Hiyori** (the delta ports), **Ren** (Ember Island), **Kagari** (the western isle and its shipyards), **Tsurugi** (the southern smithing islands) and **Kurozan** (a black-sand island north of the Boiling Lake, opposed to every Fire Lord on principle). The clans feud, and the royal house absorbs the losers. The **Sun Warriors** live in their stepped city in the southwestern jungle with the dragons. They join no war, and no ruler attacks them unless reckless or overwhelmingly strong. |
+| **The Earth continent** | The **Earth Kingdom** keeps its title and its claim to the whole continent, but rules directly only the walled heartland around Ba Sing Se. **House Cheng of Gaoling**, the **Tide Wardens of Hamakaze** and the **Duchy of Haiyan** pay it tribute. The **Kingdom of Omashu** has seceded and takes tribute of its own. The **Beishan March** stopped paying when the crown stopped sending soldiers, and the **Lingtai Warlord**, a garrison commander owed two years' pay, keeps his fort and its taxes. |
+| **The Water Tribes** | The **Northern Water Tribe** holds Agna Qel'a. The **Aqsarniit Clans** of the eastern ice left it over the Law of the Two Paths. In the South, **Wolf's Crown** is the largest tribe but speaks for the South only when the South agrees. The **Whalebone Raiders** answer to Raider-Captain Qannik alone, and the **Kanguq Tribe** stays out of everyone's wars. |
+| **The Air Temples** | The four temples are separate factions under their own abbots and abbesses, never at war. Standing with the Air Nomads as a people counts at every temple. |
+| **Communities** | Eighteen villages govern themselves under their elders, across all four regions. Some pay tribute to a power; some pay no one. |
+
+**Fealty.** A tributary pays its overlord every week, for the right to trade under the overlord's seal and to call on its armies; an overlord answers any attack on a tributary as an attack on itself. Tributaries stop paying an overlord that is losing wars or land. Powers reach for the free communities near their lands: a community asked for tribute may agree, and one that refuses may be taken by force by an aggressive ruler and rise again when the occupier is busy elsewhere. The player can ask a community for tribute, release it, or take a village and hold it.
+
+**The wars at the start of the game**
 | War | Cause |
 |---|---|
-| **Fire Nation vs Earth Kingdom: the War of the Strait** | The Strait Isles lie between the Fire Islands and the Earth Kingdom coast. Both crowns have claimed them for centuries and neither has ever fully held them; their people are mixed. After volcanic winters ruined three Fire Nation harvests, the Admiralty occupied the Isles "to protect Fire Nation families there". The Earth Kingdom calls it theft. Both are partly right. It is a border war over islands, not a conquest: no Fire Nation army stands on the mainland (`docs/canon.md` §6). |
+| **Royal House vs Earth Kingdom: the War of the Strait** | The Strait Isles lie between the Fire Islands and the Earth Kingdom coast. Both crowns have claimed them for centuries and neither has ever fully held them; their people are mixed. After volcanic winters ruined three harvests, the Admiralty occupied the Isles "to protect Fire Nation families there". The Earth Kingdom calls it theft. Both are partly right. |
 | **Earth Kingdom vs Kingdom of Omashu: the Secession** | King Feng Tao of Omashu stopped sending grain taxes to Ba Sing Se while Omashu's own people went hungry, and declared Omashu free. Ba Sing Se calls him a traitor; the people of Omashu call him a king. |
-| **Fire Nation vs Southern Water Tribe: the Raids** | Southern raiders strike Fire Nation supply ships headed for the Strait Isles. The South calls it defending the seas; the Fire Nation calls it piracy. |
-| The **Northern Water Tribe** | Neutral, isolationist and divided over whether to help the South. |
-| The **Air Nomads** | Never at war. They shelter refugees from every side and are trusted by everyone, which makes them a target. |
+| **Earth Kingdom vs the Lingtai Warlord** | Gu Bao raids the crown's tea terraces and calls it collecting arrears. |
+| **Royal House vs Wolf's Crown and the Whalebone Raiders: the Raids** | Southern raiders strike supply ships headed for the Strait Isles. The South calls it defending the seas; the Fire Islands call it piracy. |
+| **Kurozan vs Kagari** | A feud three generations old, over ships burned in a grandfather's time. |
+
+Nobody else is at war when the game begins. Wars after that start between neighbours, more often under aggressive rulers, and end as they grow long or a side loses land. Anyone may attempt conquest, anywhere: the AI marches on any enemy town or castle within reach.
 
 **The sky.** The Great Comet passes once a century and may or may not fall within a playthrough (about one game in three); the Fire Sages announce it. Total solar eclipses that silence firebending are almost unknown in recorded history, and none occurs. Lunar eclipses happen and only hide the full moon's strength (`docs/canon.md` §5).
 
@@ -114,6 +128,16 @@ Every lord has a want, a fear, a relationship with at least one other lord, and 
 | **Commander Daisuke Ren** (22) | Glory / being ordinary | A firebending prodigy, insufferable and secretly terrified. He can grow if humbled kindly. |
 | **Castellan Sakura Oda** | Order / chaos | Holds Boiling Lake Keep. Believes in schooling more than her officers do. |
 
+### The Fire Islands clans and the Sun Warriors
+| Lord | Want / fear | Detail |
+|---|---|---|
+| **Lady Aimi Hiyori** (head, Hiyori) | See above | Her brother **Lord Genji Hiyori** is the clan's sword and writes poetry nobody may read. |
+| **Lady Chiyo Ren** (head, Ren) | The clan's debts paid quietly / that her son's glory is her only collateral | Daisuke's mother; a master who stopped duelling the day she lost one. |
+| **Lord Sosuke Kagari** (head, Kagari) | A Kagari on the throne / the Kurozan | Builds model ships for his daughters. |
+| **Lady Hana Tsurugi** (head, Tsurugi) | The iron trade with the Sun Warriors kept quiet / the royal house asking what it is paid for | A smith before she was a clan head. |
+| **Lord Isamu Kurozan** (head, Kurozan) | The clans ruling the throne / dying before he sees it | Eleven Agni Kai, every scar uncovered. |
+| **Chief Huallpa** (Sun Warriors) | To be left alone / that the islands have forgotten why they leave the city alone | Says the dragons mostly talk about the weather. |
+
 ### Earth Kingdom
 | Lord | Want / fear | Detail |
 |---|---|---|
@@ -125,6 +149,15 @@ Every lord has a want, a fear, a relationship with at least one other lord, and 
 | **General Lu Kang** | Victory over Omashu / his brother's ghost; his brother died fighting for Omashu | |
 | **General Tan Yue** | To keep the Serpent's Pass open for refugees / that the capital has forgotten her fort | It has. Added in the systems pass to hold Serpent's Pass Fort. |
 | **Captain Oyama** of the Tide Wardens | To protect Hamakaze / being drawn into conquest | Refuses offensive campaigns. |
+
+### The continent's other powers
+| Lord | Want / fear | Detail |
+|---|---|---|
+| **Lady Cheng Mei** (head, House Cheng of Gaoling) | Profit and peace / ruin | Her guard captain, **Lan Jie**, gambles at the Stone Pit and wins too often. |
+| **Captain Oyama** (head, Tide Wardens) | Hamakaze kept safe / being drawn into conquest | Has refused three royal summonses, politely. |
+| **Marquis Teng Yao** (Beishan) | A kingdom in all but name / being caught between Ba Sing Se and Omashu | Never lets anyone prune his pines. |
+| **Duke Pao Ruyi** (Haiyan) | Lower tribute, a dredged harbour / his cleverer daughter | His daughter **Lady Pao Lin**, the coast's best earthbender, wants the tribute stopped altogether. |
+| **Warlord Gu Bao** (Lingtai) | His arrears / being hanged as an example | Pays his men before himself. |
 
 ### Kingdom of Omashu
 | Lord | Want / fear | Detail |
@@ -151,6 +184,14 @@ Every lord has a want, a fear, a relationship with at least one other lord, and 
 | **Master Aput** | To teach / losing students | |
 | **Raider-Captain Qannik** | Revenge / peace, because he does not know who he would be without the raids | |
 | **Elder Malik** | Diplomacy / Qannik | |
+
+### The Aqsarniit Clans and the Kanguq Tribe
+| Lord | Want / fear | Detail |
+|---|---|---|
+| **Chief Ataneq** (Aqsarniit) | Agna Qel'a admitting the clans were right / that it never will | Learned combat waterbending from her grandmother on the open ice. |
+| **Chief Nuvuk** (Kanguq) | To stay out of Wolf's Crown's wars / Qannik dragging him in | Names his sled-dogs after council members he dislikes. |
+
+Raider-Captain **Qannik** now leads the **Whalebone Raiders** as their own faction rather than answering to Wolf's Crown.
 
 ### Air Nomads (no armies)
 Abbot Dorje (Southern), Abbess Tsering (Eastern), Abbess Yeshe (Western) and Abbot Lhakpa (Northern).

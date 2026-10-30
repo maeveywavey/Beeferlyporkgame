@@ -74,6 +74,7 @@ var settlements: Dictionary = {}
 var lords: Dictionary = {}
 var relations: Dictionary = {}      # "a|b" -> "war" | "peace"
 var campaigns: Dictionary = {}      # faction -> {target, until}
+var fealty: Dictionary = {}         # faction -> the faction it pays tribute to
 var quests: Array = []
 var log_lines: Array = []
 var flags: Dictionary = {}
@@ -289,6 +290,7 @@ func new_game(p: Dictionary) -> void:
 	lords = {}
 	relations = {}
 	campaigns = {}
+	fealty = {}
 	quests = []
 	log_lines = []
 	flags = {}
@@ -303,6 +305,9 @@ func new_game(p: Dictionary) -> void:
 				relations[_rel_key(a, b)] = "peace"
 	for w in Data.STARTING_WARS:
 		relations[_rel_key(w[0], w[1])] = "war"
+	for f in Data.factions:
+		if Data.factions[f].get("fealty", "") != "":
+			fealty[f] = Data.factions[f].fealty
 	schedule_cosmic_events()
 	for id in Data.settlements:
 		var d: Dictionary = Data.settlements[id]
@@ -312,10 +317,11 @@ func new_game(p: Dictionary) -> void:
 			"volunteers": 0, "siege": {}, "looted_until": -1.0, "relation": 0,
 			"explored": false, "last_visit": -1.0, "tavern": {},
 		}
+		var gc: String = d.get("troops_culture", d.culture)
 		if d.type == "town":
-			s.garrison = _make_garrison(d.culture, 200)
+			s.garrison = _make_garrison(gc, 200)
 		elif d.type == "castle":
-			s.garrison = _make_garrison(d.culture, 110)
+			s.garrison = _make_garrison(gc, 110)
 		if d.type == "village":
 			s.volunteers = 4 + randi() % 6
 		for g in Data.goods:
@@ -539,7 +545,7 @@ func party_faction(p: Dictionary) -> String:
 func at_war(a: String, b: String) -> bool:
 	if a == b:
 		return false
-	if a == "air_nomads" or b == "air_nomads" or a == "neutral" or b == "neutral":
+	if Data.is_peaceful(a) or Data.is_peaceful(b):
 		return false
 	if a == "bandits" or b == "bandits":
 		return true
@@ -585,6 +591,16 @@ func make_peace(a: String, b: String) -> void:
 	if relations.get(_rel_key(a, b), "") == "war":
 		relations[_rel_key(a, b)] = "peace"
 		log_msg("%s and %s have agreed to a truce." % [Data.factions[a].name, Data.factions[b].name], Color(0.6, 0.9, 1))
+
+## The player's standing with a faction. A temple's standing includes the
+## standing with the Air Nomads as a people.
+func faction_rel(faction: String) -> int:
+	var fr: Dictionary = player.get("faction_rel", {})
+	var r := int(fr.get(faction, 0))
+	var people: String = Data.factions.get(faction, {}).get("people", "")
+	if people != "":
+		r += int(fr.get(people, 0))
+	return clampi(r, -100, 100)
 
 func change_faction_rel(faction: String, amount: int) -> void:
 	if not Data.factions.has(faction) or faction == "player":
@@ -1089,9 +1105,9 @@ func auto_resolve_player(enemy_ids: Array, ally_ids: Array = [], siege: String =
 # ---------------------------------------------------------------------------
 func save_game(path: String = SAVE_PATH) -> bool:
 	var data := {
-		"version": 1, "hours": hours, "player": player, "parties": parties,
+		"version": 2, "hours": hours, "player": player, "parties": parties,
 		"settlements": settlements, "lords": lords, "relations": relations,
-		"campaigns": campaigns, "quests": quests, "log": log_lines.slice(-60),
+		"campaigns": campaigns, "fealty": fealty, "quests": quests, "log": log_lines.slice(-60),
 		"flags": flags, "next_id": next_id,
 	}
 	var f := FileAccess.open(path, FileAccess.WRITE)
@@ -1103,6 +1119,47 @@ func save_game(path: String = SAVE_PATH) -> bool:
 
 func has_save(path: String = SAVE_PATH) -> bool:
 	return FileAccess.file_exists(path)
+
+## Saves from before the clans, temples and communities: add the new places
+## and people, and move the old ones that changed hands in the data to their
+## new factions, unless the player has taken them.
+const OLD_FACTIONS := ["fire_nation", "earth_kingdom", "omashu", "northern_water", "southern_water", "air_nomads"]
+
+func _migrate_factions() -> void:
+	for id in Data.settlements:
+		var d: Dictionary = Data.settlements[id]
+		if not settlements.has(id):
+			settlements[id] = {"id": id, "faction": d.faction, "owner": d.get("owner", ""),
+				"prosperity": 55.0, "garrison": [], "prices": {}, "volunteers": 0, "siege": {},
+				"looted_until": -1.0, "relation": 0, "explored": false, "last_visit": -1.0, "tavern": {}}
+			for g in Data.goods:
+				settlements[id].prices[g] = 1.0
+			var gc: String = d.get("troops_culture", d.culture)
+			if d.type in ["town", "castle"]:
+				settlements[id].garrison = _make_garrison(gc, 200 if d.type == "town" else 110)
+			elif d.type == "village":
+				settlements[id].volunteers = 5
+				if d.has("bound"):
+					settlements[id].owner = Data.settlements[d.bound].get("owner", "")
+		elif settlements[id].owner != "player" and settlements[id].faction in OLD_FACTIONS and not d.faction in OLD_FACTIONS:
+			# a place the old factions held that now belongs to a clan, a temple,
+			# a tribe or itself
+			settlements[id].faction = d.faction
+			settlements[id].owner = d.get("owner", settlements[id].owner)
+	for id in Data.lords:
+		if not lords.has(id):
+			lords[id] = {"id": id, "faction": Data.lords[id].faction, "party": "", "respawn_at": 0.0, "relation": 0, "renown": 100}
+			sim.spawn_lord(id, 1.0)
+		elif lords[id].faction != Data.lords[id].faction and not lords[id].get("retired", false):
+			lords[id].faction = Data.lords[id].faction
+			if lords[id].party != "" and parties.has(lords[id].party):
+				parties[lords[id].party].faction = lords[id].faction
+	for w in Data.STARTING_WARS:
+		if not relations.has(_rel_key(w[0], w[1])):
+			relations[_rel_key(w[0], w[1])] = "war"
+	for f in Data.factions:
+		if Data.factions[f].get("fealty", "") != "" and not fealty.has(f):
+			fealty[f] = Data.factions[f].fealty
 
 ## Saves from before the nine attributes: map the old four attributes and
 ## the skill points onto the new ones.
@@ -1142,12 +1199,15 @@ func load_game(path: String = SAVE_PATH) -> bool:
 	lords = data.lords
 	relations = data.relations
 	campaigns = data.campaigns
+	fealty = data.get("fealty", {})
 	quests = data.quests
 	log_lines = data.log
 	flags = data.flags
 	next_id = data.next_id
 	pending_battle = {}
 	_migrate_attributes()
+	if int(data.get("version", 1)) < 2:
+		_migrate_factions()
 	AvatarSys.ensure()
 	if player.get("companions", []).has("avatar"):
 		AvatarSys.register_companion()

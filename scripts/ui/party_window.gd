@@ -32,6 +32,8 @@ static func _culture_faction(c: String) -> String:
 		"north": return "northern_water"
 		"south": return "southern_water"
 		"air": return "neutral"
+		"sun": return "sun_warriors"
+		"hamakaze": return "tide_wardens"
 	return "earth_kingdom"
 
 func build() -> void:

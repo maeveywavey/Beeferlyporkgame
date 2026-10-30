@@ -8,6 +8,7 @@ const Quests = preload("res://scripts/core/quests.gd")
 const AutoResolve = preload("res://scripts/core/auto_resolve.gd")
 const AvatarSys = preload("res://scripts/core/avatar.gd")
 const BendingWork = preload("res://scripts/core/bending_work.gd")
+const Fealty = preload("res://scripts/core/fealty.gd")
 
 var sid := ""
 var map
@@ -21,11 +22,17 @@ func build() -> void:
 	var d: Dictionary = Data.settlements[sid]
 	var s: Dictionary = GS.settlements[sid]
 	set_title(d.name)
-	var header := "[b]%s[/b] of the %s" % [d.type.capitalize(), Data.factions.get(s.faction, Data.factions.neutral).name]
+	var fd: Dictionary = Data.factions.get(s.faction, Data.factions.neutral)
+	var header := "[b]%s[/b] of the %s" % [d.type.capitalize(), fd.name]
+	if s.faction == sid:
+		header = "[b]%s[/b] — governs itself, under %s" % [fd.get("kind", "Community"), fd.get("head", "its elders")]
 	if s.owner == "player":
 		header += " — [color=#2a6a2a]your fief[/color]"
 	elif Data.lords.has(s.owner):
 		header += " — held by %s" % Data.lords[s.owner].name
+	var ov := Fealty.overlord(s.faction)
+	if ov != "":
+		header += "\nPays tribute to %s" % ("you" if ov == "player" else "the " + Data.factions[ov].name)
 	if not d.type in ["ruin", "temple"]:
 		header += "\nProsperity: %d" % int(s.prosperity)
 		if d.type != "village":
@@ -97,6 +104,8 @@ func _build_main(o: VBoxContainer) -> void:
 		if d.type == "village":
 			if s.looted_until < GS.hours:
 				o.add_child(UI.option("Raid the village (dishonourable)", _raid))
+			if s.owner != "player" and GS.party_size() >= 10:
+				o.add_child(UI.option("Take the village and hold it as your own", _take_village))
 				if BendingWork.blocker("scorch", sid) == "":
 					o.add_child(UI.option("Scorch their fields with firebending (cruel; infamy)", func():
 						note = BendingWork.perform("scorch", sid)
@@ -151,6 +160,7 @@ func _build_main(o: VBoxContainer) -> void:
 				o.add_child(UI.option("Recruit volunteers (%d available)" % s.volunteers, func(): _go("recruit")))
 				o.add_child(UI.option("Buy supplies from the villagers", func(): _open(_mk("res://scripts/ui/trade_window.gd"))))
 			o.add_child(UI.option("Speak with the village elder (work)", _ask_work))
+			_tribute_options(o)
 	if s.owner == "player" and d.type != "village":
 		o.add_child(UI.option("Manage the garrison", func(): _open(_mk("res://scripts/ui/garrison_window.gd"))))
 	_work_option(o)
@@ -277,11 +287,12 @@ func _raid() -> void:
 		GS.add_good(g, 2 + randi() % 3)
 	GS.player.honor = GS.player.get("honor", 0) - 5
 	GS.change_faction_rel(s.faction, -10)
+	Fealty.protect(s.faction, GS.player_faction())
 	AvatarSys.add_infamy(25, d.pos, "raiding " + d.name)
 	Story.react("raid")
 	# Mixed Strait Isles villages: burning them angers both nations
 	var kin: String = {"earth": "earth_kingdom", "fire": "fire_nation", "north": "northern_water", "south": "southern_water", "omashu": "omashu"}.get(d.culture, "")
-	if kin != "" and kin != s.faction:
+	if kin != "" and Data.region_of(kin) != Data.region_of(s.faction):
 		GS.change_faction_rel(kin, -6)
 		GS.log_msg("The village's families were %s. Their kin will hear of this." % Data.factions[kin].name, Color(1, 0.5, 0.35))
 	if Data.lords.has(s.owner):
@@ -289,6 +300,47 @@ func _raid() -> void:
 	GS.log_msg("You raided %s, taking %d gold and supplies." % [d.name, gold], Color(1, 0.6, 0.3))
 	Quests.on_raid(sid)
 	note = "Your men loot the village. Smoke rises behind you."
+	refresh()
+
+## A community's elders, asked for tribute or released from it.
+func _tribute_options(o: VBoxContainer) -> void:
+	var s: Dictionary = GS.settlements[sid]
+	if not Fealty.is_community(s.faction) or GS.player_faction() != "player":
+		return
+	var ov := Fealty.overlord(s.faction)
+	if ov == "player":
+		o.add_child(UI.option("Release %s from its tribute to you" % Data.settlements[sid].name, func():
+			Fealty.release(s.faction)
+			note = "The elders thank you, carefully, in case it is a test."
+			refresh()))
+		return
+	var asked: bool = GS.day() - int(GS.flags.get("demand_day_" + s.faction, -999)) < 30
+	var label := "Ask the elders to pay tribute to you, for your protection"
+	if ov != "":
+		label += " (they pay the %s; it will take offence)" % Data.factions[ov].short
+	o.add_child(UI.option(label, func():
+		note = Fealty.player_demand(s.faction)
+		refresh(), not asked and GS.party_size() >= 10))
+
+## Hold a village by force: its militia fights, and then it is yours.
+func _take_village() -> void:
+	var s: Dictionary = GS.settlements[sid]
+	var d: Dictionary = Data.settlements[sid]
+	var militia := []
+	Roster.add(militia, Data.culture_recruit.get(d.get("troops_culture", d.culture), "ek_peasant"), 8 + randi() % 10)
+	var pp: Dictionary = GS.player_party()
+	if GS.sim.party_power(pp) < Roster.power(militia) * 1.5:
+		for i in 3:
+			var tid := Roster.random_troop(pp.roster)
+			if tid != "":
+				Roster.wound(pp.roster, tid, 1)
+	var old: String = s.faction
+	GS.sim.capture_settlement(sid, GS.player_faction(), "player")
+	s.prosperity = maxf(5.0, s.prosperity - 10.0)
+	s.relation = mini(int(s.relation), -20)
+	GS.change_faction_rel(old, -25)
+	AvatarSys.add_infamy(15, d.pos, "seizing " + d.name)
+	note = "The village militia breaks. By nightfall your banner hangs from the elder's house, and nobody in the village will look at it."
 	refresh()
 
 # ---------------------------------------------------------------------------

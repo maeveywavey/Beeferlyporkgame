@@ -56,8 +56,45 @@ func _run() -> void:
 		var n = await _press_all(map.modal_layer, skip)
 		print(wname, " pressed ", n)
 		await _close_all()
+	# The Factions menu: every faction's page, every tab
+	var fw = load("res://scripts/ui/faction_window.gd").new()
+	map.open_window(fw)
+	await get_tree().process_frame
+	for f in Data.factions:
+		fw.selected = f
+		fw.tab = "factions"
+		fw.refresh()
+		await get_tree().process_frame
+	for t in ["people", "wars"]:
+		fw.tab = t
+		fw.refresh()
+		await get_tree().process_frame
+	fw.tab = "factions"
+	fw.selected = "taolin"
+	fw.refresh()
+	await get_tree().process_frame
+	print("factions menu: %d factions listed" % fw._listed().size())
+	await _close_all()
+	# A free community: ask for tribute, then take another by force
+	var Fealty = load("res://scripts/core/fealty.gd")
+	GS.player.renown = 1500
+	GS.fealty.erase("taolin")
+	var tries := 0
+	while Fealty.overlord("taolin") != "player" and tries < 40:
+		GS.flags.erase("demand_day_taolin")
+		Fealty.player_demand("taolin")
+		tries += 1
+	print("taolin pays: ", Fealty.overlord("taolin"), " after ", tries, " asks; tribute ", Fealty.player_income())
+	GS.declare_war("player", "yuhe")
+	GS.player_party().pos = Data.settlements.yuhe.pos
+	map.open_settlement("yuhe")
+	await get_tree().process_frame
+	var yw = map.modal_layer.get_child(0)
+	yw._take_village()
+	print("yuhe held by: ", GS.settlements.yuhe.faction, " owner ", GS.settlements.yuhe.owner)
+	await _close_all()
 	# Settlements of every type
-	for sid in ["omashu", "fong_fortress", "senlin", "hamakaze", "southern_air_temple", "red_lantern_den", "wan_shi_tong", "stonewatch", "caldera", "agna_qela"]:
+	for sid in ["omashu", "fong_fortress", "senlin", "hamakaze", "taolin", "sun_city", "southern_air_temple", "red_lantern_den", "wan_shi_tong", "stonewatch", "caldera", "agna_qela"]:
 		GS.player_party().pos = Data.settlements[sid].pos
 		map.open_settlement(sid)
 		await get_tree().process_frame

@@ -81,7 +81,12 @@ func _hostile_line(p: Dictionary) -> String:
 	match faction:
 		"fire_nation": return ["Surrender, or be burned where you stand!", "In the name of the Fire Lord, you are under arrest!", "You'll make a fine addition to the prison rigs."].pick_random()
 		"earth_kingdom": return ["You stand on Earth Kingdom soil. Prepare to fall.", "The earth itself will bury you!"].pick_random()
-		"northern_water", "southern_water": return ["For the Water Tribes!", "The ocean takes all in the end. So shall we."].pick_random()
+		"sun_warriors": return ["You were warned at the jungle's edge. You should have listened.", "The dragons will not need to wake for you."].pick_random()
+	var name: String = Data.factions.get(faction, Data.factions.neutral).short
+	match Data.region_of(faction):
+		"fire": return ["For the %s and its honour!" % name, "Kneel, or burn!"].pick_random()
+		"earth": return ["You're on %s land. Turn around or be buried." % name, "The earth itself will bury you!"].pick_random()
+		"water": return ["For the %s!" % name, "The ocean takes all in the end. So shall we."].pick_random()
 	return "Prepare yourself!"
 
 func _gather_sides(p: Dictionary) -> Array:
@@ -191,6 +196,7 @@ func _build_lord_talk(p: Dictionary) -> void:
 	var lid: String = p.lord
 	var ld: Dictionary = Data.lords[lid]
 	var lr: Dictionary = GS.lords[lid]
+	lr.met = true
 	content.add_child(UI.rich("[b]%s:[/b] \"%s\"" % [ld.name, ld.line], 700))
 	content.add_child(UI.spacer(4))
 	var pl: Dictionary = GS.player
@@ -247,7 +253,7 @@ func _build_lord_talk(p: Dictionary) -> void:
 ## Agni Kai are fought between firebenders; a non-bender needs a champion.
 func _agni_kai_possible(lid: String) -> bool:
 	var ld: Dictionary = Data.lords[lid]
-	if ld.faction != "fire_nation" or ld.bend != "fire" or GS.is_king(lid):
+	if Data.region_of(ld.faction) != "fire" or Data.factions[ld.faction].get("protected", false) or ld.bend != "fire" or GS.is_king(lid):
 		return false
 	return GS.player.bend == "fire" or GS.agni_kai_champion() != ""
 

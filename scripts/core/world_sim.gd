@@ -10,6 +10,7 @@ const AutoResolve = preload("res://scripts/core/auto_resolve.gd")
 const Economy = preload("res://scripts/core/economy.gd")
 const Quests = preload("res://scripts/core/quests.gd")
 const Story = preload("res://scripts/story/story.gd")
+const Fealty = preload("res://scripts/core/fealty.gd")
 
 const CONTACT := 3.0
 const SIGHT := 60.0
@@ -320,6 +321,8 @@ func _daily() -> void:
 	_daily_lords()
 	_daily_spawns()
 	_daily_campaigns()
+	if GS.day() % 7 == 3:
+		Fealty.weekly()
 	_daily_player()
 	Quests.daily()
 	if GS.day() % 3 == 0 and GS.game_active:
@@ -343,6 +346,10 @@ func _weekly() -> void:
 	if income > 0:
 		GS.add_gold(income)
 		GS.log_msg("Your fiefs brought in %d gold in taxes." % income, Color(0.9, 0.85, 0.4))
+	var tribute := Fealty.player_income()
+	if tribute > 0:
+		GS.add_gold(tribute)
+		GS.log_msg("Communities under your protection sent %d gold in tribute." % tribute, Color(0.9, 0.85, 0.4))
 	if GS.player.get("status", "") == "mercenary":
 		var pay := 40 + GS.party_size() * 4
 		GS.add_gold(pay)
@@ -366,7 +373,7 @@ func _daily_events() -> void:
 		if ev.has("campaign"):
 			var f: String = ev.campaign[0]
 			var target: String = ev.campaign[1]
-			if GS.at_war(f, GS.settlements[target].faction) and Data.may_besiege(f, target, GS.settlements[target].faction):
+			if GS.at_war(f, GS.settlements[target].faction):
 				_force_campaign(f, target, ev.get("leaders", []))
 		match ev.get("effect", ""):
 			"north_debate":
@@ -404,13 +411,17 @@ func _force_campaign(f: String, target: String, leaders: Array) -> void:
 					Roster.add(p.roster, tree[mini(tree.size() - 1, randi() % tree.size())], 1)
 
 ## Wars and truces shift over time from the start. Long wars grow weary;
-## long peaces grow brittle. The Air Nomads never take part.
+## long peaces grow brittle, between neighbours and by the temper of their
+## rulers. The Air Nomads never take part, and nobody picks a fight with the
+## Sun Warriors without a reckless ruler.
 func _daily_diplomacy() -> void:
 	var ks: Array = Data.KINGDOMS
 	for i in ks.size():
 		for j in range(i + 1, ks.size()):
 			var a: String = ks[i]
 			var b: String = ks[j]
+			if Data.is_peaceful(a) or Data.is_peaceful(b):
+				continue
 			var since_key: String = "rel_since_" + a + "|" + b
 			var since: int = GS.flags.get(since_key, GS.day())
 			if not GS.flags.has(since_key):
@@ -422,11 +433,30 @@ func _daily_diplomacy() -> void:
 				if lasted > 30 and randf() < 0.008 + losing * 0.04:
 					GS.make_peace(a, b)
 					GS.flags[since_key] = GS.day()
-			elif lasted > 40 and randf() < 0.007:
-				# Nobody opens a third front, and nobody kicks a kingdom already on its knees
-				if _wars_of(a) < 2 and _wars_of(b) < 2 and _land_loss(a) < 0.4 and _land_loss(b) < 0.4:
+			elif lasted > 40 and _neighbours(a, b) and randf() < 0.002 + 0.008 * maxf(Fealty.ruler_aggression(a), Fealty.ruler_aggression(b)):
+				# Nobody opens a third front, nobody kicks a kingdom already on its
+				# knees, and the Sun Warriors are left alone by the sane
+				var sun_ok: bool = not (Data.factions[a].get("protected", false) or Data.factions[b].get("protected", false)) or _reckless(a if Data.factions[b].get("protected", false) else b, b if Data.factions[b].get("protected", false) else a)
+				if sun_ok and _wars_of(a) < 2 and _wars_of(b) < 2 and _land_loss(a) < 0.4 and _land_loss(b) < 0.4:
 					GS.declare_war(a, b)
 					GS.flags[since_key] = GS.day()
+
+## Two powers are neighbours if any of their seats lie within reach of each
+## other. Only neighbours start wars on their own.
+func _neighbours(a: String, b: String) -> bool:
+	for x in GS.faction_settlements(a):
+		for y in GS.faction_settlements(b):
+			if Data.settlements[x].pos.distance_to(Data.settlements[y].pos) < 340.0:
+				return true
+	return false
+
+## Whether f would dare attack the protected faction p: its ruler is reckless
+## (aggression 0.8 or more) and at least as strong, or it is overwhelmingly
+## stronger whoever rules it.
+func _reckless(f: String, p: String) -> bool:
+	var mine := Fealty.strength(f)
+	var theirs := maxi(1, Fealty.strength(p))
+	return (Fealty.ruler_aggression(f) >= 0.8 and mine >= theirs) or mine >= theirs * 3
 
 func _wars_of(f: String) -> int:
 	var n := 0
@@ -706,6 +736,15 @@ func _think_lord(p: Dictionary) -> void:
 			_leave_siege(p)
 			_flee(p, sc[0])
 		return
+	# Armies keep to their own and their tributaries' lands unless marching on
+	# a campaign: no chasing a bandit band across the sea
+	var on_campaign: bool = p.get("campaign", "") != "" and GS.campaigns.get(faction, {}).get("target", "") == p.campaign
+	if not on_campaign and _home_distance(p.pos, faction) > LEASH:
+		var back := _friendly_fief_near(p)
+		if back != "":
+			_go_settlement(p, back)
+			p.state = "return"
+			return
 	var scan := _scan(p)
 	var threat: Dictionary = scan[0]
 	var prey: Dictionary = scan[1]
@@ -713,6 +752,8 @@ func _think_lord(p: Dictionary) -> void:
 		_flee(p, threat)
 		return
 	if not prey.is_empty() and prey.kind in ["villager", "caravan"] and ldef.aggression < 0.35:
+		prey = {}
+	if not prey.is_empty() and not on_campaign and _home_distance(prey.pos, faction) > LEASH * 0.8:
 		prey = {}
 	if not prey.is_empty() and (prey.kind != "player" or randf() < ldef.aggression + 0.3):
 		_chase(p, prey.id)
@@ -735,7 +776,7 @@ func _think_lord(p: Dictionary) -> void:
 	# Defend besieged friendly settlements
 	for sid in GS.settlements:
 		var s: Dictionary = GS.settlements[sid]
-		if s.faction == faction and not s.siege.is_empty():
+		if (s.faction == faction or Fealty.overlord(s.faction) == faction) and not s.siege.is_empty():
 			if Data.settlements[sid].pos.distance_to(p.pos) < 320.0 and GS.parties.has(s.siege.get("leader", "")):
 				var besieger: Dictionary = GS.parties[s.siege.leader]
 				if party_power(p) > party_power(besieger) * 0.7:
@@ -766,6 +807,18 @@ func _think_lord(p: Dictionary) -> void:
 		var sid: String = own.pick_random()
 		_go_to(p, Terrain.random_land_near(Data.settlements[sid].pos, 40.0))
 	p.state = "patrol"
+
+const LEASH := 200.0
+
+## Distance from pos to the nearest settlement of faction f or of a faction
+## that pays it tribute (INF if it has none).
+func _home_distance(pos: Vector2, f: String) -> float:
+	var best := INF
+	for sid in GS.settlements:
+		var sf: String = GS.settlements[sid].faction
+		if sf == f or Fealty.overlord(sf) == f:
+			best = minf(best, Data.settlements[sid].pos.distance_to(pos))
+	return best
 
 ## Outlaws keep away from walled towns and castles.
 func _near_stronghold(pos: Vector2) -> bool:
@@ -979,6 +1032,7 @@ func _update_sieges() -> void:
 				v.raider = ""
 				p.gold += 300
 				GS.log_msg("%s has raided and burned %s." % [_display_name(p), Data.settlements[vid].name], Color(1, 0.5, 0.3))
+				Fealty.protect(v.faction, p.faction)
 				if v.owner == "player":
 					GS.log_msg("Your village %s was raided!" % Data.settlements[vid].name, Color(1, 0.3, 0.3))
 			p.state = "idle"
@@ -1052,6 +1106,7 @@ func capture_settlement(sid: String, faction: String, new_owner: String) -> void
 	if new_owner == "player":
 		GS.add_renown(25)
 		GS.player.honor = GS.player.get("honor", 0)
+	Fealty.protect(old_faction, faction)
 	# Faction eliminated?
 	if old_faction in Data.KINGDOMS and GS.faction_settlements(old_faction).is_empty():
 		GS.log_msg("The %s has lost all of its lands!" % Data.factions[old_faction].name, Color(1, 0.3, 0.3))
@@ -1068,9 +1123,8 @@ func _daily_campaigns() -> void:
 						p.campaign = ""
 						if p.state == "besiege":
 							_leave_siege(p)
-		else:
-			var chance := 0.045 if f == "fire_nation" else 0.035
-			if randf() < chance:
+		elif not Data.factions[f].get("protected", false):
+			if randf() < 0.012 + 0.04 * Fealty.ruler_aggression(f):
 				_start_campaign(f, false)
 
 func _start_campaign(f: String, forced: bool) -> void:
@@ -1087,7 +1141,7 @@ func _start_campaign(f: String, forced: bool) -> void:
 	for sid in GS.settlements:
 		var s: Dictionary = GS.settlements[sid]
 		var d: Dictionary = Data.settlements[sid]
-		if d.type in ["town", "castle"] and GS.at_war(f, s.faction) and s.faction in Data.KINGDOMS + ["player"] and Data.may_besiege(f, sid, s.faction):
+		if d.type in ["town", "castle"] and GS.at_war(f, s.faction) and s.faction in Data.KINGDOMS + ["player"] and (not Data.factions.get(s.faction, {}).get("protected", false) or _reckless(f, s.faction)):
 			var score: float = d.pos.distance_to(center) + Roster.total(s.garrison) * 2.0 + randf() * 150.0
 			if score < best_score:
 				best_score = score
@@ -1110,7 +1164,7 @@ func _start_campaign(f: String, forced: bool) -> void:
 	if joined == 0:
 		GS.campaigns.erase(f)
 		return
-	var msg := "The %s marches on %s!" % [Data.factions[f].name, Data.settlements[best].name]
+	var msg := "The armies of the %s march on %s!" % [Data.factions[f].name, Data.settlements[best].name]
 	GS.log_msg(msg, Color(1, 0.6, 0.4))
 
 # ---------------------------------------------------------------------------

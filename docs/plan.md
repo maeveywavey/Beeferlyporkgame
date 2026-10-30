@@ -39,13 +39,13 @@ This plan is drawn from the twenty answers of 30 October and the follow-up answe
 **Confirmed.** Anyone who wants to conquer may try, anywhere and at any time: the player and every AI kingdom alike. The only answer the world gives is the Avatar's: a nation that takes another nation's land draws the Avatar to it, as the player does now.
 - **For AI kingdoms:** the tyrant motive applies, scaled by the foreign land held.
 - **Consequence:** in eras with an active Avatar, cross-nation empires are unstable by design; in the child era they can grow until the Avatar comes of age.
-- **Code:** remove `Data.may_besiege`'s cross-nation block and add a per-faction "foreign holdings" score that the Avatar system reads.
+- **Code:** `Data.may_besiege` is removed (done). Still to do: a per-faction "foreign holdings" score that the Avatar system reads.
 
-**The Fire Islands, not yet unified.**
-- **Several houses:** the single Fire Nation faction becomes three or four island houses, each with its own lord and seat, under a Fire Lord who is first among equals.
-- **Bargaining between houses:** they bargain, feud and settle disputes by Agni Kai.
-- **Unification as a sandbox outcome:** a house, or the player, can unify the islands.
-- **No Fire Lord title:** there is no Fire Lord title to hold until the islands are unified.
+**The Fire Islands, not yet unified (built).**
+- **One royal house:** the Royal House of the Fire Lord holds Caldera, the Boiling Lake, Crescent Island and the Strait Isles, with lands and levies roughly equal to all the other clans combined, as in pre-unification feudal Japan.
+- **Five clans:** Hiyori, Ren, Kagari, Tsurugi and Kurozan rule their own islands, feud with each other and bow at court. The royal house absorbs clans that lose their wars, so unification is an outcome of play rather than a scripted event.
+- **The Fire Lord title:** the royal house holds it. It commands the clans in ceremony only. Canon has a Fire Lord contested by clans (`docs/canon.md` §9).
+- **The Sun Warriors:** a protected faction with dragons in their city (walls count for more while they hold it). AI powers attack them only under a ruler with aggression 0.8 or more who is at least as strong, or when three times as strong.
 
 **Grimdark war.**
 - Sacked towns, famine after raids, massacres the player can commit or witness, and refugees on the roads.
@@ -176,4 +176,5 @@ This plan is drawn from the twenty answers of 30 October and the follow-up answe
 2. **The last Avatar:** no story at all. The campaign and every trace of the lost-Avatar mystery go.
 3. **Look:** realistic and PS1 as in §5, at the **Heavy** strength, which is now the default. Light and Off remain in Settings.
 4. **Camera:** the battle camera sits at a quarter of the distance in the comparison shots (1.5 m, over the shoulder); the mouse wheel still zooms from 1 to 12 m.
+6. **Factions (built):** the four Air Temples are separate factions; the Fire Islands are a royal house and five clans, plus the Sun Warriors; the Earth Kingdom keeps its title but rules only its heartland, with tributaries, Omashu, a march, a duchy and a warlord around it; the Water Tribes are split into five; and eighteen independent communities pay tribute or none. Fealty (tribute for connection and protection) is a system: overlords answer attacks on tributaries, tributaries leave weak overlords, powers ask communities for tribute or take them, and taken communities rise. The Factions menu lists every faction, the people the player is connected to, and the wars and tribute.
 5. **Natural colour variation:** rocks show bedding strata, chunks of differently coloured stone and dark cracks, and each outcrop has its own cast. The ground has large lighter, darker, drier and lusher patches blending into one another, brown leaf litter and soil under trees, and stony soil at cliff feet. Foliage cards vary in shade.

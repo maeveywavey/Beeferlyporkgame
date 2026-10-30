@@ -55,15 +55,18 @@ func _names() -> void:
 					hits += 1
 	print("names: %d scripts scanned, %d forbidden uses" % [files.size(), hits])
 
-## The Fire Nation holds nothing on the mainland; the Strait Isles are islands;
-## Hamakaze is still joined to the mainland.
+## The Strait Isles, claimed by both crowns (docs/canon.md §9).
+const DISPUTED := ["kettle_rock", "fire_navy_harbor", "tieshan", "navy_docks"]
+
+## No Fire Islands faction starts with a holding on the mainland; the Strait
+## Isles are islands; Hamakaze is still joined to the mainland.
 func _map() -> void:
 	Terrain.ensure()
 	for sid in Data.settlements:
 		var d: Dictionary = Data.settlements[sid]
-		if d.faction == "fire_nation" and not Data.DISPUTED.has(sid) and d.pos.x > 500.0:
-			_err("Fire Nation holding %s stands east of the Fire Islands" % sid)
-	for sid in Data.DISPUTED:
+		if Data.region_of(d.faction) == "fire" and not DISPUTED.has(sid) and d.pos.x > 500.0:
+			_err("Fire Islands holding %s stands east of the Fire Islands" % sid)
+	for sid in DISPUTED:
 		var p: Vector2 = Data.settlements[sid].pos
 		var gap := false
 		for k in range(1, 40):
@@ -80,16 +83,41 @@ func _map() -> void:
 			break
 	print("map: checked Fire Nation holdings, the Strait Isles and the Hamakaze neck")
 
-## No nation's army besieges another nation's land outside the Strait Isles.
+## The factions hang together: every settlement, lord and tribute names a
+## faction that exists; every power has a head; the four temples are of the
+## Air Nomads and never at war; the Sun Warriors are left alone by sane rulers.
 func _sieges() -> void:
-	var cases := [["fire_nation", "ba_sing_se", "earth_kingdom", false], ["fire_nation", "gaoling", "earth_kingdom", false],
-		["earth_kingdom", "caldera", "fire_nation", false], ["southern_water", "caldera", "fire_nation", false],
-		["earth_kingdom", "kettle_rock", "fire_nation", true], ["fire_nation", "tieshan", "earth_kingdom", true],
-		["earth_kingdom", "omashu", "omashu", true], ["northern_water", "southern_tribe", "southern_water", true]]
-	for c in cases:
-		if Data.may_besiege(c[0], c[1], c[2]) != c[3]:
-			_err("may_besiege(%s, %s) should be %s" % [c[0], c[1], c[3]])
-	print("sieges: %d cases" % cases.size())
+	var n := 0
+	for sid in Data.settlements:
+		n += 1
+		if not Data.factions.has(Data.settlements[sid].faction):
+			_err("%s belongs to unknown faction %s" % [sid, Data.settlements[sid].faction])
+	for lid in Data.lords:
+		if not Data.factions.has(Data.lords[lid].faction) or not Data.settlements.has(Data.lords[lid].home):
+			_err("lord %s has an unknown faction or home" % lid)
+	for f in Data.KINGDOMS:
+		var king: String = Data.factions[f].get("king", "")
+		if not Data.lords.has(king) or Data.lords[king].faction != f:
+			_err("power %s has no head among its lords" % f)
+	for f in Data.factions:
+		var fe: String = Data.factions[f].get("fealty", "")
+		if fe != "" and not fe in Data.KINGDOMS:
+			_err("%s pays tribute to %s, which is not a power" % [f, fe])
+	var temples := Data.settlement_ids_of_type("temple")
+	if temples.size() != 4:
+		_err("there should be four Air Temples, found %d" % temples.size())
+	for sid in temples:
+		var f: String = Data.settlements[sid].faction
+		if not Data.is_peaceful(f) or Data.factions[f].get("people", "") != "air_nomads":
+			_err("%s is not a peaceful Air Nomad temple" % sid)
+	if not Data.factions.sun_warriors.get("protected", false):
+		_err("the Sun Warriors are not protected")
+	GS.new_game(GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1)))
+	if GS.sim._reckless("fire_nation", "sun_warriors"):
+		_err("the royal house would march on the Sun Warriors at the start")
+	if not Data.settlements.sun_city.get("dragons", false) or Data.walls("sun_city") < 2.5:
+		_err("the Sun Warriors' city is not defended by dragons")
+	print("factions: %d settlements, %d powers, %d factions" % [n, Data.KINGDOMS.size(), Data.factions.size()])
 
 ## The Great Comet at most once a game and in about a third of games; no
 ## solar eclipses; a lunar eclipse never takes waterbending away.

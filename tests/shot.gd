@@ -140,7 +140,7 @@ func _ready() -> void:
 					mm.c_bend = "air"
 					mm.c_background = "air_nomad"
 				mm._build())
-		"world", "town", "party", "encounter", "char", "factions", "trade", "far", "inv", "quests", "society", "forms", "avatar", "techniques", "work", "settings", "talk":
+		"world", "town", "party", "encounter", "char", "factions", "people", "wars", "trade", "far", "inv", "quests", "society", "forms", "avatar", "techniques", "work", "settings", "talk":
 			var p := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 			GS.new_game(p)
 			GS.flags.seen_help = true
@@ -254,7 +254,6 @@ static func _open(mode: String) -> void:
 		"town": map.open_settlement("omashu")
 		"party": map._open_party()
 		"char": map._open_character()
-		"factions": map._open_factions()
 		"inv": map._open_inventory()
 		"quests":
 			var Story = load("res://scripts/story/story.gd")
@@ -269,6 +268,18 @@ static func _open(mode: String) -> void:
 			fw2.draft = GS.player.forms[0].duplicate(true)
 			fw2.editing = 0
 			fw2.call_deferred("refresh")
+		"factions", "people", "wars":
+			# a few months of history first, so wars and tribute have moved
+			for i in 24 * 90:
+				GS.sim.advance(1.0)
+			for lid in ["haoren", "hiyori", "cheng_mei", "oyama", "siqiniq", "feng_tao"]:
+				GS.lords[lid].met = true
+				GS.change_lord_rel(lid, randi_range(-20, 30))
+			GS.player.companions = ["hana", "nima"]
+			var ffw = load("res://scripts/ui/faction_window.gd").new()
+			ffw.tab = mode
+			ffw.selected = "earth_kingdom"
+			map.open_window(ffw)
 		"society":
 			var fw = load("res://scripts/ui/faction_window.gd").new()
 			fw.selected = "northern_water"

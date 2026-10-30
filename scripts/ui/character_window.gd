@@ -52,10 +52,22 @@ func build() -> void:
 	right.add_child(UI.rich("Health [b]%d[/b]   Chi [b]%d[/b]   Melee [b]+%d%%[/b]   Party up to [b]%d[/b]" % [GS.max_hp(), int(GS.max_chi()), int(GS.skill("power_strike") * 8 + GS.attr("str")), GS.party_limit()], 520))
 	right.add_child(UI.spacer(8))
 	right.add_child(UI.label("Faction standing", 19, UI.BROWN))
-	for f in Data.KINGDOMS:
-		var rel: int = pl.faction_rel.get(f, 0)
+	# The factions that think something of you, strongest feelings first; the
+	# Factions window (N) lists everyone
+	var known := []
+	for f in Data.factions:
+		if f in ["player", "neutral", "avatar"]:
+			continue
+		if GS.faction_rel(f) != 0 or GS.at_war(GS.player_faction(), f):
+			known.append(f)
+	known.sort_custom(func(a, b): return absi(GS.faction_rel(a)) > absi(GS.faction_rel(b)))
+	for f in known.slice(0, 8):
 		var war := GS.at_war(GS.player_faction(), f)
-		right.add_child(UI.label("%s: %d%s" % [Data.factions[f].name, rel, "  (at war)" if war else ""], 15, UI.RED if war else UI.INK))
+		right.add_child(UI.label("%s: %d%s" % [Data.factions[f].name, GS.faction_rel(f), "  (at war)" if war else ""], 15, UI.RED if war else UI.INK))
+	if known.is_empty():
+		right.add_child(UI.label("Nobody has an opinion of you yet.", 15, UI.INK))
+	elif known.size() > 8:
+		right.add_child(UI.label("…and %d more in the Factions window." % (known.size() - 8), 14, UI.BROWN))
 	var b := UI.hbox()
 	content.add_child(b)
 	if GS.player.bend != "":

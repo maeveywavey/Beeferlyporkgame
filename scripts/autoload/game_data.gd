@@ -9,92 +9,190 @@ const MAP_H := 1200.0
 # ---------------------------------------------------------------------------
 # Factions
 # ---------------------------------------------------------------------------
+# region: where the faction belongs (fire, earth, water, air, outlaw); groups
+#   the Factions window. kind: what sort of polity it is, as shown to the player.
+# fealty: the faction it pays tribute to when the game begins ("" = none).
+# peaceful: never at war with anyone. protected: other powers' AI will not
+#   attack it unless led by someone reckless or overwhelmingly strong.
+# head: the leader's name, for factions without a lord in Data.lords.
+# Independent communities are generated from settlements with a "community"
+# entry (see _init_communities), one faction per village.
 var factions := {
+	# --- The Fire Islands -------------------------------------------------
 	"fire_nation": {
-		"name": "Fire Nation", "short": "Fire Nation", "color": Color(0.78, 0.16, 0.12),
-		"trim": Color(0.95, 0.75, 0.2), "culture": "fire", "king": "haoren", "capital": "caldera",
-		"desc": "An island nation of volcanoes and old noble houses. After three ruined harvests its Admiralty occupied the Strait Isles, which both crowns have claimed for centuries and neither has ever fully held. The Fire Lord wants peace; his admiral wants the Isles.",
+		"name": "Royal House of the Fire Lord", "short": "Royal House", "color": Color(0.78, 0.16, 0.12),
+		"trim": Color(0.95, 0.75, 0.2), "culture": "fire", "king": "haoren", "capital": "caldera", "region": "fire", "kind": "Royal house",
+		"desc": "The Fire Lord's own house: Caldera, the Boiling Lake, Crescent Island and, through its Admiralty, the Strait Isles. Its lands, ships and levies roughly equal those of every other clan put together, which is why the clans bow at court and why none of them bows any further. The title of Fire Lord commands the clans in ceremony; on their own islands they rule themselves. The Admiralty occupied the Strait Isles after three ruined harvests, and the Fire Lord has not yet decided whether to thank it.",
 	},
+	"clan_hiyori": {
+		"name": "Hiyori Clan", "short": "Hiyori", "color": Color(0.62, 0.22, 0.32),
+		"trim": Color(0.9, 0.8, 0.6), "culture": "fire", "king": "hiyori", "capital": "fire_fountain", "region": "fire", "kind": "Clan",
+		"desc": "A merchant clan of the delta ports. The Hiyori own the tea houses where every rumour in the islands is sold, and sell most of them twice. They support the throne in public, because the throne is the largest buyer of what they know.",
+	},
+	"clan_ren": {
+		"name": "Ren Clan", "short": "Ren", "color": Color(0.85, 0.42, 0.12),
+		"trim": Color(0.3, 0.12, 0.08), "culture": "fire", "king": "ren_chiyo", "capital": "ember_island", "region": "fire", "kind": "Clan",
+		"desc": "An old firebending clan of Ember Island, proud of its masters and short of money. Lady Chiyo keeps the clan's debts quiet and its prodigy, her son Daisuke, loud.",
+	},
+	"clan_kagari": {
+		"name": "Kagari Clan", "short": "Kagari", "color": Color(0.45, 0.12, 0.1),
+		"trim": Color(0.75, 0.75, 0.72), "culture": "fire", "king": "kagari_sosuke", "capital": "kagari_keep", "region": "fire", "kind": "Clan",
+		"desc": "Lords of the western isle, where the salt pans are and the ships are built. The Kagari have married into the royal house twice and been refused a third time, and they keep a list.",
+	},
+	"clan_tsurugi": {
+		"name": "Tsurugi Clan", "short": "Tsurugi", "color": Color(0.55, 0.32, 0.18),
+		"trim": Color(0.92, 0.62, 0.3), "culture": "fire", "king": "tsurugi_hana", "capital": "tsurugi", "region": "fire", "kind": "Clan",
+		"desc": "A clan of sword-smiths and shipwrights on the southern islands, nearest of all to the Sun Warriors' coast. They trade with the Sun Warriors in iron and keep the trade's terms to themselves.",
+	},
+	"clan_kurozan": {
+		"name": "Kurozan Clan", "short": "Kurozan", "color": Color(0.28, 0.2, 0.22),
+		"trim": Color(0.85, 0.3, 0.18), "culture": "fire", "king": "kurozan_isamu", "capital": "kurozan_hold", "region": "fire", "kind": "Clan",
+		"desc": "A hard clan on a black-sand island north of the Boiling Lake. Its lords have opposed every Fire Lord for four generations, on principle, and have been right about it often enough to stay alive.",
+	},
+	"sun_warriors": {
+		"name": "Sun Warriors", "short": "Sun Warriors", "color": Color(0.88, 0.62, 0.12),
+		"trim": Color(0.2, 0.45, 0.42), "culture": "sun", "king": "huallpa", "capital": "sun_city", "region": "fire", "kind": "Reclusive people", "protected": true,
+		"desc": "The oldest firebenders, who learned from the dragons and still live beside them. Their stepped city in the southwestern jungle keeps the Eternal Flame. They trade a little, travel less and want nothing from the islands but to be left alone. The clans leave them alone, as does the royal house: an army that marches on the Sun Warriors will meet their masters, their walls and the dragons, and every Fire Lord so far has decided the city is better as a neighbour.",
+	},
+	# --- The Earth continent ----------------------------------------------
 	"earth_kingdom": {
 		"name": "Earth Kingdom", "short": "Earth Kingdom", "color": Color(0.24, 0.55, 0.22),
-		"trim": Color(0.85, 0.75, 0.35), "culture": "earth", "king": "hualing", "capital": "ba_sing_se",
-		"desc": "The largest nation in the world, ruled from Ba Sing Se by a nineteen-year-old queen and the regent who rules for her. It is fighting the Fire Nation on the coast and its own rebels in the mountains.",
+		"trim": Color(0.85, 0.75, 0.35), "culture": "earth", "king": "hualing", "capital": "ba_sing_se", "region": "earth", "kind": "Kingdom",
+		"desc": "The crown at Ba Sing Se, ruled by a nineteen-year-old queen and the regent who rules for her. The kingdom keeps its title and its claim to the whole continent, but rules directly only the walled heartland around the capital. Beyond it, cities and villages send tribute for the right to trade under the crown's seal and to call on its armies; many send nothing at all. It is at war with the Royal House at sea, with Omashu in the mountains and with a warlord in the northeast.",
 	},
 	"omashu": {
 		"name": "Kingdom of Omashu", "short": "Omashu", "color": Color(0.45, 0.6, 0.2),
-		"trim": Color(0.75, 0.55, 0.85), "culture": "omashu", "king": "feng_tao", "capital": "omashu",
-		"desc": "A mountain city that stopped sending grain to Ba Sing Se while its own people went hungry, and declared itself free. Its king is loud, its couriers are heroes, and its future depends on a letter.",
+		"trim": Color(0.75, 0.55, 0.85), "culture": "omashu", "king": "feng_tao", "capital": "omashu", "region": "earth", "kind": "Kingdom",
+		"desc": "A mountain city that stopped sending grain to Ba Sing Se while its own people went hungry, and declared itself free. Its king is loud, its couriers are heroes, and the villages in its valleys now pay their tribute to Omashu instead.",
 	},
+	"house_cheng": {
+		"name": "House Cheng of Gaoling", "short": "Gaoling", "color": Color(0.55, 0.62, 0.3),
+		"trim": Color(0.95, 0.85, 0.5), "culture": "earth", "king": "cheng_mei", "capital": "gaoling", "region": "earth", "kind": "Merchant city", "fealty": "earth_kingdom",
+		"desc": "Gaoling rules itself through its merchant houses, the Cheng above all, and pays the crown a tribute that buys the crown's seal on its goods and its silence about everything else.",
+	},
+	"tide_wardens": {
+		"name": "Tide Wardens of Hamakaze", "short": "Tide Wardens", "color": Color(0.18, 0.24, 0.45),
+		"trim": Color(0.65, 0.32, 0.2), "culture": "hamakaze", "king": "oyama", "capital": "hamakaze", "region": "earth", "kind": "Peninsula guard", "fealty": "earth_kingdom",
+		"desc": "The order that guards the Hamakaze peninsula. It sends Ba Sing Se a token tribute and refuses every summons to march. Envoys of every nation meet on its shore because the Wardens are the one force nobody suspects of conquest.",
+	},
+	"beishan": {
+		"name": "Beishan March", "short": "Beishan", "color": Color(0.42, 0.45, 0.28),
+		"trim": Color(0.82, 0.8, 0.75), "culture": "earth", "king": "teng_yao", "capital": "beishan_hold", "region": "earth", "kind": "March lordship",
+		"desc": "A border lordship in the northern hills whose marquis stopped paying tribute when the crown stopped sending soldiers. He calls himself loyal and acts free, and both Ba Sing Se and Omashu court him.",
+	},
+	"haiyan": {
+		"name": "Duchy of Haiyan", "short": "Haiyan", "color": Color(0.3, 0.5, 0.45),
+		"trim": Color(0.9, 0.9, 0.85), "culture": "earth", "king": "pao_ruyi", "capital": "haiyan", "region": "earth", "kind": "Duchy", "fealty": "earth_kingdom",
+		"desc": "The eastern coast, rich in fish, salt and grievances. The Pao dukes pay Ba Sing Se its tribute on the last possible day, every year, in the smallest coins they can find.",
+	},
+	"lingtai": {
+		"name": "Lingtai Warlord", "short": "Lingtai", "color": Color(0.5, 0.35, 0.2),
+		"trim": Color(0.2, 0.18, 0.15), "culture": "earth", "king": "gu_bao", "capital": "lingtai", "region": "earth", "kind": "Warlord",
+		"desc": "A former Earth Kingdom garrison commander who kept his fort, his men and the taxes when the crown fell behind on his pay. He raids the crown's tea terraces and calls it collecting arrears.",
+	},
+	# --- The Water Tribes ---------------------------------------------------
 	"northern_water": {
 		"name": "Northern Water Tribe", "short": "North Water", "color": Color(0.2, 0.45, 0.8),
-		"trim": Color(0.9, 0.95, 1.0), "culture": "north", "king": "tulok", "capital": "agna_qela",
-		"desc": "A proud polar nation behind great walls of ice, neutral and divided over whether to help the South. By old law its women may learn waterbending only as healing.",
+		"trim": Color(0.9, 0.95, 1.0), "culture": "north", "king": "tulok", "capital": "agna_qela", "region": "water", "kind": "Tribe",
+		"desc": "A proud polar city behind great walls of ice, neutral and divided over whether to help the South. By old law its women may learn waterbending only as healing. The clans of the far ice do not answer to its chief.",
+	},
+	"aqsarniit": {
+		"name": "Aqsarniit Clans", "short": "Aqsarniit", "color": Color(0.35, 0.55, 0.7),
+		"trim": Color(0.95, 0.9, 0.7), "culture": "north", "king": "ataneq", "capital": "aurora_hall", "region": "water", "kind": "Clan league",
+		"desc": "Hunting clans of the eastern ice who left Agna Qel'a three generations ago over the Law of the Two Paths and never came back. Their women fight; their men heal if they are good at it. They trade furs with the North and insults with its council.",
 	},
 	"southern_water": {
-		"name": "Southern Water Tribe", "short": "South Water", "color": Color(0.15, 0.32, 0.62),
-		"trim": Color(0.85, 0.85, 0.9), "culture": "south", "king": "siqiniq", "capital": "southern_tribe",
-		"desc": "A great city of ice and canals, the North's equal in all but pride. Its council votes on war, and its raiders strike the Fire Navy's supply ships.",
+		"name": "Southern Tribe of Wolf's Crown", "short": "Wolf's Crown", "color": Color(0.15, 0.32, 0.62),
+		"trim": Color(0.85, 0.85, 0.9), "culture": "south", "king": "siqiniq", "capital": "southern_tribe", "region": "water", "kind": "Tribe",
+		"desc": "The largest of the southern tribes: a city of ice and canals whose council votes on war. It speaks for the South when the South agrees, which is rarely.",
 	},
+	"whalebone": {
+		"name": "Whalebone Raiders", "short": "Whalebone", "color": Color(0.32, 0.36, 0.42),
+		"trim": Color(0.9, 0.88, 0.8), "culture": "south", "king": "qannik", "capital": "hakodas_watch", "region": "water", "kind": "Raider band",
+		"desc": "Canoe crews of the southern ice shelf who answer to Raider-Captain Qannik and to no council. They sink Fire Navy supply ships, and sometimes ships that only look like them.",
+	},
+	"kanguq": {
+		"name": "Kanguq Tribe", "short": "Kanguq", "color": Color(0.25, 0.42, 0.55),
+		"trim": Color(0.95, 0.95, 0.95), "culture": "south", "king": "nuvuk", "capital": "kanguq_hall", "region": "water", "kind": "Tribe",
+		"desc": "A small tribe of the western ice, named for the snow geese that nest on its shore. It stays out of Wolf's Crown's council and out of its wars, and keeps the best sled-dogs in the South.",
+	},
+	# --- The Air Temples ----------------------------------------------------
 	"air_nomads": {
 		"name": "Air Nomads", "short": "Air Nomads", "color": Color(0.95, 0.62, 0.15),
-		"trim": Color(0.95, 0.88, 0.55), "culture": "air", "king": "", "capital": "",
-		"desc": "Four temples of monks and nuns who will not fight. They shelter refugees from every side and are trusted by everyone, which is beginning to make them a target.",
+		"trim": Color(0.95, 0.88, 0.55), "culture": "air", "king": "", "capital": "", "region": "air", "kind": "People", "peaceful": true,
+		"desc": "The monks and nuns of the four temples, and their pilgrims. Your standing with the Nomads as a people counts at every temple.",
 	},
+	"air_south": {
+		"name": "Southern Air Temple", "short": "South Temple", "color": Color(0.95, 0.6, 0.18),
+		"trim": Color(0.95, 0.88, 0.55), "culture": "air", "king": "", "capital": "southern_air_temple", "region": "air", "kind": "Temple", "peaceful": true, "people": "air_nomads", "head": "Abbot Dorje",
+		"desc": "A temple of monks on the Patola peaks. It shelters refugees from three wars and has begun to run short of rice.",
+	},
+	"air_north": {
+		"name": "Northern Air Temple", "short": "North Temple", "color": Color(0.92, 0.7, 0.25),
+		"trim": Color(0.95, 0.88, 0.55), "culture": "air", "king": "", "capital": "northern_air_temple", "region": "air", "kind": "Temple", "peaceful": true, "people": "air_nomads", "head": "Abbot Lhakpa",
+		"desc": "The highest and most austere temple, a monks' retreat that keeps the old disciplines and distrusts the others' politics.",
+	},
+	"air_east": {
+		"name": "Eastern Air Temple", "short": "East Temple", "color": Color(0.98, 0.55, 0.2),
+		"trim": Color(0.95, 0.88, 0.55), "culture": "air", "king": "", "capital": "eastern_air_temple", "region": "air", "kind": "Temple", "peaceful": true, "people": "air_nomads", "head": "Abbess Tsering",
+		"desc": "A temple of nuns whose archive holds letters from every Avatar who visited. It is the temple that speaks to kings, and the other three let it.",
+	},
+	"air_west": {
+		"name": "Western Air Temple", "short": "West Temple", "color": Color(0.9, 0.5, 0.25),
+		"trim": Color(0.95, 0.88, 0.55), "culture": "air", "king": "", "capital": "western_air_temple", "region": "air", "kind": "Temple", "peaceful": true, "people": "air_nomads", "head": "Abbess Yeshe",
+		"desc": "A nuns' temple hanging beneath a cliff edge near the Fire Islands. It hears the clans' quarrels first and repeats none of them.",
+	},
+	# --- Others -----------------------------------------------------------
 	"player": {
 		"name": "Your Realm", "short": "Your Realm", "color": Color(0.6, 0.35, 0.75),
-		"trim": Color(0.95, 0.9, 0.6), "culture": "earth", "king": "player", "capital": "",
-		"desc": "The lands you hold in your own name.",
+		"trim": Color(0.95, 0.9, 0.6), "culture": "earth", "king": "player", "capital": "", "region": "", "kind": "Realm",
+		"desc": "The lands you hold in your own name, and the communities that pay you tribute.",
 	},
 	"bandits": {
 		"name": "Outlaws", "short": "Outlaws", "color": Color(0.35, 0.3, 0.25),
-		"trim": Color(0.6, 0.55, 0.45), "culture": "earth", "king": "", "capital": "",
+		"trim": Color(0.6, 0.55, 0.45), "culture": "earth", "king": "", "capital": "", "region": "outlaw", "kind": "Outlaws",
 		"desc": "Pirates, raiders and deserters who prey on everyone.",
 	},
 	"red_lanterns": {
 		"name": "Red Lantern Brotherhood", "short": "Red Lanterns", "color": Color(0.7, 0.18, 0.15),
-		"trim": Color(0.95, 0.7, 0.3), "culture": "earth", "king": "", "capital": "",
+		"trim": Color(0.95, 0.7, 0.3), "culture": "earth", "king": "", "capital": "", "region": "outlaw", "kind": "Sworn brotherhood", "head": "the Elder Brother",
 		"desc": "Sworn daofei who rob the Earth Kingdom's tax barges and feed Ba Sing Se's Lower Ring with the grain. Heroes to the hungry, murderers to the Censorate.",
 	},
 	"avatar": {
 		"name": "The Avatar's Company", "short": "The Avatar", "color": Color(0.92, 0.9, 0.75),
-		"trim": Color(0.6, 0.85, 1.0), "culture": "air", "king": "", "capital": "",
+		"trim": Color(0.6, 0.85, 1.0), "culture": "air", "king": "", "capital": "", "region": "", "kind": "Company",
 		"desc": "The Avatar and those who travel with them: friends, teachers and volunteers from every nation.",
 	},
 	"neutral": {
 		"name": "Neutral", "short": "Neutral", "color": Color(0.8, 0.8, 0.8),
-		"trim": Color(1, 1, 1), "culture": "air", "king": "", "capital": "",
+		"trim": Color(1, 1, 1), "culture": "air", "king": "", "capital": "", "region": "", "kind": "",
 		"desc": "",
 	},
 }
 
-# Factions that take part in diplomacy (wars, fiefs, lords). The Air Nomads
-# never go to war and hold no fiefs that can be taken.
-const KINGDOMS := ["fire_nation", "earth_kingdom", "omashu", "northern_water", "southern_water"]
+## Display order and headings of the regions in the Factions window.
+const REGIONS := [["fire", "The Fire Islands"], ["earth", "The Earth Continent"], ["water", "The Water Tribes"], ["air", "The Air Temples"], ["outlaw", "Outlaws"]]
 
-## Which of the four nations each kingdom belongs to. Before Sozin no nation
-## conquers another's land (docs/canon.md §6): the AI only besieges across
-## national lines in the Strait Isles, which both crowns claim.
-const NATION_OF := {"fire_nation": "fire", "earth_kingdom": "earth", "omashu": "earth", "northern_water": "water", "southern_water": "water"}
-const DISPUTED := ["kettle_rock", "fire_navy_harbor", "tieshan", "navy_docks"]
-
-## True if faction f's armies may lay siege to settlement sid.
-static func may_besiege(f: String, sid: String, owner_faction: String) -> bool:
-	if not NATION_OF.has(f) or not NATION_OF.has(owner_faction):
-		return true
-	return NATION_OF[f] == NATION_OF[owner_faction] or DISPUTED.has(sid)
+## Factions that take part in diplomacy: everyone with lords and armies.
+## Filled in _ready from the lords table; communities and temples are not in it.
+var KINGDOMS: Array = []
 
 # Wars already being fought when the game begins.
-const STARTING_WARS := [["fire_nation", "earth_kingdom"], ["earth_kingdom", "omashu"], ["fire_nation", "southern_water"]]
+const STARTING_WARS := [["fire_nation", "earth_kingdom"], ["earth_kingdom", "omashu"], ["fire_nation", "southern_water"],
+	["fire_nation", "whalebone"], ["earth_kingdom", "lingtai"], ["clan_kurozan", "clan_kagari"]]
 
 # How each people orders itself: shown in the Nations window, and the source
 # of the class rules the game enforces (see docs/setting.md §2).
 var societies := {
-	"fire_nation": {"ladder": ["The Fire Lord and the royal family", "The old noble houses", "Fire Sages (outside rank, inside every decision)", "Officers, merchants and civil servants", "Commoners: farmers, fishers, smiths — conscripted at sixteen", "Strait Islanders: neither wholly Fire nor Earth"],
-		"text": "Rank is inherited, and the noble houses of Caldera terrace the crater walls in order of precedence. Disputes of honour between nobles are settled by Agni Kai, a firebending duel before witnesses. Commoners serve; three ruined harvests have made the service longer and the rations smaller. The Fire Sages chart the sky and keep the calendar, and nobody declares war without asking them first.",
+	"fire_nation": {"ladder": ["The Fire Lord and the royal house", "The heads of the great clans", "Fire Sages (outside rank, inside every decision)", "Officers, merchants and civil servants", "Commoners: farmers, fishers, smiths — conscripted at sixteen", "Strait Islanders: neither wholly Fire nor Earth"],
+		"text": "Rank is inherited. The royal house rules Caldera and its own islands; the great clans rule theirs, owe the throne ceremony and ships, and give it as little of either as they can. In Caldera the clans' town houses terrace the crater walls in order of precedence. Disputes of honour between nobles are settled by Agni Kai, a firebending duel before witnesses. Commoners serve; three ruined harvests have made the service longer and the rations smaller. The Fire Sages chart the sky and keep the calendar, and nobody declares war without asking them first.",
 		"rules": "Fire Nation nobles accept an Agni Kai only from someone of Gentry standing; a non-bender must name a firebending champion. Refusing a noble's challenge costs honour."},
 	"earth_kingdom": {"ladder": ["The Earth Queen", "The Grand Secretariat, and the Censorate that serves it", "Upper Ring nobility", "Middle Ring merchants and scholars, who rise by civil examination", "Lower Ring labourers and refugees", "Villagers beyond the walls"],
 		"text": "The Kingdom is held together by walls, seals and paperwork. Ba Sing Se's three rings are three worlds, and the gates between them are guarded. The Censorate was founded long ago to keep the city's records honest; now it protect its silence. Most earthbenders are miners, builders and farmers, not soldiers.",
 		"rules": "Ba Sing Se's Middle Ring needs Citizen standing or papers; the Upper Ring needs Gentry standing or an invitation. A trade permit improves prices in Earth Kingdom markets."},
+	"sun_warriors": {"ladder": ["The Chief, keeper of the Eternal Flame", "Masters, who have stood before the dragons", "Warriors and adepts", "Farmers and builders of the terraces"],
+		"text": "The Sun Warriors learned firebending from the dragons and still teach it the old way: as the energy of life, not of rage. Their city is old, their customs older, and they keep the Eternal Flame that every other fire in the islands is said to come from. They are few, and they mean to stay few.",
+		"rules": "The Sun Warriors will not join anyone's war. Their city is defended by its masters and by the dragons; every faction's AI leaves it alone unless led by someone reckless or overwhelmingly strong."},
 	"omashu": {"ladder": ["The King and his Consort", "The Courier Guild and the old mountain families", "Valley farmers", "Refugees, who are granted 'stair rights' after a year"],
 		"text": "Omashu promotes by deeds. Anyone who carries a message through a siege has their name carved on the palace stairs, and the stairs are long. The city loves spectacle, argument and its king, roughly in that order. Since the Secession every citizen has been a little bit of a soldier.",
 		"rules": "Omashu troops are hardier and faster but less armoured than Ba Sing Se's. Omashu's walls are among the strongest in the world."},
@@ -113,7 +211,7 @@ var societies := {
 var culture_recruit := {
 	"fire": "fn_conscript", "earth": "ek_peasant", "north": "nwt_hunter",
 	"south": "swt_villager", "hamakaze": "tw_initiate", "swamp": "sw_swamper",
-	"omashu": "om_militia", "air": "an_novice",
+	"omashu": "om_militia", "air": "an_novice", "sun": "sun_initiate",
 }
 
 # ---------------------------------------------------------------------------
@@ -333,6 +431,20 @@ func _init_troops() -> void:
 		"hp": 80, "armor": 28, "skill": 80,
 		"look": {"body": Color(0.3, 0.25, 0.2), "trim": Color(0.6, 0.15, 0.1), "helmet": "fn_cap"}})
 
+	# Sun Warriors: few, old in their art, and fighting beside dragons at home
+	var sw_body := Color(0.72, 0.5, 0.18)
+	var sw_trim := Color(0.18, 0.42, 0.4)
+	_t("sun_initiate", "Sun Warrior Initiate", "sun", 1, {"weapon": "spear", "skill": 40,
+		"upgrades": ["sun_warrior", "sun_fb_adept"], "look": {"body": sw_body, "trim": sw_trim, "helmet": "none"}})
+	_t("sun_warrior", "Sun Warrior", "sun", 3, {"weapon": "war_club", "shield": true, "skill": 70,
+		"upgrades": ["sun_guard"], "look": {"body": Color(0.6, 0.4, 0.15), "trim": sw_trim, "helmet": "none"}})
+	_t("sun_fb_adept", "Sun Warrior Adept", "sun", 3, {"weapon": "fists", "bend": "fire", "bend_power": 1.5, "armor": 14,
+		"upgrades": ["sun_master"], "look": {"body": sw_body, "trim": Color(0.85, 0.3, 0.1), "helmet": "none"}})
+	_t("sun_guard", "Flame Guard", "sun", 4, {"weapon": "guan_dao", "shield": false, "skill": 88, "armor": 28, "hp": 80,
+		"look": {"body": Color(0.5, 0.32, 0.1), "trim": Color(0.9, 0.75, 0.3), "helmet": "none"}})
+	_t("sun_master", "Sun Warrior Master", "sun", 5, {"weapon": "fists", "bend": "fire", "bend_power": 2.2, "armor": 20, "hp": 85, "skill": 90,
+		"look": {"body": Color(0.8, 0.6, 0.2), "trim": Color(0.12, 0.35, 0.33), "helmet": "none"}})
+
 	# Air Nomads: travel as pilgrims, never start fights, defend themselves only
 	_t("an_novice", "Air Nomad Novice", "air", 1, {"weapon": "staff", "bend": "air", "bend_power": 0.8,
 		"armor": 2, "upgrades": ["an_monk"], "look": {"body": Color(0.95, 0.6, 0.15), "trim": Color(0.95, 0.85, 0.3), "helmet": "none"}})
@@ -462,14 +574,40 @@ var lords := {
 		"look": {"sex": "m", "hair": "Hair_Buzzed", "hair_color": GREY},
 		"bio": "Wants to bring his conscripts home alive; fears becoming irrelevant. A non-bender who rose through the ranks and remembers the name of every soldier he has lost.",
 		"line": "I have three hundred and twelve names in this book. I would rather not add yours."},
-	"hiyori": {"name": "Lady Aimi Hiyori", "faction": "fire_nation", "bend": "", "power": 1.0, "weapon": "knife", "hp": 110, "troops": 60, "home": "fire_fountain", "aggression": 0.4,
+	"hiyori": {"name": "Lady Aimi Hiyori", "faction": "clan_hiyori", "bend": "", "power": 1.0, "weapon": "knife", "hp": 110, "troops": 70, "home": "fire_fountain", "king": true, "aggression": 0.4,
 		"look": {"sex": "f", "hair": "Hair_Long"},
 		"bio": "Wants information, which is power; fears being underestimated, though she encourages it. A spymaster who plays every side and is honest only with her cat.",
 		"line": "You're the one everyone's been writing to me about. Oh, don't look so worried. Most of the letters were kind."},
-	"daisuke": {"name": "Commander Daisuke Ren", "faction": "fire_nation", "bend": "fire", "power": 1.8, "weapon": "fists", "hp": 150, "troops": 70, "home": "ember_island", "aggression": 0.9,
+	"daisuke": {"name": "Commander Daisuke Ren", "faction": "clan_ren", "bend": "fire", "power": 1.8, "weapon": "fists", "hp": 150, "troops": 70, "home": "ember_island", "aggression": 0.9,
 		"look": {"sex": "m", "hair": "Hair_Long"},
 		"bio": "Wants glory; fears being ordinary. A twenty-two-year-old firebending prodigy, insufferable and secretly terrified. Humbled kindly, he could become someone worth following.",
 		"line": "You've heard of me, obviously. Everyone has. Go on — ask me about the Battle of Shu Jing Strait."},
+	# Fire Islands clans
+	"hiyori_genji": {"name": "Lord Genji Hiyori", "faction": "clan_hiyori", "bend": "fire", "power": 1.4, "weapon": "jian", "hp": 140, "troops": 50, "home": "fire_fountain", "aggression": 0.5,
+		"look": {"sex": "m", "hair": "Hair_SimpleParted"},
+		"bio": "Lady Hiyori's younger brother and the clan's sword. Wants a seat on the royal council; fears his sister will trade it away for a secret. He writes poetry nobody is allowed to read.",
+		"line": "My sister knows everything. I only know how to win. Between us, the clan does well."},
+	"ren_chiyo": {"name": "Lady Chiyo Ren", "faction": "clan_ren", "bend": "fire", "power": 1.9, "weapon": "fists", "hp": 150, "troops": 60, "home": "ember_island", "king": true, "aggression": 0.35,
+		"look": {"sex": "f", "hair": "Hair_Buns", "hair_color": GREY},
+		"bio": "Head of the Ren Clan and Daisuke's mother. Wants the clan's debts paid before its creditors notice; fears that her son's glory is the only collateral she has left. A master who stopped duelling the day she lost one.",
+		"line": "If you have come to admire my son, the queue is outside. If you have come to lend me money, sit down."},
+	"kagari_sosuke": {"name": "Lord Sosuke Kagari", "faction": "clan_kagari", "bend": "fire", "power": 1.7, "weapon": "dao", "hp": 160, "troops": 90, "home": "kagari_keep", "king": true, "aggression": 0.6,
+		"look": {"sex": "m", "hair": "Hair_Long", "beard": true},
+		"bio": "Wants a Kagari on the throne, by marriage if possible and otherwise by other means; fears the Kurozan, who burned his grandfather's ships. Builds model ships for his daughters.",
+		"line": "The royal house needs our ships more than we need its blessings. One day it will remember that, or be reminded."},
+	"tsurugi_hana": {"name": "Lady Hana Tsurugi", "faction": "clan_tsurugi", "bend": "", "power": 1.0, "weapon": "dao", "hp": 140, "troops": 80, "home": "tsurugi", "king": true, "aggression": 0.4,
+		"look": {"sex": "f", "hair": "Hair_Long"},
+		"bio": "A smith before she was a clan head, and still one in the evenings. Wants her clan's iron trade with the Sun Warriors kept quiet; fears the day the royal house asks what is paid for it.",
+		"line": "Everything on this island that cuts, I made or my mother did. Mind your hands."},
+	"kurozan_isamu": {"name": "Lord Isamu Kurozan", "faction": "clan_kurozan", "bend": "fire", "power": 2.0, "weapon": "fists", "hp": 170, "troops": 70, "home": "kurozan_hold", "king": true, "aggression": 0.75,
+		"look": {"sex": "m", "hair": "Hair_Buzzed", "beard": true},
+		"bio": "Wants the clans to rule the throne rather than the other way round; fears dying before he sees it. Has fought eleven Agni Kai and keeps the scars of every one uncovered.",
+		"line": "Every Fire Lord promises the clans their old rights. Every Fire Lord forgets. I have a long memory instead."},
+	# Sun Warriors
+	"huallpa": {"name": "Chief Huallpa", "faction": "sun_warriors", "bend": "fire", "power": 2.8, "weapon": "fists", "hp": 220, "troops": 150, "home": "sun_city", "king": true, "aggression": 0.05, "no_offense": true, "culture": "sun",
+		"look": {"sex": "m", "hair": "Hair_Long", "hair_color": GREY, "accessory": "warpaint"},
+		"bio": "Chief of the Sun Warriors and keeper of the Eternal Flame. Wants the city left alone; fears that the islands have forgotten why they leave it alone. He speaks to the dragons and says they mostly speak about the weather.",
+		"line": "You came a long way through the jungle to be told no. Sit, drink something, and then be told no."},
 	"oda": {"name": "Castellan Sakura Oda", "faction": "fire_nation", "bend": "", "power": 1.0, "weapon": "guan_dao", "hp": 140, "troops": 60, "home": "boiling_keep", "aggression": 0.3, "no_offense": true,
 		"look": {"sex": "f", "hair": "Hair_Buns", "hair_color": GREY},
 		"bio": "Wants order; fears chaos. Holds Boiling Lake Keep and believes in schooling far more than her officers do.",
@@ -491,7 +629,7 @@ var lords := {
 		"look": {"sex": "m", "hair": "Hair_Buzzed", "hair_color": GREY, "beard": true},
 		"bio": "Wants to hold the Outer Wall; fears pointless orders from the palace. Gruff, fair, and the author of truly bad poetry for his late wife.",
 		"line": "The Wall has stood for a thousand years. It'll stand through this. Whether I do is another question."},
-	"cheng_mei": {"name": "Lady Cheng Mei", "faction": "earth_kingdom", "bend": "", "power": 1.0, "weapon": "jian", "hp": 100, "troops": 60, "home": "gaoling", "aggression": 0.2,
+	"cheng_mei": {"name": "Lady Cheng Mei", "faction": "house_cheng", "king": true, "bend": "", "power": 1.0, "weapon": "jian", "hp": 100, "troops": 60, "home": "gaoling", "aggression": 0.2,
 		"look": {"sex": "f", "hair": "Hair_Buns", "hair_color": GREY},
 		"bio": "Wants profit and peace, in that order; fears ruin. A merchant matriarch of Gaoling who quietly funds both sides of everything.",
 		"line": "War is terrible for business, unless you sell rice. I sell rice. I would still prefer peace. Rice keeps."},
@@ -503,10 +641,31 @@ var lords := {
 		"look": {"sex": "f", "hair": "Hair_Buns"},
 		"bio": "Wants to keep the Serpent's Pass open for refugees; fears that the capital has forgotten her fort exists. It has.",
 		"line": "The pass is open to anyone who comes in peace. You'd be surprised how few do."},
-	"oyama": {"name": "Captain Oyama", "faction": "earth_kingdom", "bend": "", "power": 1.0, "weapon": "warden_glaive", "hp": 150, "troops": 40, "home": "gaoling", "aggression": 0.5, "culture": "hamakaze", "no_offense": true,
+	"oyama": {"name": "Captain Oyama", "faction": "tide_wardens", "king": true, "bend": "", "power": 1.0, "weapon": "warden_glaive", "hp": 150, "troops": 60, "home": "hamakaze", "aggression": 0.5, "culture": "hamakaze", "no_offense": true,
 		"look": {"sex": "f", "hair": "Hair_Buns"},
 		"bio": "Leader of the Tide Wardens. Wants to protect Hamakaze; fears being drawn into conquest. She has refused three royal orders to march, politely.",
 		"line": "The Tide Wardens defend. We don't conquer. If you've come to recruit us for a war, the answer is still no."},
+	"lan_jie": {"name": "Captain Lan Jie", "faction": "house_cheng", "bend": "earth", "power": 1.3, "weapon": "spear", "hp": 140, "troops": 50, "home": "gaoling", "aggression": 0.35,
+		"look": {"sex": "f", "hair": "Hair_Buzzed"},
+		"bio": "Commands the hired guard of House Cheng. Wants a contract long enough to retire on; fears being paid to fight the crown. Gambles at the Stone Pit and wins too often to be liked.",
+		"line": "House Cheng pays well and on time. That makes us the most loyal soldiers on the continent, as long as it lasts."},
+	# Beishan, Haiyan, Lingtai
+	"teng_yao": {"name": "Marquis Teng Yao", "faction": "beishan", "bend": "earth", "power": 1.8, "weapon": "guan_dao", "hp": 170, "troops": 90, "home": "beishan_hold", "king": true, "aggression": 0.6,
+		"look": {"sex": "m", "hair": "Hair_SimpleParted", "beard": true},
+		"bio": "Wants Beishan to be a kingdom in all but name, and maybe in name; fears being caught between Ba Sing Se and Omashu when they stop fighting each other. Keeps a garden of northern pines he has never let anyone prune.",
+		"line": "Ba Sing Se wants my tribute, Omashu wants my soldiers, and my farmers want rain. Only the farmers will get what they want."},
+	"pao_ruyi": {"name": "Duke Pao Ruyi", "faction": "haiyan", "bend": "", "power": 1.0, "weapon": "jian", "hp": 120, "troops": 90, "home": "haiyan", "king": true, "aggression": 0.3,
+		"look": {"sex": "m", "hair": "Hair_Long", "hair_color": GREY},
+		"bio": "Wants Haiyan's tribute lowered and its harbour dredged; fears his daughter is cleverer than he is, and is right. Counts the crown's coins twice before he sends them.",
+		"line": "Every year I send the crown its tribute, and every year it sends me a letter of thanks. One of us is getting the better bargain."},
+	"pao_lin": {"name": "Lady Pao Lin", "faction": "haiyan", "bend": "earth", "power": 1.6, "weapon": "fists", "hp": 140, "troops": 50, "home": "haiyan", "aggression": 0.55,
+		"look": {"sex": "f", "hair": "Hair_Buns"},
+		"bio": "The duke's daughter and the coast's best earthbender. Wants Haiyan to stop paying tribute altogether; fears her father will make her marry before she can make it happen.",
+		"line": "My father thinks the crown protects us. I have read the crown's letters. It protects the tribute."},
+	"gu_bao": {"name": "Warlord Gu Bao", "faction": "lingtai", "bend": "earth", "power": 1.7, "weapon": "dao", "hp": 180, "troops": 80, "home": "lingtai", "king": true, "aggression": 0.85,
+		"look": {"sex": "m", "hair": "Hair_Buzzed", "accessory": "bandana"},
+		"bio": "Once a crown garrison commander; now a warlord. Wants the arrears he is owed and then some; fears being hanged as an example. Pays his men before himself, which is why they stay.",
+		"line": "The crown owed my men two years' pay. I collected it. Now everyone calls me a warlord and the crown calls me a debt."},
 	# Kingdom of Omashu
 	"feng_tao": {"name": "King Feng Tao", "faction": "omashu", "bend": "earth", "power": 2.4, "weapon": "fists", "hp": 210, "troops": 110, "home": "omashu", "king": true, "aggression": 0.6,
 		"look": {"sex": "m", "hair": "Hair_Long", "beard": true},
@@ -549,6 +708,15 @@ var lords := {
 		"look": {"sex": "f", "hair": "Hair_Long"},
 		"bio": "Wants open seas; fears the Fire Navy's iron ships. The best sailor in the North, and she knows it.",
 		"line": "The sea doesn't care whose flag you fly. I do, a little."},
+	# Aqsarniit Clans and the Kanguq Tribe
+	"ataneq": {"name": "Chief Ataneq", "faction": "aqsarniit", "bend": "water", "power": 2.0, "weapon": "spear", "hp": 160, "troops": 80, "home": "aurora_hall", "king": true, "aggression": 0.35,
+		"look": {"sex": "f", "hair": "Hair_Long"},
+		"bio": "Chief of the Aqsarniit Clans, a waterbender who learned combat from her grandmother on the open ice. Wants Agna Qel'a to admit the clans were right; fears it never will.",
+		"line": "Agna Qel'a sends us letters about tradition. We send back furs. They read the furs more carefully."},
+	"nuvuk": {"name": "Chief Nuvuk", "faction": "kanguq", "bend": "", "power": 1.0, "weapon": "spear", "hp": 150, "troops": 70, "home": "kanguq_hall", "king": true, "aggression": 0.3,
+		"look": {"sex": "m", "hair": "Hair_Long", "beard": true},
+		"bio": "Wants the Kanguq left out of Wolf's Crown's wars; fears Qannik's raiders will drag them in anyway. Breeds sled-dogs and names each one after a council member he dislikes.",
+		"line": "Wolf's Crown votes for war, Qannik sails to it, and the geese still come back every spring. I side with the geese."},
 	# Southern Water Tribe
 	"siqiniq": {"name": "Chief Siqiniq", "faction": "southern_water", "bend": "water", "power": 2.0, "weapon": "fists", "hp": 170, "troops": 90, "home": "southern_tribe", "king": true, "aggression": 0.55,
 		"look": {"sex": "f", "hair": "Hair_Long"},
@@ -558,7 +726,7 @@ var lords := {
 		"look": {"sex": "m", "hair": "Hair_Long", "hair_color": GREY},
 		"bio": "Wants to teach; fears losing students to the raids. He trains benders of every gender and has opinions about the North.",
 		"line": "In the South, whoever wants to learn, learns. Do you want to learn?"},
-	"qannik": {"name": "Raider-Captain Qannik", "faction": "southern_water", "bend": "", "power": 1.0, "weapon": "war_club", "hp": 170, "troops": 70, "home": "hakodas_watch", "aggression": 0.9,
+	"qannik": {"name": "Raider-Captain Qannik", "faction": "whalebone", "king": true, "bend": "", "power": 1.0, "weapon": "war_club", "hp": 170, "troops": 70, "home": "hakodas_watch", "aggression": 0.9,
 		"look": {"sex": "m", "hair": "Hair_Long", "accessory": "warpaint", "beard": true},
 		"bio": "Wants revenge on the Fire Navy; fears peace, because he does not know who he would be without the raids.",
 		"line": "Every Fire Nation ship that sinks is one that won't come south. Want to help me sink some?"},
@@ -636,9 +804,9 @@ var settlements := {
 	# Fire Nation
 	"caldera": {"name": "Caldera City", "type": "town", "faction": "fire_nation", "pos": Vector2(318, 560), "owner": "haoren", "walls": 1.4, "culture": "fire",
 		"produces": ["iron", "silk", "pottery"], "desc": "The Fire Nation capital, built inside the crater of a dormant volcano. Noble houses terrace the crater walls by rank; the palace sits highest, and the harbour district lowest."},
-	"fire_fountain": {"name": "Fire Fountain City", "type": "town", "faction": "fire_nation", "pos": Vector2(392, 618), "owner": "hiyori", "culture": "fire",
+	"fire_fountain": {"name": "Fire Fountain City", "type": "town", "faction": "clan_hiyori", "pos": Vector2(392, 618), "owner": "hiyori", "culture": "fire",
 		"produces": ["spices", "pottery"], "desc": "A bustling port crowned by a fire-breathing statue of a Fire Lord nobody can agree on. Every rumour in the Nation passes through its tea houses — and through Lady Hiyori."},
-	"ember_island": {"name": "Ember Island", "type": "town", "faction": "fire_nation", "pos": Vector2(452, 505), "owner": "daisuke", "culture": "fire",
+	"ember_island": {"name": "Ember Island", "type": "town", "faction": "clan_ren", "pos": Vector2(452, 505), "owner": "ren_chiyo", "culture": "fire",
 		"produces": ["fish", "silk"], "desc": "A resort island for the Fire Nation elite, famous for its beaches, its summer houses and its sulking volcano."},
 	"boiling_keep": {"name": "Boiling Lake Keep", "type": "castle", "faction": "fire_nation", "pos": Vector2(292, 405), "owner": "oda", "walls": 1.3, "culture": "fire",
 		"produces": [], "desc": "An old keep on an island in a boiling lake, seat of the western garrison. Its castellan runs reading classes for the garrison's children on Tuesdays."},
@@ -650,9 +818,9 @@ var settlements := {
 		"produces": ["rice", "fire_flakes"], "desc": "A quiet farming and fishing village in the Fire Nation heartland. Southern raiders struck its fleet two winters ago, and it has not forgotten."},
 	"crescent_island": {"name": "Crescent Island", "type": "village", "faction": "fire_nation", "pos": Vector2(200, 470), "bound": "caldera", "culture": "fire",
 		"produces": ["fish", "salt"], "desc": "A volcanic island home to an ancient Fire Temple, where the sages keep the calendar and watch for the Great Comet's return."},
-	"jang_hui": {"name": "Jang Hui", "type": "village", "faction": "fire_nation", "pos": Vector2(398, 645), "bound": "fire_fountain", "culture": "fire",
+	"jang_hui": {"name": "Jang Hui", "type": "village", "faction": "clan_hiyori", "pos": Vector2(398, 645), "bound": "fire_fountain", "culture": "fire",
 		"produces": ["fish", "rice"], "desc": "A floating village of stilt houses on the delta. Its people trade with both nations and trust neither."},
-	"ember_shore": {"name": "Ember Shore", "type": "village", "faction": "fire_nation", "pos": Vector2(470, 520), "bound": "ember_island", "culture": "fire",
+	"ember_shore": {"name": "Ember Shore", "type": "village", "faction": "clan_ren", "pos": Vector2(470, 520), "bound": "ember_island", "culture": "fire",
 		"produces": ["fire_flakes", "salt"], "desc": "Fishing huts and beach houses along the Ember Island shore."},
 	"tieshan": {"name": "Tieshan", "type": "village", "faction": "fire_nation", "pos": Vector2(566, 520), "bound": "kettle_rock", "culture": "earth",
 		"produces": ["iron", "rice"], "desc": "A mining village in the Strait Isles, under the Admiralty's 'protection'. The Fire Nation families who came for the mine live in the new houses; the old island families live everywhere else."},
@@ -664,7 +832,7 @@ var settlements := {
 	# Earth Kingdom
 	"ba_sing_se": {"name": "Ba Sing Se", "type": "town", "faction": "earth_kingdom", "pos": Vector2(1290, 370), "owner": "hualing", "walls": 1.8, "culture": "earth",
 		"produces": ["jade", "silk", "tea"], "desc": "The impenetrable city. Refugees and labourers crowd the Lower Ring, merchants and scholars the Middle, nobles the Upper. The Censorate polices the gates between them — and the thoughts within."},
-	"gaoling": {"name": "Gaoling", "type": "town", "faction": "earth_kingdom", "pos": Vector2(1040, 745), "owner": "cheng_mei", "culture": "earth",
+	"gaoling": {"name": "Gaoling", "type": "town", "faction": "house_cheng", "pos": Vector2(1040, 745), "owner": "cheng_mei", "culture": "earth",
 		"produces": ["silk", "tea", "herbs"], "desc": "A wealthy southern town of merchant houses, where the Cheng family's coin reaches every ledger and the Stone Pit draws crowds every night."},
 	"outer_wall": {"name": "Outer Wall Gate", "type": "castle", "faction": "earth_kingdom", "pos": Vector2(1160, 395), "owner": "ba_tsai", "walls": 1.5, "culture": "earth",
 		"produces": [], "desc": "A gate in the vast Outer Wall of Ba Sing Se, held by General Ba Tsai and a great many bad poems."},
@@ -672,19 +840,19 @@ var settlements := {
 		"produces": [], "desc": "An Earth Kingdom fortress facing the rebel kingdom of Omashu, from which General Lu Kang plans his campaigns."},
 	"serpent_fort": {"name": "Serpent's Pass Fort", "type": "castle", "faction": "earth_kingdom", "pos": Vector2(1205, 520), "owner": "tan_yue", "culture": "earth",
 		"produces": [], "desc": "A watchpost above the narrow Serpent's Pass to Ba Sing Se. Refugees cross it daily; General Tan Yue counts every one."},
-	"tanshui": {"name": "Tanshui Village", "type": "village", "faction": "earth_kingdom", "pos": Vector2(910, 720), "bound": "gaoling", "culture": "earth",
+	"tanshui": {"name": "Tanshui Village", "type": "village", "faction": "house_cheng", "pos": Vector2(910, 720), "bound": "gaoling", "culture": "earth",
 		"produces": ["cabbages", "rice"], "desc": "A cliff-top village above the southwestern sea, famous for its masked spring festival and its arguments about it."},
 	"gaipan": {"name": "Gaipan", "type": "village", "faction": "earth_kingdom", "pos": Vector2(1045, 430), "bound": "fong_fortress", "culture": "earth",
 		"produces": ["rice", "iron"], "desc": "A small valley town below a great dam, quartering more of Lu Kang's soldiers than it can feed."},
 	"full_moon_bay": {"name": "Full Moon Bay", "type": "village", "faction": "earth_kingdom", "pos": Vector2(1220, 455), "bound": "outer_wall", "culture": "earth",
 		"produces": ["fish", "salt"], "desc": "A hidden harbour where refugees board ferries to Ba Sing Se. The pirate queen Old Mother Shiyo anchors offshore and takes a toll."},
-	"misty_palms": {"name": "Misty Palms Oasis", "type": "village", "faction": "earth_kingdom", "pos": Vector2(1075, 560), "bound": "serpent_fort", "culture": "earth",
+	"misty_palms": {"name": "Misty Palms Oasis", "type": "village", "faction": "misty_palms", "pos": Vector2(1075, 560), "community": {"fealty": "earth_kingdom", "head": "Well-keeper Su Ling", "kind": "Oasis town"}, "culture": "earth",
 		"produces": ["spices", "salt"], "desc": "A fading oasis town at the edge of the Si Wong Desert. The Earth Kingdom closed its wells to the sandbender clans last summer."},
-	"chameleon_bay": {"name": "Chameleon Bay", "type": "village", "faction": "earth_kingdom", "pos": Vector2(1470, 500), "bound": "ba_sing_se", "culture": "earth",
+	"chameleon_bay": {"name": "Chameleon Bay", "type": "village", "faction": "chameleon_bay", "pos": Vector2(1470, 500), "community": {"fealty": "earth_kingdom", "head": "Harbourmaster Lo Wen", "kind": "Fishing village"}, "culture": "earth",
 		"produces": ["fish", "whale_oil"], "desc": "A sheltered bay on the eastern coast, far from every war and grateful for it."},
-	"hamakaze": {"name": "Hamakaze", "type": "village", "faction": "earth_kingdom", "pos": Vector2(770, 890), "bound": "gaoling", "culture": "hamakaze",
+	"hamakaze": {"name": "Hamakaze", "type": "village", "faction": "tide_wardens", "pos": Vector2(770, 890), "owner": "oyama", "culture": "hamakaze",
 		"produces": ["fish", "silk"], "desc": "A pine-covered peninsula of fishing villages joined to the mainland by a narrow neck, defended by the Tide Wardens. It belongs to the Earth Kingdom on paper and to itself in practice, which makes it the one place every nation's envoys will agree to meet. Watch out for the unagi."},
-	"foggy_swamp": {"name": "Foggy Swamp", "type": "village", "faction": "earth_kingdom", "pos": Vector2(965, 655), "bound": "gaoling", "culture": "swamp",
+	"foggy_swamp": {"name": "Foggy Swamp", "type": "village", "faction": "foggy_swamp", "pos": Vector2(965, 655), "community": {"fealty": "", "head": "the elders of the great tree", "kind": "Swamp tribe"}, "culture": "swamp",
 		"produces": ["herbs", "fish"], "desc": "A misty swamp where a forgotten tribe of waterbenders lives among the roots of a single great tree."},
 	"agrarian_vale": {"name": "Jade Terraces", "type": "village", "faction": "earth_kingdom", "pos": Vector2(1340, 300), "bound": "ba_sing_se", "culture": "earth",
 		"produces": ["tea", "rice"], "desc": "The farmland between Ba Sing Se's walls, terraced with tea. Its harvest goes to the Upper Ring first."},
@@ -694,9 +862,9 @@ var settlements := {
 		"produces": ["jade", "pottery"], "desc": "A mountain city of delivery chutes, giant stairways and loud public theatre. Since the Secession its banners are purple and its king gives a speech every morning."},
 	"stonewatch": {"name": "Stonewatch Pass", "type": "castle", "faction": "omashu", "pos": Vector2(815, 430), "owner": "kuang", "walls": 1.4, "culture": "omashu",
 		"produces": [], "desc": "A fortress cut into the mountain road to Omashu. General Kuang has turned it into the rebellion's anvil."},
-	"senlin": {"name": "Senlin Village", "type": "village", "faction": "omashu", "pos": Vector2(800, 585), "bound": "omashu", "culture": "omashu",
+	"senlin": {"name": "Senlin Village", "type": "village", "faction": "senlin", "pos": Vector2(800, 585), "community": {"fealty": "omashu", "head": "Elder Mao", "kind": "Forest village"}, "culture": "omashu",
 		"produces": ["rice", "cabbages"], "desc": "A forest village that leaves offerings at the edge of the trees for a great black-and-white spirit. Nobody wants to find out what happens if they stop."},
-	"makapu": {"name": "Makapu Village", "type": "village", "faction": "omashu", "pos": Vector2(925, 585), "bound": "omashu", "culture": "omashu",
+	"makapu": {"name": "Makapu Village", "type": "village", "faction": "makapu", "pos": Vector2(925, 585), "community": {"fealty": "omashu", "head": "Fortuneteller Ai", "kind": "Farming village"}, "culture": "omashu",
 		"produces": ["rice", "pottery"], "desc": "A village at the foot of a volcano, home to a long line of fortunetellers who read clouds and are right just often enough."},
 	"bianfu": {"name": "Bianfu Hollow", "type": "village", "faction": "omashu", "pos": Vector2(870, 410), "bound": "stonewatch", "culture": "omashu",
 		"produces": ["iron", "cabbages"], "desc": "Miners' terraces in a bat-haunted valley. Its people dug Omashu's first chutes and never let anyone forget it."},
@@ -714,21 +882,86 @@ var settlements := {
 	# Southern Water Tribe
 	"southern_tribe": {"name": "Wolf's Crown", "type": "town", "faction": "southern_water", "pos": Vector2(720, 1110), "owner": "siqiniq", "walls": 1.3, "culture": "south",
 		"produces": ["furs", "seal_jerky", "sea_prunes"], "desc": "The great ice city of the South, ringed by canal-harbours. Its council hall is open to anyone who wants to argue, and most people do."},
-	"hakodas_watch": {"name": "Whalebone Watch", "type": "castle", "faction": "southern_water", "pos": Vector2(860, 1095), "owner": "qannik", "culture": "south",
+	"hakodas_watch": {"name": "Whalebone Watch", "type": "castle", "faction": "whalebone", "pos": Vector2(860, 1095), "owner": "qannik", "culture": "south",
 		"produces": [], "desc": "A raider harbour on the southern ice shelf, roofed with whale ribs. Qannik's canoes leave from here at night."},
 	"wolf_cove": {"name": "Wolf Cove", "type": "village", "faction": "southern_water", "pos": Vector2(610, 1120), "bound": "southern_tribe", "culture": "south",
 		"produces": ["fish", "furs"], "desc": "A sheltered cove where the tribe's canoes are hauled onto the ice."},
-	"whaletail": {"name": "Whaletail Island", "type": "village", "faction": "southern_water", "pos": Vector2(930, 1050), "bound": "hakodas_watch", "culture": "south",
+	"whaletail": {"name": "Whaletail Island", "type": "village", "faction": "whalebone", "pos": Vector2(930, 1050), "bound": "hakodas_watch", "culture": "south",
 		"produces": ["whale_oil", "seal_jerky"], "desc": "A rocky island shaped like the tail of a whale."},
 
+	# Fire Islands clans and the Sun Warriors
+	"kagari_keep": {"name": "Kagari Keep", "type": "castle", "faction": "clan_kagari", "pos": Vector2(110, 548), "owner": "kagari_sosuke", "walls": 1.3, "culture": "fire",
+		"produces": [], "desc": "A shipyard keep on the western isle, its slipways guarded by a wall built from the stone of an older wall the Kurozan knocked down."},
+	"shiohama": {"name": "Shiohama", "type": "village", "faction": "clan_kagari", "pos": Vector2(125, 596), "bound": "kagari_keep", "culture": "fire",
+		"produces": ["salt", "fish"], "desc": "Salt pans and drying racks on a white beach. The Kagari's ships are paid for one sack at a time."},
+	"tsurugi": {"name": "Tsurugi Harbour", "type": "town", "faction": "clan_tsurugi", "pos": Vector2(258, 766), "owner": "tsurugi_hana", "walls": 1.1, "culture": "fire",
+		"produces": ["iron", "pottery"], "desc": "A harbour town of forges and slipways on the southern islands. Its smiths' hammers can be heard from the sea, and its best blades are sold to people who never come to collect them in person."},
+	"akashima": {"name": "Akashima", "type": "village", "faction": "akashima", "pos": Vector2(355, 810), "culture": "fire", "community": {"fealty": "", "head": "Old Netmaker Sachi", "kind": "Fishing island"},
+		"produces": ["fish", "salt"], "desc": "A red-cliffed fishing island that has refused every clan's protection for a century, on the grounds that nobody has ever wanted it badly enough to make the offer stick."},
+	"kurozan_hold": {"name": "Kurozan Hold", "type": "castle", "faction": "clan_kurozan", "pos": Vector2(352, 282), "owner": "kurozan_isamu", "walls": 1.4, "culture": "fire",
+		"produces": [], "desc": "A black basalt fortress on a black-sand island. Its walls are scorched on the inside from generations of Agni Kai in the courtyard."},
+	"hinoura": {"name": "Hinoura", "type": "village", "faction": "clan_kurozan", "pos": Vector2(300, 302), "bound": "kurozan_hold", "culture": "fire",
+		"produces": ["fire_flakes", "iron"], "desc": "A village of obsidian knappers and hot springs below the Hold."},
+	"umibe": {"name": "Umibe", "type": "village", "faction": "umibe", "pos": Vector2(430, 705), "culture": "fire", "community": {"fealty": "fire_nation", "head": "Headman Goro", "kind": "Fishing village"},
+		"produces": ["fish", "rice"], "desc": "A fishing village on a small island south of the delta. It pays the royal house for the right to fly its pennant, which keeps the clans' tax-boats away."},
+	"sun_city": {"name": "City of the Sun Warriors", "type": "town", "faction": "sun_warriors", "pos": Vector2(96, 704), "owner": "huallpa", "walls": 2.0, "culture": "fire", "troops_culture": "sun", "dragons": true,
+		"produces": ["herbs", "pottery"], "desc": "A stepped stone city in the jungle of the southwestern isle, where the Eternal Flame burns in the temple at the top of the stairs. Dragons sleep on the terraces at noon. Visitors are few and watched."},
+	"sun_steps": {"name": "Ancestors' Steps", "type": "village", "faction": "sun_warriors", "pos": Vector2(126, 742), "bound": "sun_city", "culture": "fire", "troops_culture": "sun",
+		"produces": ["herbs", "rice"], "desc": "Terraced fields on the jungle slopes below the city, worked by Sun Warrior families and tended, some say, by dragon-warmth in winter."},
+	# The Earth continent: realms
+	"beishan_hold": {"name": "Beishan Hold", "type": "castle", "faction": "beishan", "pos": Vector2(960, 250), "owner": "teng_yao", "walls": 1.3, "culture": "earth",
+		"produces": [], "desc": "A hill fortress over the northern passes, built by the crown and kept by a marquis who no longer asks it for anything."},
+	"lanshui": {"name": "Lanshui", "type": "village", "faction": "beishan", "pos": Vector2(1030, 215), "bound": "beishan_hold", "culture": "earth",
+		"produces": ["rice", "iron"], "desc": "A river village of mills and iron-workings. Its taxes go up the hill to Beishan and stop there."},
+	"haiyan": {"name": "Haiyan", "type": "town", "faction": "haiyan", "pos": Vector2(1440, 590), "owner": "pao_ruyi", "walls": 1.2, "culture": "earth",
+		"produces": ["fish", "salt", "silk"], "desc": "The eastern coast's largest harbour, silting slowly. The duke's palace faces the sea; the counting house faces the palace."},
+	"yuwan": {"name": "Yuwan", "type": "village", "faction": "haiyan", "pos": Vector2(1500, 645), "bound": "haiyan", "culture": "earth",
+		"produces": ["fish", "whale_oil"], "desc": "A fishing village whose boats bring the duke his fish and his news."},
+	"lingtai": {"name": "Lingtai Fort", "type": "castle", "faction": "lingtai", "pos": Vector2(1420, 232), "owner": "gu_bao", "walls": 1.3, "culture": "earth",
+		"produces": [], "desc": "A crown fort on the northeastern road, still flying the crown's colours upside down."},
+	"shimen": {"name": "Shimen", "type": "village", "faction": "lingtai", "pos": Vector2(1362, 196), "bound": "lingtai", "culture": "earth",
+		"produces": ["cabbages", "iron"], "desc": "A gate-village where the warlord's men take a toll from everyone, and pay for their own drinks, which the villagers find confusing."},
+	# The Earth continent: independent communities
+	"liuqiao": {"name": "Liuqiao", "type": "village", "faction": "liuqiao", "pos": Vector2(1100, 225), "culture": "earth", "community": {"fealty": "earth_kingdom", "head": "Elder Fu", "kind": "Ferry village"},
+		"produces": ["rice", "fish"], "desc": "Willow Bridge: a ferry crossing with no bridge, whose elders pay the crown for a seal that lets its boats carry royal freight."},
+	"taolin": {"name": "Taolin", "type": "village", "faction": "taolin", "pos": Vector2(1240, 202), "culture": "earth", "community": {"fealty": "", "head": "Headwoman Xiao Rong", "kind": "Orchard village"},
+		"produces": ["tea", "herbs"], "desc": "Peach orchards on a northern slope. It has paid tribute to nobody since the last tax collector married the headwoman's sister."},
+	"huangtu": {"name": "Huangtu", "type": "village", "faction": "huangtu", "pos": Vector2(1330, 560), "culture": "earth", "community": {"fealty": "", "head": "Elder Mo Gan", "kind": "Desert-edge village"},
+		"produces": ["salt", "pottery"], "desc": "Yellow Earth: rammed-earth houses on the eastern edge of the Si Wong, trading with the sandbender clans that the crown will not."},
+	"baiyun": {"name": "Baiyun", "type": "village", "faction": "baiyun", "pos": Vector2(885, 285), "culture": "earth", "community": {"fealty": "", "head": "Headman Shan Bo", "kind": "Mountain village"},
+		"produces": ["herbs", "cabbages"], "desc": "White Cloud: a village above the cloud line where Beishan and Omashu both send envoys, and both are given the same tea."},
+	"qingshi": {"name": "Qingshi", "type": "village", "faction": "qingshi", "pos": Vector2(840, 345), "culture": "earth", "community": {"fealty": "omashu", "head": "Quarry-master Deng", "kind": "Quarry village"},
+		"produces": ["jade", "iron"], "desc": "Bluestone: a quarry village that cut Omashu's stairways and now pays Omashu's king instead of Ba Sing Se's queen."},
+	"yuhe": {"name": "Yuhe", "type": "village", "faction": "yuhe", "pos": Vector2(1210, 715), "culture": "earth", "community": {"fealty": "", "head": "Elder Tao Hua", "kind": "River village"},
+		"produces": ["fish", "rice"], "desc": "A river-mouth village of stilt houses that has seen soldiers of three flags pass by and offered each of them the same thin soup."},
+	"dongping": {"name": "Dongping", "type": "village", "faction": "dongping", "pos": Vector2(1150, 470), "culture": "earth", "community": {"fealty": "earth_kingdom", "head": "Magistrate Wei", "kind": "Market village"},
+		"produces": ["rice", "tea"], "desc": "A market village outside the Outer Wall, near enough to the crown to pay it and far enough to complain."},
+	"fenghe": {"name": "Fenghe", "type": "village", "faction": "fenghe", "pos": Vector2(980, 800), "culture": "earth", "community": {"fealty": "house_cheng", "head": "Elder Kong Yi", "kind": "Farming village"},
+		"produces": ["rice", "cabbages"], "desc": "Wind River: rice paddies whose harvest is bought by House Cheng before it is planted. The village pays Gaoling, not the crown, and is glad of the difference."},
+	"lanwei": {"name": "Lanwei", "type": "village", "faction": "lanwei", "pos": Vector2(1430, 420), "culture": "earth", "community": {"fealty": "earth_kingdom", "head": "Headwoman Bai Qiao", "kind": "Coastal village"},
+		"produces": ["fish", "salt"], "desc": "A coastal village that pays the crown and is raided by the warlord, and has begun to wonder what the first payment is for."},
+	# The Water Tribes
+	"aurora_hall": {"name": "Aurora Hall", "type": "castle", "faction": "aqsarniit", "pos": Vector2(1100, 62), "owner": "ataneq", "walls": 1.2, "culture": "north",
+		"produces": [], "desc": "The clans' meeting hall, a long ice house under the brightest skies of the north. Its doors face away from Agna Qel'a, deliberately."},
+	"qilak": {"name": "Qilak Camp", "type": "village", "faction": "aqsarniit", "pos": Vector2(1215, 58), "bound": "aurora_hall", "culture": "north",
+		"produces": ["furs", "seal_jerky"], "desc": "A hunting camp on the far ice where the women hunt with waterbending and the men argue about it."},
+	"umiak_point": {"name": "Umiak Point", "type": "village", "faction": "umiak_point", "pos": Vector2(230, 62), "culture": "north", "community": {"fealty": "", "head": "Elder Pilu", "kind": "Whaling camp"},
+		"produces": ["whale_oil", "furs"], "desc": "A whaling camp on the western ice, too far from Agna Qel'a to be ruled from it and too poor to be worth conquering."},
+	"kanguq_hall": {"name": "Kanguq Hall", "type": "castle", "faction": "kanguq", "pos": Vector2(300, 1128), "owner": "nuvuk", "walls": 1.1, "culture": "south",
+		"produces": [], "desc": "A walled ice hall on the western shelf, with kennels larger than the hall."},
+	"seal_rocks": {"name": "Seal Rocks", "type": "village", "faction": "kanguq", "pos": Vector2(395, 1140), "bound": "kanguq_hall", "culture": "south",
+		"produces": ["seal_jerky", "fish"], "desc": "Rocks crowded with seals and the families who hunt them."},
+	"qamutik": {"name": "Qamutik Landing", "type": "village", "faction": "qamutik", "pos": Vector2(1250, 1135), "culture": "south", "community": {"fealty": "", "head": "Elder Siku", "kind": "Sled-trading post"},
+		"produces": ["furs", "sea_prunes"], "desc": "A sled-trading post on the eastern shelf where southern tribes trade without asking whose side anyone is on."},
+
 	# Air Temples (cannot be besieged; free healing and shelter)
-	"southern_air_temple": {"name": "Southern Air Temple", "type": "temple", "faction": "air_nomads", "pos": Vector2(600, 990), "culture": "air", "abbot": "Abbot Dorje",
+	"southern_air_temple": {"name": "Southern Air Temple", "type": "temple", "faction": "air_south", "pos": Vector2(600, 990), "culture": "air", "abbot": "Abbot Dorje",
 		"produces": ["tea"], "desc": "A temple of monks on the peaks of the Patola range. Sky bison graze its terraces, and refugees from three wars sleep in its courtyards."},
-	"northern_air_temple": {"name": "Northern Air Temple", "type": "temple", "faction": "air_nomads", "pos": Vector2(915, 175), "culture": "air", "abbot": "Abbot Lhakpa",
+	"northern_air_temple": {"name": "Northern Air Temple", "type": "temple", "faction": "air_north", "pos": Vector2(915, 175), "culture": "air", "abbot": "Abbot Lhakpa",
 		"produces": ["herbs"], "desc": "The highest of the temples, a monks' retreat of wind-chimes and cold stone. Its gliders can be seen for miles."},
-	"eastern_air_temple": {"name": "Eastern Air Temple", "type": "temple", "faction": "air_nomads", "pos": Vector2(1470, 700), "culture": "air", "abbot": "Abbess Tsering",
+	"eastern_air_temple": {"name": "Eastern Air Temple", "type": "temple", "faction": "air_east", "pos": Vector2(1470, 700), "culture": "air", "abbot": "Abbess Tsering",
 		"produces": ["tea", "herbs"], "desc": "A temple of nuns among mountain peaks, whose archives hold letters from every Avatar who ever visited."},
-	"western_air_temple": {"name": "Western Air Temple", "type": "temple", "faction": "air_nomads", "pos": Vector2(520, 330), "culture": "air", "abbot": "Abbess Yeshe",
+	"western_air_temple": {"name": "Western Air Temple", "type": "temple", "faction": "air_west", "pos": Vector2(520, 330), "culture": "air", "abbot": "Abbess Yeshe",
 		"produces": ["herbs"], "desc": "A nuns' temple built upside-down beneath a cliff edge, hidden from anyone who does not already know where to look."},
 
 	# Ruins and landmarks
@@ -758,14 +991,20 @@ var land_ellipses := [
 	[300, 520, 62, 125, 18], [370, 615, 110, 50, -18], [250, 612, 55, 38, 0],
 	[452, 508, 38, 24, 10], [200, 470, 30, 22, 0], [300, 405, 34, 28, 0],
 	[520, 330, 90, 65, -15], [330, 445, 30, 20, 0],
+	# Clan islands: Kagari (west), Tsurugi and Akashima (south), Kurozan (north), Umibe
+	[110, 565, 42, 58, 10], [258, 770, 62, 32, -10], [355, 810, 28, 18, 0], [330, 290, 58, 34, 0], [430, 705, 26, 16, 0],
+	# The Sun Warriors' jungle isle
+	[100, 715, 50, 50, 0],
 	# Patola mountains (Southern Air Temple)
 	[600, 985, 65, 48, 0],
 	# Whaletail
 	[930, 1050, 40, 26, 0],
 	# Northern ice shelf
 	[520, 100, 190, 60, 0],
-	# Southern ice shelf
-	[760, 1110, 260, 70, 0],
+	# Southern ice shelf, with the Kanguq shelf to the west and Qamutik to the east
+	[760, 1110, 260, 70, 0], [320, 1135, 140, 35, 0], [1250, 1135, 150, 32, 0],
+	# Far northern ice: the Aqsarniit to the east, Umiak Point to the west
+	[1150, 60, 150, 30, 0], [230, 62, 100, 28, 0],
 ]
 
 # Regions that change the biome of land inside them [cx, cy, rx, ry, biome]
@@ -775,6 +1014,8 @@ var biome_regions := [
 	[330, 540, 200, 170, "volcanic"],
 	[520, 330, 90, 65, "highland"],
 	[600, 985, 70, 50, "mountain"],
+	[100, 715, 55, 55, "forest"],
+	[330, 290, 60, 36, "volcanic"],
 ]
 
 # Bandit spawn points: [pos, troop pool, faction, label]
@@ -873,6 +1114,43 @@ var arena_fighters := [
 
 func _ready() -> void:
 	_init_troops()
+	_init_communities()
+	for lid in lords:
+		var f: String = lords[lid].faction
+		if not KINGDOMS.has(f):
+			KINGDOMS.append(f)
+
+## Each settlement with a "community" entry is a faction of its own: a village
+## that answers to its elders, and pays tribute to an overlord or to no one.
+func _init_communities() -> void:
+	const REGION_OF := {"fire": "fire", "north": "water", "south": "water", "air": "air"}
+	for sid in settlements:
+		var d: Dictionary = settlements[sid]
+		if not d.has("community"):
+			continue
+		var c: Dictionary = d.community
+		var base: Color = {"fire": Color(0.62, 0.38, 0.3), "north": Color(0.42, 0.55, 0.68), "south": Color(0.4, 0.5, 0.6)}.get(d.culture, Color(0.5, 0.52, 0.36))
+		# a stable per-village shade, so neighbours can be told apart on the map
+		var h := float(absi(hash(sid)) % 1000) / 1000.0
+		factions[sid] = {
+			"name": d.name, "short": d.name, "color": base.lightened(h * 0.3 - 0.1),
+			"trim": Color(0.9, 0.88, 0.8), "culture": d.culture, "king": "", "capital": sid,
+			"region": REGION_OF.get(d.culture, "earth"), "kind": c.get("kind", "Community"),
+			"fealty": c.get("fealty", ""), "head": c.get("head", "the elders"), "community": true,
+			"desc": d.desc,
+		}
+
+## Region heading for a faction ("fire", "earth", "water", "air", "outlaw", "").
+func region_of(f: String) -> String:
+	return factions.get(f, {}).get("region", "")
+
+## Factions at peace with everyone, always (the Air Nomads and their temples).
+func is_peaceful(f: String) -> bool:
+	return factions.get(f, {}).get("peaceful", false) or f == "neutral"
+
+## The settlement a power's lords think of as home, or "".
+func seat_of(f: String) -> String:
+	return factions.get(f, {}).get("capital", "")
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -899,6 +1177,9 @@ func walls(sid: String) -> float:
 	var gs = get_node_or_null("/root/GS")
 	if gs != null and gs.settlements.has(sid):
 		bonus = float(gs.settlements[sid].get("wall_bonus", 0.0))
+	# The Sun Warriors' dragons defend their city as long as it is theirs
+	if settlements.get(sid, {}).get("dragons", false) and gs != null and gs.settlements.has(sid) and gs.settlements[sid].faction == settlements[sid].faction:
+		bonus += 1.2
 	return float(settlements.get(sid, {}).get("walls", 1.0)) + bonus
 
 func troop_wage(id: String) -> int:
