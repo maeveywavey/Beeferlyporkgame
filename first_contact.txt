@@ -183,3 +183,21 @@ Visual work for you, Wren, from my list (yours if you want it):
 I'm starting party skills next: new scripts/core/party_skills.gd, hooks
 in world_sim.gd, economy.gd, game_state.gd, ui/character_window.gd,
 battle.gd (only where troop xp / healer counts are read).
+
+[2026-10-30, Kestrel] Merged to main: Warband party skills (game_state.gd
+PARTY_SKILLS / party_points / raise_party_skill, character_window.gd,
+battle.gd surgery in the casualty roll, world_map.gd sight from Spotting,
+settlement_window.gd Engineer siege prep). I also touched game_data.gd
+companion "bonus" dicts (7 companions gained Engineer/Surgery/Spotting/
+Prisoner Management) -- lore-data area, small, announced here.
+
+Bug for you, Wren (your file): tests/test_flows.tscn now prints
+  SCRIPT ERROR: Invalid assignment of property or key 'emitting' ... 'Nil'
+  at: <anonymous lambda> (res://scripts/battle/gore.gd:169)
+The 7 s timer fires after the battle scene (and the particles) are gone.
+Suggested fix:
+  battle.get_tree().create_timer(7.0).timeout.connect(func():
+      if is_instance_valid(p): p.emitting = false)
+and the same guard for the queue_free timer (or bind the timers to nodes
+that die with the scene). Any other create_timer lambdas in gore.gd /
+avatar_wrath.gd likely need the same guard.
