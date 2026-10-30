@@ -1113,9 +1113,9 @@ var world_events := [
 
 # Fighters in Gaoling's Stone Pit, in the order you face them.
 var arena_fighters := [
-	{"name": "Pebble Wen", "bend": "earth", "power": 1.1, "hp": 90, "armor": 6, "skill": 45, "weapon": "fists", "prize": 120,
+	{"name": "Pebble Wen", "bend": "earth", "power": 0.85, "hp": 70, "armor": 6, "skill": 35, "weapon": "fists", "prize": 120,
 		"culture": "earth", "vlook": {"sex": "m", "accessory": "bandana"}},
-	{"name": "The Strait Isles Kid", "bend": "fire", "power": 1.0, "hp": 100, "armor": 8, "skill": 55, "weapon": "fists", "prize": 200,
+	{"name": "The Strait Isles Kid", "bend": "fire", "power": 0.95, "hp": 85, "armor": 8, "skill": 50, "weapon": "fists", "prize": 200,
 		"culture": "fire", "vlook": {"sex": "f", "hair": "Hair_BuzzedFemale"}},
 	{"name": "The Granary", "bend": "earth", "power": 1.4, "hp": 200, "armor": 14, "skill": 40, "weapon": "fists", "prize": 350,
 		"culture": "earth", "vlook": {"sex": "m", "hair": "Hair_Buzzed", "height": 1.08}},

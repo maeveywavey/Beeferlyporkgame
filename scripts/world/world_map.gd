@@ -144,6 +144,8 @@ func _refresh_banners() -> void:
 		var f: String = GS.settlements[sid].faction
 		MapBuilder.set_banner_color(settlement_banners[sid], Data.factions.get(f, Data.factions.neutral).color)
 
+var _top_bar: Control
+
 func _build_hud() -> void:
 	hud = CanvasLayer.new()
 	add_child(hud)
@@ -159,6 +161,7 @@ func _build_hud() -> void:
 	# Top bar: a lacquer banner with the season's seal, the date, the
 	# party's numbers as labelled chips, and the screens as tablets
 	var top := PanelContainer.new()
+	_top_bar = top
 	top.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	top.mouse_filter = Control.MOUSE_FILTER_STOP
 	top.add_theme_stylebox_override("panel", _banner_box())
@@ -184,7 +187,7 @@ func _build_hud() -> void:
 	var right := UI.vbox(4)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(right)
-	var chips := UI.hbox(14)
+	var chips := UI.hbox(24)
 	chips.alignment = BoxContainer.ALIGNMENT_END
 	right.add_child(chips)
 	var buttons := UI.hbox(6)
@@ -194,9 +197,11 @@ func _build_hud() -> void:
 		var cb := UI.vbox(0)
 		var cap := UI.label(k[1].to_upper(), 11, Color(UISkin.GOLD, 0.9))
 		cap.add_theme_font_override("font", UISkin.font("display_med"))
+		cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		cb.add_child(cap)
 		var val := UI.label("", 18, Color(0.98, 0.93, 0.82))
 		val.add_theme_font_override("font", UISkin.font("bold"))
+		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		cb.add_child(val)
 		chips.add_child(cb)
 		hud_chips[k[0]] = val
@@ -472,9 +477,34 @@ func _update_lighting() -> void:
 func _player_sight() -> float:
 	return SIGHT + GS.skill("pathfinding") * 4.0
 
+## Parties resting inside a friendly settlement, as in Warband: they are in
+## the hall or the barracks, not standing on the walls. Refreshed four times a
+## second; id -> settlement id.
+var _sheltered := {}
+var _sheltered_t := 0.0
+
+func _refresh_sheltered() -> void:
+	_sheltered = {}
+	for id in GS.parties:
+		var p: Dictionary = GS.parties[id]
+		if id == "player" or not p.kind in ["lord", "caravan", "villager"] or p.get("besieging", "") != "":
+			continue
+		if p.moving and GS.hours >= p.get("wait_until", 0.0):
+			continue
+		for sid in Data.settlements:
+			if Data.settlements[sid].pos.distance_to(p.pos) < GS.shelter_radius(sid):
+				var f: String = GS.settlements[sid].faction
+				if f == p.faction or not GS.at_war(f, p.faction):
+					_sheltered[id] = sid
+				break
+
 func _update_parties(delta: float) -> void:
 	var pp: Dictionary = GS.player_party()
 	var sight := _player_sight()
+	_sheltered_t -= delta
+	if _sheltered_t <= 0.0:
+		_sheltered_t = 0.25
+		_refresh_sheltered()
 	# Remove nodes for parties that no longer exist
 	for id in party_nodes.keys():
 		if not GS.parties.has(id):
@@ -493,6 +523,8 @@ func _update_parties(delta: float) -> void:
 		var node: Node3D = party_nodes[id]
 		var visible_now: bool = id == "player" or p.pos.distance_to(pp.pos) <= sight or p.get("besieging", "") != ""
 		if id == "player" and GS.player.get("captive_until", -1.0) > GS.hours:
+			visible_now = false
+		if _sheltered.has(id):
 			visible_now = false
 		node.visible = visible_now
 		var target := Vector3(p.pos.x, Terrain.surface(p.pos), p.pos.y)
@@ -580,10 +612,14 @@ func _update_labels() -> void:
 		l.position = camera.unproject_position(wp) - Vector2(l.size.x / 2.0, l.size.y)
 	_declutter()
 
-## Nudge overlapping map labels apart so stacked armies stay readable.
+## Nudge overlapping map labels apart so stacked armies stay readable, and
+## keep them out from under the top bar.
 func _declutter() -> void:
 	var ls := []
+	var top_h: float = _top_bar.size.y if _top_bar else 0.0
 	for l in settlement_labels.values() + party_labels.values():
+		if l.visible and l.position.y < top_h:
+			l.visible = false
 		if l.visible:
 			ls.append(l)
 	ls.sort_custom(func(a, b): return a.position.y > b.position.y)
@@ -600,6 +636,8 @@ func _declutter() -> void:
 					r.position.y = q.position.y - r.size.y
 					moved = true
 		l.position = r.position
+		if r.position.y < top_h:
+			l.visible = false
 		placed.append(r)
 
 func _update_hud(captive: bool) -> void:
@@ -774,6 +812,20 @@ func _ground_point(screen: Vector2) -> Vector2:
 	return Vector2(clampf(hit.x, 2, Data.MAP_W - 2), clampf(hit.z, 2, Data.MAP_H - 2))
 
 func _pick(screen: Vector2) -> Dictionary:
+	# A click on a settlement's name, or right on the settlement, means the
+	# settlement, whoever is camped beside it.
+	for sid in settlement_labels:
+		var l: Label = settlement_labels[sid]
+		if l.visible and Rect2(l.position, l.size).grow(4.0).has_point(screen):
+			return {"type": "settlement", "id": sid}
+	for sid in settlement_nodes:
+		var wp0: Vector3 = settlement_nodes[sid].position + Vector3(0, 2, 0)
+		if not camera.is_position_behind(wp0) and camera.unproject_position(wp0).distance_to(screen) < 14.0:
+			return {"type": "settlement", "id": sid}
+	for id in party_labels:
+		var pl: Label = party_labels[id]
+		if id != "player" and pl.visible and Rect2(pl.position, pl.size).grow(2.0).has_point(screen):
+			return {"type": "party", "id": id}
 	var best := {}
 	var bd := 26.0
 	for id in party_nodes:

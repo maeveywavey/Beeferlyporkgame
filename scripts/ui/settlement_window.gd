@@ -685,23 +685,29 @@ func _build_hall(o: VBoxContainer) -> void:
 		o.add_child(UI.rich("Your own hall. Your servants bow as you enter.", 740))
 		o.add_child(UI.option("Back", func(): _go("main")))
 		return
-	var present := ""
+	# Every lord resting here, the owner first, as in a Warband hall.
+	var present := []
 	var pos: Vector2 = Data.settlements[sid].pos
 	for lid in GS.lords:
 		var lr: Dictionary = GS.lords[lid]
-		if lr.party != "" and GS.parties.has(lr.party) and GS.parties[lr.party].pos.distance_to(pos) < 10.0 and lr.faction == s.faction:
-			present = lid
+		if lr.party != "" and GS.parties.has(lr.party) and GS.parties[lr.party].pos.distance_to(pos) < GS.shelter_radius(sid) and not GS.at_war(lr.faction, s.faction):
 			if lid == owner:
-				break
-	if present == "":
+				present.push_front(lid)
+			else:
+				present.append(lid)
+	if present.is_empty():
 		o.add_child(UI.rich("The lord is away. A servant offers you tea while you wait.", 740))
 		o.add_child(UI.option("Back", func(): _go("main")))
 		return
-	var ld: Dictionary = Data.lords[present]
-	o.add_child(UI.rich("[b]%s[/b] is here." % ld.name, 740))
-	o.add_child(UI.option("Speak with %s" % ld.name, func():
-		var ew = load("res://scripts/ui/encounter_window.gd").new()
-		ew.pid = GS.lords[present].party
-		ew.page = "talk"
-		_open(ew)))
+	var names := []
+	for lid in present:
+		names.append("[b]%s[/b]" % Data.lords[lid].name)
+	o.add_child(UI.rich(("%s is here." if present.size() == 1 else "Here: %s.") % ", ".join(names), 740))
+	for lid in present:
+		var pid: String = GS.lords[lid].party
+		o.add_child(UI.option("Speak with %s" % Data.lords[lid].name, func():
+			var ew = load("res://scripts/ui/encounter_window.gd").new()
+			ew.pid = pid
+			ew.page = "talk"
+			_open(ew)))
 	o.add_child(UI.option("Back", func(): _go("main")))
