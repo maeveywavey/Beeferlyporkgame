@@ -1,0 +1,52 @@
+; Engine configuration file.
+; Avatar: Mount & Bend — a Mount & Blade style sandbox set in the world of
+; Avatar: The Last Airbender. Built for Godot 4.3+.
+
+config_version=5
+
+[application]
+
+config/name="Avatar: Mount & Bend"
+config/description="A Mount & Blade style sandbox set during the Hundred Year War."
+run/main_scene="res://scenes/main_menu.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+Data="*res://scripts/autoload/game_data.gd"
+GS="*res://scripts/autoload/game_state.gd"
+Sfx="*res://scripts/autoload/sfx.gd"
+Music="*res://scripts/autoload/music.gd"
+
+[display]
+
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[physics]
+
+common/physics_ticks_per_second=60
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+anti_aliasing/quality/msaa_3d=1
+
+[shader_globals]
+
+ps1_snap={
+"type": "float",
+"value": 0.0
+}
+ps1_texel_m={
+"type": "float",
+"value": 0.0
+}
+ps1_affine={
+"type": "float",
+"value": 0.0
+}
