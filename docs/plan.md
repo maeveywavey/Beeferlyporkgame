@@ -1,6 +1,6 @@
 # Plan: the next rework
 
-This plan is drawn from the twenty answers of 30 October. It is for review before any code changes. Each section states the decision, what changes, and where it pulls against canon. Where it does, the canon rule wins and the section gives the workaround.
+This plan is drawn from the twenty answers of 30 October and the follow-up answers after them. It is for review before any code changes. Each section states the decision, what changes, and where it pulls against canon. Where it does, the canon rule wins and the section gives the workaround.
 
 ## 1. Lore sources and setting
 
@@ -36,7 +36,7 @@ This plan is drawn from the twenty answers of 30 October. It is for review befor
 
 **Canon tension.** The series opens with "the four nations lived together in harmony", and Sozin calls expansion a new idea in 3×06. Canon also shows the remedy: Avatars stop conquerors (Roku and Sozin; Kyoshi and Chin).
 
-**Workaround.** Conquest is possible, but a nation that takes another nation's land draws the Avatar to it, as the player does now.
+**Confirmed.** Anyone who wants to conquer may try, anywhere and at any time: the player and every AI kingdom alike. The only answer the world gives is the Avatar's: a nation that takes another nation's land draws the Avatar to it, as the player does now.
 - **For AI kingdoms:** the tyrant motive applies, scaled by the foreign land held.
 - **Consequence:** in eras with an active Avatar, cross-nation empires are unstable by design; in the child era they can grow until the Avatar comes of age.
 - **Code:** remove `Data.may_besiege`'s cross-nation block and add a per-faction "foreign holdings" score that the Avatar system reads.
@@ -57,7 +57,7 @@ This plan is drawn from the twenty answers of 30 October. It is for review befor
 **Decisions.** Q9: the story campaign is dropped. Q10: each era has its own world state. Q19: a game can span decades.
 
 **Dropping the campaign.**
-- The Drowned Testament, its six pages, the endings and the two culpable men are removed as a campaign.
+- The Drowned Testament, its six pages, the endings and the two culpable men are removed entirely. The last Avatar gets no story: no logbook, no mystery, no rumours about the death.
 - Characters who still fit return as sandbox lords and quest-givers.
 
 **Four era sandboxes**, each with its own rulers, borders, wars and opening situation:
@@ -124,11 +124,32 @@ This plan is drawn from the twenty answers of 30 October. It is for review befor
 - **The fire trial:** the firebending mastery trial moves to the dragons, in the manner of 3×13.
 - **Dragon hunting:** hunting dragons is possible, and grimdark: it carries large infamy, angers the Sun Warriors and draws the Avatar.
 
-**Look (Q16): closer to the show.**
-- **Flatter shading:** flatter cel bands and stronger, consistent line weight.
-- **Palette:** palettes taken from the series' colour scripts.
-- **Bending effects:** effects are redrawn as stylised shapes (ribbon fire, solid water bodies with white rims, angular earth chunks, swirling air lines) rather than particle puffs.
-- **Battle screen:** the battle overlay finally gets the interface treatment.
+**Look: realistic and PS1 (replaces Q16).** A prototype is already in the battle scene: `scripts/battle/landscape.gd`, `shaders/ps1.gdshaderinc`, `shaders/lit.gdshader`, `shaders/sprite.gdshader`, `shaders/backdrop.gdshader`. It gives:
+- **Ground:** textured and desaturated, lit realistically instead of cel-shaded.
+- **2D stand-ins, as PS1 games did:**
+  - mountains are painted images on a ring of cards around the field, in three ranges that grow paler with distance;
+  - broadleaf trees keep a modelled, bark-textured trunk and branches, with canopies of painted leaf-clump cards that face the camera;
+  - pines, bushes and grass tufts are cards.
+- **Natural layout:**
+  - cliffs jut from flat land at the flanks, singly or in short ridges, with boulders and scrub at their feet;
+  - trees grow in groves with thick edges of undergrowth, plus a few lone trees and tufts in the open;
+  - the middle band where armies meet is kept mostly clear.
+- **The PS1 layer, on every 3D shader:**
+  - vertices snap to a screen grid, so edges wobble as the camera moves;
+  - textures are point-sampled at a low texel count;
+  - texture mapping can drift towards affine.
+  - It is set in Settings → Retro look: Off, **Light** (grid 480, 128 texels) or **Heavy** (grid 200, 40 texels, 60% affine warp).
+  - The comparison is in `docs/screenshots/retro_compare.jpg` and `.gif`.
+
+**Still to do for the look:**
+- **The world map, towns and the title screen:** these still use the cel style, and the same treatment comes next.
+- **Characters:**
+  - outfits are flat-coloured, so they gain little from texture pixelation;
+  - they need low-resolution painted textures, and less saturated culture palettes to match the ground.
+- **Bending effects:** these need sprite-based fire, water, earth and air in the same idiom.
+- **Detail clean-up:**
+  - the cel rim light and ink outlines should be removed or reduced to suit the realistic direction;
+  - the old CC0 rock and plant models are replaced only in battles so far.
 
 **Companions (Q11):** kept as written. They are revised only where a decision above changes their facts:
 - Juro's burned village and Kazan's siege stay in the Isles;
@@ -145,11 +166,12 @@ This plan is drawn from the twenty answers of 30 October. It is for review befor
 | E | Bending work as a lasting economy | Medium |
 | F | Conquest with an Avatar response for AI kingdoms; grimdark war consequences | Medium |
 | G | Decades: season skip, ageing, heirs, Avatar death and rebirth in one game | Large |
-| H | Sun Warriors and dragons; show-like rendering and effects | Large |
+| H | Sun Warriors and dragons; realistic and PS1 look everywhere (map, towns, characters, effects) | Large |
 
 **Order.** A comes first, because every later phase names things. B and C come next, because they change what the world contains. D through H can follow in any order.
 
-## 7. Two points to confirm
+## 7. Decided after review
 
-1. **Conquest versus harmony.** Is "conquest is possible, and the Avatar answers it", for AI kingdoms as well as the player, the right reading of full sandbox conquest?
-2. **Dropping the campaign.** Dropping it also drops the lost-Avatar mystery. Should the Quiet Years era keep a lighter version as a set of rumours and quests?
+1. **Conquest:** anyone may attempt it, anywhere and at any time. The Avatar's response is the only check.
+2. **The last Avatar:** no story at all. The campaign and every trace of the lost-Avatar mystery go.
+3. **Look:** realistic and PS1 as in §5. The choice between **Light** and **Heavy** is open; both are in the build.

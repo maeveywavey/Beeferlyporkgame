@@ -16,6 +16,8 @@ uniform float emission_strength : hint_range(0.0, 4.0) = 0.0;
 
 varying vec3 world_pos;
 
+#include "res://shaders/ps1.gdshaderinc"
+
 float hash(vec3 p) {
 	p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
 	p *= 17.0;
@@ -34,12 +36,19 @@ float noise(vec3 x) {
 
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	PS1_VERTEX(UV)
 }
 
 void fragment() {
 	vec3 c = COLOR.rgb * tint.rgb;
 	// two octaves of soft value noise, stretched horizontally like brush strokes
-	vec3 p = world_pos * brush_scale * vec3(0.6, 1.4, 0.6);
+	vec3 wp = world_pos;
+	if (ps1_tex > 0.0) {
+		// blocky texels in world space for untextured, vertex-painted surfaces
+		float k = ps1_tex / 16.0;
+		wp = floor(wp * k) / k;
+	}
+	vec3 p = wp * brush_scale * vec3(0.6, 1.4, 0.6);
 	float n = noise(p) * 0.65 + noise(p * 3.1) * 0.35;
 	c *= 1.0 + (n - 0.5) * 2.0 * brush_strength;
 	ALBEDO = c;

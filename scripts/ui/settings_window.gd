@@ -103,6 +103,15 @@ func build() -> void:
 	rf.button_pressed = GS.settings.get("reduce_flashing", false)
 	rf.toggled.connect(func(v): GS.settings.reduce_flashing = v)
 	g.add_child(rf)
+	g.add_child(UI.label("Retro look (PS1 vertex wobble and pixelated textures)"))
+	var rl := OptionButton.new()
+	for k in ["off", "light", "heavy"]:
+		rl.add_item(k.capitalize())
+	rl.selected = ["off", "light", "heavy"].find(String(GS.settings.get("retro", "light")))
+	rl.item_selected.connect(func(i):
+		GS.settings.retro = ["off", "light", "heavy"][i]
+		GS.apply_settings())
+	g.add_child(rl)
 	g.add_child(UI.label("Reduce motion (no window animations)"))
 	var rm := CheckBox.new()
 	rm.button_pressed = GS.settings.get("reduce_motion", false)

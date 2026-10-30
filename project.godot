@@ -35,3 +35,18 @@ common/physics_ticks_per_second=60
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 anti_aliasing/quality/msaa_3d=1
+
+[shader_globals]
+
+ps1_snap={
+"type": "float",
+"value": 0.0
+}
+ps1_tex={
+"type": "float",
+"value": 0.0
+}
+ps1_affine={
+"type": "float",
+"value": 0.0
+}

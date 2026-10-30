@@ -10,6 +10,7 @@ const MB = preload("res://scripts/world/map_builder.gd")
 const Roster = preload("res://scripts/core/roster.gd")
 const SettingsWindow = preload("res://scripts/ui/settings_window.gd")
 const Dress = preload("res://scripts/battle/set_dressing.gd")
+const Land = preload("res://scripts/battle/landscape.gd")
 const Arch = preload("res://scripts/town/arch.gd")
 const ActorS = preload("res://scripts/actors/actor.gd")
 const LooksS = preload("res://scripts/actors/looks.gd")
@@ -234,9 +235,9 @@ func _build_ground() -> void:
 			var h := heights[gz * GRID + gx]
 			verts.append(Vector3(gx - HALF, h, gz - HALF))
 			var v := cn.get_noise_2d(gx, gz) * 0.12
-			var c := Color(clampf(base.r + v, 0, 1), clampf(base.g + v, 0, 1), clampf(base.b + v * 0.6, 0, 1))
+			var c := Color(1.0 + v, 1.0 + v, 1.0 + v * 0.6)
 			if siege != "" and absf(gz - HALF - wall_z) < 9.0:
-				c = c.lerp(Color(0.5, 0.45, 0.38), 0.5)
+				c = c.lerp(Color(0.85, 0.78, 0.7), 0.5)
 			cols.append(c)
 	for iz in n - 1:
 		for ix in n - 1:
@@ -247,11 +248,8 @@ func _build_ground() -> void:
 	st.generate_normals()
 	var mi := MeshInstance3D.new()
 	mi.mesh = st.commit()
-	# the painted-ground material shared with the settlements
-	var m: ShaderMaterial = Arch.material(false).duplicate()
-	m.set_shader_parameter("brush_scale", 0.15)
-	m.set_shader_parameter("brush_strength", 0.1)
-	mi.material_override = m
+	# textured, desaturated ground (scripts/battle/landscape.gd)
+	mi.material_override = Land.ground_material(biome)
 	add_child(mi)
 	# Distant ground and painted mountains
 	var far := MeshInstance3D.new()
@@ -259,9 +257,13 @@ func _build_ground() -> void:
 	pm.size = Vector2(900, 900)
 	far.mesh = pm
 	far.position = Vector3(0, -6.0, 0)
-	far.material_override = MB.mat(base.darkened(0.15))
+	var fm: ShaderMaterial = Land.ground_material(biome).duplicate()
+	fm.set_shader_parameter("tint", Color(0.85, 0.85, 0.85))
+	far.material_override = fm
 	add_child(far)
-	add_child(Dress.mountains(base.lerp(Color(0.45, 0.48, 0.55), 0.5) if biome != "volcanic" else Color(0.3, 0.27, 0.27), biome in ["snow", "highland", "mountain"], 11))
+	# mountains painted on cards around the field, as PS1 games did
+	var daylight := clampf(sin((hour - 6.0) / 13.0 * PI), 0.0, 1.0)
+	add_child(Land.backdrop(biome, Color(0.2, 0.2, 0.3).lerp(Color(0.75, 0.8, 0.9), daylight)))
 
 func _build_environment() -> void:
 	var we := WorldEnvironment.new()
@@ -348,49 +350,50 @@ func _build_weather() -> void:
 
 func _build_props() -> void:
 	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	var pal: Dictionary = Dress.palette(biome)
-	var trees := 30
-	var rocks := 10
-	match biome:
-		"forest": trees = 80
-		"swamp": trees = 50
-		"grass": trees = 22
-		"desert", "beach":
-			trees = 5
-			rocks = 18
-		"snow":
-			trees = 14
-			rocks = 16
-		"mountain", "highland", "volcanic":
-			trees = 18
-			rocks = 26
-	for i in trees + rocks:
-		var p := Vector2(rng.randf_range(-70, 70), rng.randf_range(-42, 42))
-		if siege != "" and absf(p.y - wall_z) < 12.0:
+	if GS.pending_battle.has("seed"):
+		rng.seed = int(GS.pending_battle.seed)
+	else:
+		rng.randomize()
+	var daylight := clampf(sin((hour - 6.0) / 13.0 * PI), 0.0, 1.0)
+	var light := Color(0.45, 0.5, 0.65).lerp(Color(1.0, 0.97, 0.9), daylight)
+	var pines := biome in ["snow", "mountain", "highland"] or (biome == "forest" and true)
+	var dead := biome in ["desert", "beach", "volcanic"]
+	var wz := wall_z if siege != "" else 999.0
+	for it in Land.layout(biome, rng, wz):
+		var p: Vector2 = it.pos
+		if absf(p.x) > 76.0 or absf(p.y) > 46.0:
 			continue
 		var h := ground_height(p.x, p.y)
 		var node: Node3D
-		if i < trees and not pal.trees.is_empty():
-			node = Dress.nature(pal.trees[rng.randi() % pal.trees.size()], pal.get("tree_tint", Color.WHITE))
-			node.scale = Vector3.ONE * rng.randf_range(0.9, 1.5)
-			node.rotation.y = rng.randf() * TAU
-			obstacles.append({"p": p, "r": 0.5})
-		else:
-			var sc := rng.randf_range(0.6, 1.8)
-			node = Dress.rock(sc, pal.rocks)
-			obstacles.append({"p": p, "r": sc * 0.9})
-		node.position = Vector3(p.x, h, p.y)
+		match it.kind:
+			"cliff":
+				node = Land.cliff(biome, it.r, it.h, rng)
+				obstacles.append({"p": p, "r": it.r * 0.9})
+			"boulder":
+				node = Land.cliff(biome, it.r, it.r * rng.randf_range(0.7, 1.3), rng)
+				obstacles.append({"p": p, "r": it.r * 0.9})
+			"tree":
+				if dead:
+					node = Land.tree(biome, "dead", rng, light)
+				elif pines and (biome != "forest" or rng.randf() < 0.4):
+					node = Land.pine(biome, rng, light)
+				else:
+					node = Land.tree(biome, "broad", rng, light)
+				node.rotation.y = rng.randf() * TAU
+				obstacles.append({"p": p, "r": 0.5})
+			"bush":
+				if dead:
+					continue
+				node = Land.card(Land.leaf_card(biome, rng.randi_range(1, 3)), Vector2.ONE * rng.randf_range(1.2, 2.0), 2, light)
+				node.position.y -= 0.3
+			"grass":
+				if biome in ["snow", "volcanic"]:
+					continue
+				node = Land.card(Land.grass_card(biome), Vector2.ONE * rng.randf_range(0.6, 1.1), 1, light)
+		if node == null:
+			continue
+		node.position += Vector3(p.x, h, p.y)
 		add_child(node)
-	# undergrowth (no collision)
-	if not pal.small.is_empty():
-		for i in 120:
-			var q := Vector2(rng.randf_range(-75, 75), rng.randf_range(-45, 45))
-			var g := Dress.nature(pal.small[rng.randi() % pal.small.size()])
-			g.position = Vector3(q.x, ground_height(q.x, q.y), q.y)
-			g.rotation.y = rng.randf() * TAU
-			g.scale = Vector3.ONE * rng.randf_range(0.8, 1.4)
-			add_child(g)
 
 func _build_arena() -> void:
 	# A sunken ring of cut stone, wooden stands and a seated crowd

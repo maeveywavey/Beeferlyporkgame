@@ -17,9 +17,15 @@ uniform float texture_desaturate : hint_range(0.0, 1.0) = 0.0;
 uniform float emission_strength : hint_range(0.0, 4.0) = 0.0;
 uniform vec4 emission_color : source_color = vec4(0.0);
 
+#include "res://shaders/ps1.gdshaderinc"
+
+void vertex() {
+	PS1_VERTEX(UV)
+}
+
 void fragment() {
-	vec4 a = texture(albedo_tex, UV);
-	vec4 b = texture(albedo_tex_b, UV);
+	vec4 a = ps1_texture(albedo_tex, UV);
+	vec4 b = ps1_texture(albedo_tex_b, UV);
 	vec3 t = mix(a.rgb, b.rgb, tex_mix);
 	float tg = dot(t, vec3(0.299, 0.587, 0.114));
 	t = mix(t, vec3(tg), texture_desaturate);
