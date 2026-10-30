@@ -200,15 +200,17 @@ static func _limb_mesh(length: float, col: Color, head: bool) -> Node3D:
 	if not head:
 		# a hand or a boot at the far end
 		var end := MeshInstance3D.new()
-		var em := SphereMesh.new() if length < 0.6 else BoxMesh.new()
-		if em is SphereMesh:
-			em.radius = 0.06
-			em.height = 0.1
+		if length < 0.6:
+			var hand := SphereMesh.new()
+			hand.radius = 0.06
+			hand.height = 0.1
+			end.mesh = hand
 			end.material_override = _flesh_mat(Color(0.74, 0.55, 0.42))
 		else:
-			em.size = Vector3(0.1, 0.12, 0.24)
+			var boot := BoxMesh.new()
+			boot.size = Vector3(0.1, 0.12, 0.24)
+			end.mesh = boot
 			end.material_override = _flesh_mat(Color(0.18, 0.13, 0.1))
-		end.mesh = em
 		end.position = Vector3(-length * 0.5 - 0.04, 0, 0)
 		root.add_child(end)
 	# the raw end
