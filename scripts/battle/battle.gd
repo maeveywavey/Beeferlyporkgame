@@ -966,6 +966,7 @@ func melee_strike(att) -> void:
 		dmg *= 1.1
 	if att.mounted():
 		dmg += Vector2(att.vel.x, att.vel.z).length() * 1.4
+	victim.gore_hint = "blade" if w.get("dtype", "cut") == "cut" else ""
 	var landed: bool = victim.receive_melee(att, dmg, w.get("dtype", "cut"), att.attack_dir)
 	if landed:
 		spawn_spark(victim.chest(), Color(0.7, 0.1, 0.1))
@@ -987,6 +988,12 @@ func projectile_hit(pr, u) -> void:
 		return
 	var push: Vector3 = pr.vel.normalized()
 	push.y = 0
+	u.gore_hint = {"water": "water_slice", "ice": "water_slice", "fire": "fire", "blue_fire": "fire",
+		"rock": "impale" if pr.radius >= 0.9 else ""}.get(pr.fx, "")
+	# a strong gust throws people into the air
+	if pr.fx == "air" and pr.knock >= 12.0 and not u.mounted() and not u.airborne:
+		u.airborne = true
+		u.y_vel = 7.0 + pr.knock * 0.25
 	u.apply_damage(pr.dmg, pr.owner_unit, pr.dtype, push.normalized(), pr.knock)
 	_apply_effect(u, pr.effect, pr.dmg)
 	if is_instance_valid(pr.owner_unit) and pr.owner_unit.is_player:
@@ -1049,6 +1056,10 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				var d3: Vector3 = e.position - caster.position
 				d3.y = 0
 				if d3.length() < a.range + e.radius and d3.length() > 0.01 and rad_to_deg(fwd.angle_to(d3.normalized())) < a.angle:
+					e.gore_hint = {"fire": "fire", "blue_fire": "fire", "water": "water_slice"}.get(a.fx, "")
+					if a.get("breath", false):
+						e.burn_t = maxf(e.burn_t, 4.0)
+						e.burn_dps = maxf(e.burn_dps, 6.0)
 					e.apply_damage(dmg, caster, "fire" if a.fx in ["fire", "blue_fire"] else "blunt", d3.normalized(), a.knock)
 					_apply_effect(e, a.get("effect", ""), dmg * 0.85)
 					if a.fx == "water":
@@ -1108,12 +1119,14 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				var d4: Vector3 = e.position - caster.position
 				d4.y = 0
 				if d4.length() < a.range:
+					e.gore_hint = "impale" if a.fx == "rock" and randf() < 0.3 else ""
 					e.apply_damage(dmg, caster, "blunt", d4.normalized(), a.knock)
 					if e.alive and not e.mounted():
 						e._set_action("stagger", a.stun)
 						if not e.airborne:
 							e.airborne = true
-							e.y_vel = 4.0
+							# wind throws people far higher than a shaking ground
+							e.y_vel = 12.0 + a.knock * 0.2 if a.fx == "air" else 4.0
 			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx))
 			if field != null:
 				if a.fx == "rock":
@@ -1143,6 +1156,7 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				rel2.y = 0.0
 				var along2 := rel2.dot(dir3)
 				if along2 > 0.0 and along2 < float(a.dist) and (rel2 - dir3 * along2).length() < 1.4:
+					e.gore_hint = "fire" if a.fx in ["fire", "blue_fire"] else ""
 					e.apply_damage(dmg, caster, "fire" if a.fx == "fire" else "blunt", dir3.rotated(Vector3.UP, PI / 2.0 * signf(randf() - 0.5)), a.knock)
 					_apply_effect(e, a.get("effect", ""), dmg)
 			spawn_burst(start + Vector3(0, 0.6, 0), Bending.fx_color(a.fx), 1.0)
@@ -1158,6 +1172,7 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				d5.y = 0
 				if d5.length() < a.range:
 					var push5: Vector3 = d5.normalized() * (-1.0 if a.get("pull", false) else 1.0)
+					e.gore_hint = "fire" if a.fx in ["fire", "blue_fire"] else ""
 					e.apply_damage(dmg, caster, "fire" if a.fx == "fire" else "blunt", push5, a.knock)
 					_apply_effect(e, a.get("effect", ""), dmg)
 			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx))
@@ -1179,6 +1194,7 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				rel4.y = 0.0
 				var along4 := rel4.dot(dir4)
 				if along4 > 0.5 and along4 < float(a.range) and (rel4 - dir4 * along4).length() < float(a.width):
+					e.gore_hint = "impale" if randf() < 0.5 else ""
 					e.apply_damage(dmg, caster, "blunt", Vector3.UP * 0.2 + dir4, a.knock)
 					if e.alive and not e.mounted():
 						e._set_action("stagger", a.get("stun", 1.0))
@@ -1277,6 +1293,7 @@ func _raise_pillar(caster, a: Dictionary, point: Vector3, dmg: float) -> void:
 			var d := Vector2(u.position.x - c.x, u.position.z - c.z)
 			if d.length() < r + u.radius + 0.3:
 				if t != caster.team:
+					u.gore_hint = "impale"
 					u.apply_damage(dmg, caster, "blunt", Vector3(d.x, 0, d.y).normalized(), a.get("knock", 2.0))
 				if u.alive and not u.mounted():
 					u.airborne = true
@@ -1439,7 +1456,7 @@ func on_unit_down(u, killer, dtype: String) -> void:
 		# Pemba never takes a life: their blows only knock people down
 		if killer != null and is_instance_valid(killer) and killer.companion_id != "" and Data.companions.get(killer.companion_id, {}).get("nonlethal", false):
 			chance = 1.0
-		wounded = randf() < chance
+		wounded = randf() < chance and not u.has_meta("gored")
 		if not casualties.has(u.party_key):
 			casualties[u.party_key] = {}
 		var c: Dictionary = casualties[u.party_key]
