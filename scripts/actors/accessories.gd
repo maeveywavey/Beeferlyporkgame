@@ -208,13 +208,13 @@ static func dress_head(parts: Dictionary, style: String, sex: String, hair: Colo
 			add.call(panel(shell(0.124, 0.03, 120.0, 0.006, 12), Color(0.6, 0.1, 0.1), at(Vector3(0, y + 0.03, 0.0))))
 		"air_arrow":
 			# blue arrow tattoo from the brow over the crown to the nape
-			var c := Vector3(0, y + 0.02, 0.005)
+			var c := Vector3(0, y + 0.008, 0.005)
 			var r := 0.122
 			var arrow_c := Color(0.2, 0.5, 0.95)
-			for i in 16:
-				var phi := deg_to_rad(lerpf(58.0, -95.0, i / 15.0))
+			for i in 32:
+				var phi := deg_to_rad(lerpf(58.0, -95.0, i / 31.0))
 				var p := c + Vector3(0, cos(phi) * r, sin(phi) * r)
-				add.call(node(SphereMesh.new(), arrow_c, at(p, Vector3(rad_to_deg(-phi), 0, 0), Vector3(0.028, 0.006, 0.03)), false))
+				add.call(node(SphereMesh.new(), arrow_c, at(p, Vector3(rad_to_deg(phi), 0, 0), Vector3(0.028, 0.006, 0.03)), false))
 			var tip_phi := deg_to_rad(66.0)
 			add.call(node(lathe([Vector2(0.0, 0.035), Vector2(0.03, 0.0)], 3, 1.0, 0.25), arrow_c, at(c + Vector3(0, cos(tip_phi) * (r + 0.002), sin(tip_phi) * (r + 0.002)), Vector3(180 - rad_to_deg(tip_phi) + 90, 0, 0)), false))
 
