@@ -206,7 +206,24 @@ static func option(text: String, cb: Callable, enabled: bool = true) -> Button:
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	b.resized.connect(fit_option.bind(b))
 	return b
+
+## A wrapped button does not grow with its text in Godot 4.3: make the row
+## as tall as its wrapped lines so long choices never overlap the next one.
+static func fit_option(b: Button) -> void:
+	if not is_instance_valid(b) or b.size.x <= 0.0:
+		return
+	var sb: StyleBox = b.get_theme_stylebox("normal")
+	var pad: Vector2 = sb.get_minimum_size() if sb else Vector2.ZERO
+	var w: float = b.size.x - pad.x
+	if w <= 10.0:
+		return
+	var f: Font = b.get_theme_font("font")
+	var fs: int = b.get_theme_font_size("font_size")
+	var h: float = f.get_multiline_string_size(b.text, HORIZONTAL_ALIGNMENT_LEFT, w, fs).y + pad.y
+	if absf(b.custom_minimum_size.y - h) > 1.0:
+		b.custom_minimum_size.y = h
 
 static func vbox(sep: int = 6) -> VBoxContainer:
 	var v := VBoxContainer.new()

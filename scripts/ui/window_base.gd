@@ -24,7 +24,17 @@ var window_size := Vector2(720, 520)
 var closable := true
 var seal_glyph := ""
 
+## Open windows, oldest first: only the topmost answers keys.
+static var _stack: Array = []
+
+func _is_top() -> bool:
+	while not _stack.is_empty() and not is_instance_valid(_stack[-1]):
+		_stack.pop_back()
+	return not _stack.is_empty() and _stack[-1] == self
+
 func _ready() -> void:
+	_stack.append(self)
+	tree_exiting.connect(func(): _stack.erase(self))
 	theme = UI.theme()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -136,7 +146,60 @@ func close() -> void:
 	closed.emit()
 	queue_free()
 
+## Every window's choice rows work like a conversation's: numbered, chosen
+## with 1-9 (0 for a tenth), and Esc takes the way out when the window has no close button.
+const LEAVE_WORDS := ["leave", "farewell", "back", "never mind", "cancel", "not now", "another time", "\"i'll go", "\"another time", "end conversation", "continue", "close", "done"]
+var _number_t := 0.0
+
+func _option_rows(n: Node = null, out: Array = []) -> Array:
+	if n == null:
+		n = content
+	if n == null:
+		return out
+	for c in n.get_children():
+		if c is Button and c.theme_type_variation == "OptionRow" and c.is_visible_in_tree():
+			out.append(c)
+		else:
+			_option_rows(c, out)
+	return out
+
+static func _bare(text: String) -> String:
+	var r := RegEx.create_from_string("^\\d\\.\\s+")
+	return r.sub(text, "")
+
+func _process(delta: float) -> void:
+	_number_t -= delta
+	if _number_t > 0.0:
+		return
+	_number_t = 0.2
+	var rows := _option_rows()
+	for i in mini(rows.size(), 10):
+		var b: Button = rows[i]
+		var want := "%d.  %s" % [(i + 1) % 10, _bare(b.text)]
+		if b.text != want:
+			b.text = want
+			UI.fit_option(b)
+
 func _unhandled_input(event: InputEvent) -> void:
-	if closable and event is InputEventKey and event.pressed and event.physical_keycode == KEY_ESCAPE:
-		get_viewport().set_input_as_handled()
-		close()
+	if not (event is InputEventKey and event.pressed and not event.echo) or not _is_top():
+		return
+	var k: int = event.physical_keycode
+	if k == KEY_ESCAPE:
+		if closable:
+			get_viewport().set_input_as_handled()
+			close()
+			return
+		for b in _option_rows():
+			var t := _bare(b.text).to_lower()
+			for w in LEAVE_WORDS:
+				if t.begins_with(w) and not b.disabled:
+					get_viewport().set_input_as_handled()
+					b.pressed.emit()
+					return
+		return
+	if k >= KEY_0 and k <= KEY_9:
+		var rows := _option_rows()
+		var idx := 9 if k == KEY_0 else k - KEY_1
+		if idx < rows.size() and not rows[idx].disabled:
+			get_viewport().set_input_as_handled()
+			rows[idx].pressed.emit()

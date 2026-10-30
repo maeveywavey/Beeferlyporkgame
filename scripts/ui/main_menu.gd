@@ -7,6 +7,7 @@ const SettingsWindow = preload("res://scripts/ui/settings_window.gd")
 
 var panel: PanelContainer
 var body: VBoxContainer
+var footer: HBoxContainer
 var center: CenterContainer
 var scroll_root: MarginContainer
 var scroll_panel: PanelContainer
@@ -50,7 +51,7 @@ func _ready() -> void:
 	# Title page: a hanging scroll on the left
 	scroll_root = MarginContainer.new()
 	scroll_root.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
-	scroll_root.offset_right = 640
+	scroll_root.offset_right = 700
 	for side in ["left", "top", "bottom"]:
 		scroll_root.add_theme_constant_override("margin_" + side, 56 if side == "left" else 48)
 	add_child(scroll_root)
@@ -74,17 +75,23 @@ func _ready() -> void:
 	panel.custom_minimum_size = Vector2(1300, 820)
 	panel.add_theme_stylebox_override("panel", UISkin.panel_box(22, 24))
 	center.add_child(panel)
+	# The page scrolls; Back and Next stay put beneath it.
+	var sheet := UI.vbox(8)
+	panel.add_child(sheet)
 	var bs := ScrollContainer.new()
 	bs.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	bs.custom_minimum_size = Vector2(1250, 770)
-	panel.add_child(bs)
+	bs.custom_minimum_size = Vector2(1250, 700)
+	sheet.add_child(bs)
 	body = UI.vbox(10)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bs.add_child(body)
+	footer = UI.hbox()
+	sheet.add_child(footer)
 	_build()
 
 func _build() -> void:
 	UI.clear(body)
+	UI.clear(footer)
 	UI.clear(scroll_body)
 	scroll_root.visible = page == "title"
 	center.visible = page != "title"
@@ -111,8 +118,6 @@ func _build_title() -> void:
 	st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	b.add_child(st)
 	b.add_child(UI.sep())
-	b.add_child(UI.rich("[i]Water. Earth. Fire. Air. You are not the Avatar. You are one of the millions who live in the world the Avatar is trying to keep in balance.\n\nRaise an army, master your element, serve a nation or carve out your own realm. Rule well and the Avatar may come to sit at your table. Rule cruelly and they will come for you.[/i]", 420))
-	b.add_child(UI.spacer(6))
 	var has_auto := GS.has_save(GS.AUTOSAVE_PATH)
 	var has_save := GS.has_save(GS.SAVE_PATH)
 	b.add_child(_menu_button("New Game", func():
@@ -126,6 +131,9 @@ func _build_title() -> void:
 	b.add_child(_menu_button("Quit", func(): get_tree().quit()))
 	if note != "":
 		b.add_child(UI.rich("[center]%s[/center]" % note, 420))
+	# The menu comes first so it is always on screen; the pitch follows.
+	b.add_child(UI.spacer(6))
+	b.add_child(UI.rich("[i]Water. Earth. Fire. Air. You are not the Avatar. You are one of the millions who live in the world the Avatar is trying to keep in balance.\n\nRaise an army, master your element, serve a nation or carve out your own realm. Rule well and the Avatar may come to sit at your table. Rule cruelly and they will come for you.[/i]", 420))
 	b.add_child(UI.expand())
 	b.add_child(UI.rich("[center][font_size=13]A fan-made game. Avatar: The Last Airbender belongs to its creators.[/font_size][/center]", 420))
 
@@ -152,18 +160,16 @@ func _build_world() -> void:
 	for e in ["quiet", "young", "prime", "elder"]:
 		var info: Dictionary = AvatarSys.ERAS[e]
 		var card := UI.vbox(4)
-		card.custom_minimum_size = Vector2(420, 150)
+		card.custom_minimum_size = Vector2(600, 150)
 		var b := UI.button(info.name + ("  (story)" if info.story else "  (sandbox)"), func():
 			c_era = e
-			_build(), 410)
+			_build(), 590)
 		if e == c_era:
 			UI.mark_selected(b)
 		card.add_child(b)
-		card.add_child(UI.rich("[font_size=14]%s[/font_size]" % info.pitch, 410))
+		card.add_child(UI.rich("[font_size=14]%s[/font_size]" % info.pitch, 590))
 		grid.add_child(card)
-	body.add_child(UI.spacer(6))
-	var row := UI.hbox()
-	body.add_child(row)
+	var row := footer
 	row.add_child(UI.button("Back", func():
 		page = "title"
 		_build(), 120))
@@ -261,9 +267,7 @@ func _build_create() -> void:
 			_build()))
 	acol.add_child(UI.rich("[i]Build only chooses a body model. Pronouns are how the world refers to you; they open no doors and close none, except who might fall for you.[/i]", 600))
 	arow.add_child(_preview())
-	body.add_child(UI.spacer(4))
-	var row := UI.hbox()
-	body.add_child(row)
+	var row := footer
 	row.add_child(UI.button("Back", func():
 		page = "world"
 		_build(), 120))

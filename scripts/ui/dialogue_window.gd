@@ -95,7 +95,7 @@ func build() -> void:
 
 ## Number keys choose, Enter or Space continues.
 func _unhandled_input(event: InputEvent) -> void:
-	if not (event is InputEventKey and event.pressed and not event.echo):
+	if not (event is InputEventKey and event.pressed and not event.echo) or not _is_top():
 		return
 	var k: int = event.physical_keycode
 	var idx := -1

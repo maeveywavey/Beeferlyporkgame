@@ -7,6 +7,15 @@ var result := {}
 func _init() -> void:
 	window_size = Vector2(720, 480)
 
+## Size the sheet to what it has to say: a short defeat is a short note.
+func _ready() -> void:
+	var rows: int = result.get("lines", []).size()
+	for k in ["prisoners", "goods", "items"]:
+		if not result.get(k, []).is_empty():
+			rows += 2
+	window_size = Vector2(720, clampf(190.0 + rows * 34.0, 240.0, 480.0))
+	super()
+
 func build() -> void:
 	var won: bool = result.get("won", false)
 	set_title("Victory!" if won else "Defeat")

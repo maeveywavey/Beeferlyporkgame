@@ -102,7 +102,7 @@ static func panel_texture(edge: int = 18, rule: bool = true) -> ImageTexture:
 		for x in sz:
 			var v := n.get_noise_2d(x, y) * 0.5 + 0.5
 			var c := PAPER_SHADE.lightened(v * 0.05 + rng.randf() * 0.025)
-			c.a = 0.97
+			c.a = 1.0
 			var d := mini(mini(x, y), mini(sz - 1 - x, sz - 1 - y))
 			if rule:
 				if d == 0:
