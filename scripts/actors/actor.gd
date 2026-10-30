@@ -64,15 +64,24 @@ func _build_tree() -> void:
 		var a := AnimationNodeAnimation.new()
 		a.animation = pt[1]
 		loco.add_blend_point(a, pt[0])
+	# keep the walk, jog and sprint cycles in step, so feet do not skip as speed changes
+	loco.sync = true
 	bt.add_node("loco", loco, Vector2(0, 0))
-	# Stance idle that replaces the locomotion idle when standing still
-	var stance_anim := AnimationNodeAnimation.new()
-	stance_anim.animation = "ual1/Idle"
-	bt.add_node("stance_anim", stance_anim, Vector2(0, 200))
+	# Stance idle that replaces the locomotion idle when standing still. Two
+	# slots crossfade, so changing stance (drawing a sword, sitting down)
+	# blends instead of snapping.
+	for slot in ["stance_a", "stance_b"]:
+		var sa := AnimationNodeAnimation.new()
+		sa.animation = "ual1/Idle"
+		bt.add_node(slot, sa, Vector2(0, 200 if slot == "stance_a" else 280))
+	var stance_x := AnimationNodeBlend2.new()
+	bt.add_node("stance_x", stance_x, Vector2(120, 240))
+	bt.connect_node("stance_x", 0, "stance_a")
+	bt.connect_node("stance_x", 1, "stance_b")
 	var stance_blend := AnimationNodeBlend2.new()
 	bt.add_node("stance_blend", stance_blend, Vector2(250, 100))
 	bt.connect_node("stance_blend", 0, "loco")
-	bt.connect_node("stance_blend", 1, "stance_anim")
+	bt.connect_node("stance_blend", 1, "stance_x")
 	# Upper body one-shot
 	var up_anim := AnimationNodeAnimation.new()
 	up_anim.animation = "ual1/Punch_Jab"
@@ -81,8 +90,8 @@ func _build_tree() -> void:
 	bt.add_node("up_speed", up_speed, Vector2(400, 300))
 	bt.connect_node("up_speed", 0, "up_anim")
 	var upper := AnimationNodeOneShot.new()
-	upper.fadein_time = 0.08
-	upper.fadeout_time = 0.18
+	upper.fadein_time = 0.12
+	upper.fadeout_time = 0.26
 	upper.filter_enabled = true
 	for b in UPPER_BONES:
 		upper.set_filter_path(NodePath("Armature/Skeleton3D:" + b), true)
@@ -101,8 +110,8 @@ func _build_tree() -> void:
 	bt.add_node("full_speed", full_speed, Vector2(700, 300))
 	bt.connect_node("full_speed", 0, "full_anim")
 	var full := AnimationNodeOneShot.new()
-	full.fadein_time = 0.1
-	full.fadeout_time = 0.2
+	full.fadein_time = 0.14
+	full.fadeout_time = 0.3
 	bt.add_node("full", full, Vector2(850, 100))
 	bt.connect_node("full", 0, "upper")
 	bt.connect_node("full", 1, "full_speed")
@@ -116,8 +125,7 @@ func set_stance(s: String) -> void:
 	if s == stance or dead:
 		return
 	stance = s
-	var node: AnimationNodeAnimation = tree.tree_root.get_node("stance_anim")
-	node.animation = STANCES.get(s, "ual1/Idle")
+	_crossfade_stance(STANCES.get(s, "ual1/Idle"))
 	if bend_pose:
 		bend_pose.set_form("ride" if s == "ride" else ("" if bend_pose.form == "ride" else bend_pose.form))
 
@@ -148,14 +156,29 @@ func die(kind: String = "") -> void:
 	if bend_pose:
 		bend_pose.set_form("")
 
-## Play a looping full-body animation outside the tree (sitting, working, dancing...).
+var _stance_slot := 0
+var _stance_x := 0.0
+var _stance_x_target := 0.0
+
+func _crossfade_stance(anim_name: String) -> void:
+	_stance_slot = 1 - _stance_slot
+	var node: AnimationNodeAnimation = tree.tree_root.get_node("stance_b" if _stance_slot == 1 else "stance_a")
+	node.animation = anim_name
+	_stance_x_target = float(_stance_slot)
+
+## Play a looping full-body animation (sitting, working, dancing...),
+## blended in through the stance slots rather than cutting the tree off.
 func loop(anim_name: String) -> void:
-	tree.active = false
-	anim.play(anim_name, 0.3)
+	if dead or tree == null:
+		return
+	stance = "loop:" + anim_name
+	_crossfade_stance(anim_name)
 
 func resume_tree() -> void:
 	if not dead:
 		tree.active = true
+		if stance.begins_with("loop:"):
+			set_stance("unarmed")
 
 func set_expression(expr: String) -> void:
 	_expr = expr
@@ -163,8 +186,10 @@ func set_expression(expr: String) -> void:
 func _process(delta: float) -> void:
 	if tree == null:
 		return
-	_speed_smooth = lerpf(_speed_smooth, speed, minf(1.0, delta * 8.0))
+	_speed_smooth = lerpf(_speed_smooth, speed, minf(1.0, delta * 6.0))
 	tree.set("parameters/loco/blend_position", _speed_smooth)
+	_stance_x = move_toward(_stance_x, _stance_x_target, delta / 0.25)
+	tree.set("parameters/stance_x/blend_amount", _stance_x)
 	tree.set("parameters/stance_blend/blend_amount", clampf(1.0 - _speed_smooth / 0.6, 0.0, 1.0) if stance != "unarmed" else 0.0)
 	_update_face(delta)
 

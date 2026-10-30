@@ -22,6 +22,13 @@ uniform float texel_mult = 1.0;
 uniform float grain = 0.0;
 // cut-out textures (leaves, hair cards): alpha below this is discarded
 uniform float alpha_cut = 0.0;
+// the model's own normal map (cloth folds, muscle, hair strands)
+uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap;
+uniform float normal_strength = 0.0;
+// undersides a little darker than tops: shape without a cartoon rim
+uniform float top_shade = 0.22;
+// finer vertex snapping for characters (see ps1.gdshaderinc)
+uniform float snap_mult = 1.0;
 
 varying vec3 obj_pos;
 
@@ -43,7 +50,7 @@ float g_noise(vec3 x) {
 
 void vertex() {
 	obj_pos = VERTEX;
-	PS1_VERTEX(UV)
+	PS1_VERTEX_S(UV, snap_mult)
 }
 
 void fragment() {
@@ -64,6 +71,10 @@ void fragment() {
 	}
 	float grey = dot(c, vec3(0.299, 0.587, 0.114));
 	ALBEDO = mix(vec3(grey), c, saturation);
+	float up = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
+	ALBEDO *= 1.0 - top_shade * (0.5 - up * 0.5);
+	NORMAL_MAP = ps1_texture(normal_tex, UV, uv_per_m / texel_mult).rgb;
+	NORMAL_MAP_DEPTH = normal_strength;
 	EMISSION = emission_color.rgb * emission_strength;
 	ALPHA = alpha_cut > 0.0 ? mix(a.a, b.a, tex_mix) : 1.0;
 	ALPHA_SCISSOR_THRESHOLD = max(alpha_cut, 0.001);

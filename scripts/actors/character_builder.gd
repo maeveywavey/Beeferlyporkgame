@@ -94,6 +94,10 @@ static func toon_from(mat: Material, opts: Dictionary = {}) -> ShaderMaterial:
 	sm.set_shader_parameter("albedo_tex_b", tex)
 	sm.set_shader_parameter("tint", opts.get("tint", Color.WHITE))
 	sm.set_shader_parameter("saturation", opts.get("saturation", 1.12))
+	# the model's normal map gives cloth, skin and hair their relief
+	if mat is BaseMaterial3D and (mat as BaseMaterial3D).normal_texture != null:
+		sm.set_shader_parameter("normal_tex", (mat as BaseMaterial3D).normal_texture)
+		sm.set_shader_parameter("normal_strength", opts.get("normal_strength", 1.0))
 	# leaves and other cut-outs keep their holes and show both faces
 	if mat is BaseMaterial3D and (mat as BaseMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
 		sm.shader = TOON_DOUBLE
@@ -105,6 +109,9 @@ static func toon_from(mat: Material, opts: Dictionary = {}) -> ShaderMaterial:
 static var _uv_density := {}
 ## Characters' texels per metre relative to the world's (2 = half-size pixels).
 const CHARACTER_TEXEL_MULT := 2.0
+## Characters' vertex-snap grid relative to the world's: the wobble stays,
+## the silhouette keeps its shape.
+const CHARACTER_SNAP_MULT := 2.5
 
 ## UV units per metre of a mesh surface (in the mesh's own units), measured
 ## from triangle areas once and cached.
@@ -152,6 +159,7 @@ static func set_texel_density(n: Node, root: Node3D) -> void:
 			if m is ShaderMaterial and (m.shader == TOON or m.shader == TOON_DOUBLE):
 				# characters (and what they wear) get pixels half the shared size
 				m.set_shader_parameter("texel_mult", CHARACTER_TEXEL_MULT)
+				m.set_shader_parameter("snap_mult", CHARACTER_SNAP_MULT)
 				var tex = m.get_shader_parameter("albedo_tex")
 				if tex is Texture2D and tex.get_width() > 8:
 					m.set_shader_parameter("uv_per_m", _surface_uv_per_unit(mi.mesh, s) / maxf(sc, 1e-4))

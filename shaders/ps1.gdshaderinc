@@ -13,11 +13,12 @@ global uniform float ps1_affine;
 
 varying vec3 ps1_uvw;
 
-// Snapped clip-space position of a vertex.
-vec4 ps1_position(mat4 projection_m, mat4 modelview, vec3 vertex) {
+// Snapped clip-space position of a vertex. snap_mult > 1 snaps to a finer
+// grid (characters use 2.5, so their silhouettes keep their shape).
+vec4 ps1_position(mat4 projection_m, mat4 modelview, vec3 vertex, float smul) {
 	vec4 clip = projection_m * modelview * vec4(vertex, 1.0);
 	if (ps1_snap > 0.0) {
-		vec2 grid = vec2(ps1_snap, ps1_snap * 0.5625) * 0.5;
+		vec2 grid = vec2(ps1_snap, ps1_snap * 0.5625) * 0.5 * smul;
 		vec2 ndc = clip.xy / clip.w;
 		ndc = round(ndc * grid) / grid;
 		clip.xy = ndc * clip.w;
@@ -27,7 +28,8 @@ vec4 ps1_position(mat4 projection_m, mat4 modelview, vec3 vertex) {
 
 // Use at the end of vertex(): snaps the vertex on screen and records the
 // affine texture coordinates.
-#define PS1_VERTEX(uv) POSITION = ps1_position(PROJECTION_MATRIX, MODELVIEW_MATRIX, VERTEX); ps1_uvw = vec3((uv) * POSITION.w, POSITION.w);
+#define PS1_VERTEX(uv) POSITION = ps1_position(PROJECTION_MATRIX, MODELVIEW_MATRIX, VERTEX, 1.0); ps1_uvw = vec3((uv) * POSITION.w, POSITION.w);
+#define PS1_VERTEX_S(uv, m) POSITION = ps1_position(PROJECTION_MATRIX, MODELVIEW_MATRIX, VERTEX, m); ps1_uvw = vec3((uv) * POSITION.w, POSITION.w);
 
 // Snap a position given in metres to the centre of its texel.
 vec2 ps1_snap_m(vec2 p) {
