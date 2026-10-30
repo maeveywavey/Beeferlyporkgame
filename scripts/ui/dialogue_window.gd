@@ -197,7 +197,7 @@ func _portrait(who: String, expr: String) -> Control:
 		var we := WorldEnvironment.new()
 		var env := Environment.new()
 		env.background_mode = Environment.BG_COLOR
-		env.background_color = Color(0.78, 0.66, 0.5)
+		env.background_color = Color(0.09, 0.08, 0.075)
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		env.ambient_light_color = Color(0.9, 0.86, 0.8)
 		env.ambient_light_energy = 0.55

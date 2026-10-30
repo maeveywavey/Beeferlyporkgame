@@ -105,20 +105,19 @@ func _close_button() -> Button:
 	return b
 
 ## Gold corner brackets with a bead at each corner, inside the burnt edge.
+## Steel corner caps over the bronze border, bevelled like stamped metal.
 func _draw_ornaments() -> void:
-	var r := Rect2(Vector2.ZERO, panel.size).grow(-11.0)
-	var g := Color(UISkin.GOLD, 0.95)
-	var L := 30.0
+	var r := Rect2(Vector2.ZERO, panel.size)
+	var s := 16.0
 	for k in 4:
-		var c := Vector2(r.position.x if k % 2 == 0 else r.end.x, r.position.y if k < 2 else r.end.y)
-		var sx := 1.0 if k % 2 == 0 else -1.0
-		var sy := 1.0 if k < 2 else -1.0
-		panel.draw_line(c, c + Vector2(L * sx, 0), g, 2.0)
-		panel.draw_line(c, c + Vector2(0, L * sy), g, 2.0)
-		panel.draw_line(c + Vector2(5 * sx, 5 * sy), c + Vector2(L * 0.6 * sx, 5 * sy), g, 1.0)
-		panel.draw_line(c + Vector2(5 * sx, 5 * sy), c + Vector2(5 * sx, L * 0.6 * sy), g, 1.0)
-		panel.draw_circle(c, 3.0, UISkin.CINNABAR)
-		panel.draw_arc(c, 3.0, 0.0, TAU, 12, g, 1.0)
+		var x := r.position.x if k % 2 == 0 else r.end.x - s
+		var y := r.position.y if k < 2 else r.end.y - s
+		var cap := Rect2(x, y, s, s)
+		panel.draw_rect(cap, UISkin.STEEL.darkened(0.25))
+		panel.draw_rect(Rect2(x + 2, y + 2, s - 4, s - 4), UISkin.STEEL)
+		panel.draw_line(Vector2(x + 2, y + 2), Vector2(x + s - 2, y + 2), UISkin.STEEL.lightened(0.45), 1.0)
+		panel.draw_line(Vector2(x + 2, y + 2), Vector2(x + 2, y + s - 2), UISkin.STEEL.lightened(0.3), 1.0)
+		panel.draw_rect(cap, Color(0, 0, 0), false, 1.0)
 
 func set_title(t: String) -> void:
 	window_title = t

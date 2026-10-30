@@ -104,7 +104,7 @@ func _build_title() -> void:
 	for e in [["水", UISkin.INDIGO], ["土", UISkin.JADE], ["火", UISkin.CINNABAR], ["空", Color(0.85, 0.6, 0.2)]]:
 		seals.add_child(UISkin.seal(e[0], 46, e[1]))
 	var t := UI.title("Mount & Bend", 50)
-	t.add_theme_color_override("font_color", Color(0.16, 0.08, 0.05))
+	t.add_theme_color_override("font_color", Color(0.97, 0.96, 0.92))
 	b.add_child(t)
 	var st := UI.label("The Quiet Years, and after", 20, UI.BROWN)
 	st.add_theme_font_override("font", UISkin.font("italic"))
@@ -296,7 +296,7 @@ func _preview() -> Control:
 		var we := WorldEnvironment.new()
 		var env := Environment.new()
 		env.background_mode = Environment.BG_COLOR
-		env.background_color = Color(0.86, 0.78, 0.62)
+		env.background_color = Color(0.09, 0.08, 0.075)
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		env.ambient_light_color = Color(0.9, 0.86, 0.8)
 		env.ambient_light_energy = 0.55

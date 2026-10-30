@@ -153,6 +153,9 @@ Each can be switched off in Settings. Each adds:
 - **The Southern council** can be swayed on war and peace.
 - **Air Temples** cannot be attacked, heal you for free, and sell no meat.
 
+### Attributes
+Nine, after Dark Souls 3: Vigor, Attunement (bending and chi), Endurance, Vitality, Strength, Dexterity, Intelligence, Spirit (in place of Faith) and Luck, two points per level. Bending draws on Attunement and two attributes of its element: earth on Endurance and Vigor, water on Intelligence and Dexterity, air on Dexterity and Spirit, fire on Strength and Vitality.
+
 ### Bending
 Fire is stronger by day, water by night and strongest under a full moon. The Great Comet, if it comes, makes fire burn far hotter; a lunar eclipse hides the full moon's strength. Only waterbenders heal with bending.
 
@@ -162,16 +165,11 @@ To use it, open **Character → Bending Forms**, chain movements whose stances c
 
 ![A designed firebending form, then Fire Blast and Lightning](docs/screenshots/bending.gif)
 
-### Interface
-The interface is made of the world's materials, all generated in code:
-- paper with burnt edges;
-- lacquered tablets for actions;
-- rows on paper for choices;
-- gold leaf for what is selected;
-- brush-stroke rules;
-- a one-character seal on every window.
+### Look
+- **3D:** realistic and muted, with a PS1 layer (Settings → Retro look; Heavy by default): vertices snap to a screen grid, and every surface (ground, rock, bark, foliage cards, people) shares one texel size. Ground and rock are computed from world position: hard-edged patches of ground, leaf litter under trees, and rock in zones of different stone with bedding, joints, staining, varnish and lichen. Mountains, canopies, pines and grass are painted cards. Character textures are repainted (`tools/paint_textures.py`).
+- **Interface:** after PS2-era menus. Dark grained panels with a bronze border and steel corner caps, white serif titles over a red rule, menu entries on dark wood planks that light up as an amber bar, steel tablets for actions, and light text with a drop shadow. All text is 1.5× the old size.
 
-Type is set in Alegreya and Alegreya SC, with a **Readable font** option (Atkinson Hyperlegible) and **Reduce motion**. The title screen is a live ink-wash landscape.
+Type is set in Alegreya and Alegreya SC, with a **Readable font** option (Atkinson Hyperlegible) and **Reduce motion**.
 
 ![A settlement](docs/screenshots/town.jpg)
 ![A conversation](docs/screenshots/talk.jpg)

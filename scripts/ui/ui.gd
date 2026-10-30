@@ -7,15 +7,17 @@ extends RefCounted
 
 const UISkin = preload("res://scripts/ui/skin.gd")
 
-const PARCHMENT := Color(0.94, 0.9, 0.81)
-const PARCHMENT_DARK := Color(0.84, 0.77, 0.64)
-const INK := Color(0.13, 0.09, 0.07)
-const BROWN := Color(0.42, 0.22, 0.12)
-const BROWN_LIGHT := Color(0.6, 0.4, 0.2)
-const RED := Color(0.66, 0.16, 0.1)
-const GREEN := Color(0.16, 0.42, 0.3)
-const BLUE := Color(0.2, 0.33, 0.55)
-const GOLD := Color(0.8, 0.6, 0.22)
+# Text on dark panels (scripts/ui/skin.gd): light body text, amber-tan
+# headings, and accents bright enough to read on near-black.
+const PARCHMENT := Color(0.06, 0.055, 0.05)
+const PARCHMENT_DARK := Color(0.12, 0.11, 0.1)
+const INK := Color(0.92, 0.9, 0.85)
+const BROWN := Color(0.86, 0.7, 0.42)
+const BROWN_LIGHT := Color(0.72, 0.62, 0.48)
+const RED := Color(0.92, 0.38, 0.3)
+const GREEN := Color(0.52, 0.82, 0.56)
+const BLUE := Color(0.58, 0.72, 0.98)
+const GOLD := Color(0.98, 0.78, 0.34)
 
 static var _theme: Theme
 
@@ -25,6 +27,13 @@ const TEXT_SCALE := 1.5
 
 static func px(size: float) -> int:
 	return int(round(size * TEXT_SCALE))
+
+## Older BBCode colours were picked for dark text on paper; lift them so they
+## read on the dark panels.
+static func _light_colours(text: String) -> String:
+	if text.find("[color=#") < 0:
+		return text
+	return text.replace("[color=#2a6a2a]", "[color=#86d08e]").replace("[color=#a03020]", "[color=#f0705a]")
 
 ## Scales [font_size=N] tags inside BBCode text.
 static func scale_bbcode(text: String) -> String:
@@ -64,6 +73,11 @@ static func theme() -> Theme:
 	t.set_stylebox("panel", "Panel", UISkin.panel_box(18, 16))
 	t.set_color("font_color", "Label", INK)
 	t.set_color("default_color", "RichTextLabel", INK)
+	# PS2-era text: light, with a hard drop shadow
+	for ty in ["Label", "RichTextLabel"]:
+		t.set_color("font_shadow_color", ty, Color(0, 0, 0, 0.85))
+		t.set_constant("shadow_offset_x", ty, 2)
+		t.set_constant("shadow_offset_y", ty, 2)
 	t.set_font("normal_font", "RichTextLabel", UISkin.font("body"))
 	t.set_font("bold_font", "RichTextLabel", UISkin.font("bold"))
 	t.set_font("italics_font", "RichTextLabel", UISkin.font("italic"))
@@ -73,11 +87,11 @@ static func theme() -> Theme:
 		t.set_stylebox(st, "Button", UISkin.button_box(st))
 	t.set_stylebox("focus", "Button", _box(Color(0, 0, 0, 0), UISkin.GOLD_PALE, 2, 4, 10))
 	t.set_font("font", "Button", UISkin.font("display_med"))
-	t.set_color("font_color", "Button", Color(0.98, 0.93, 0.8))
-	t.set_color("font_hover_color", "Button", Color(1, 0.97, 0.86))
+	t.set_color("font_color", "Button", Color(0.94, 0.91, 0.84))
+	t.set_color("font_hover_color", "Button", UISkin.GOLD_PALE)
 	t.set_color("font_pressed_color", "Button", UISkin.GOLD_PALE)
-	t.set_color("font_disabled_color", "Button", Color(0.82, 0.78, 0.72))
-	t.set_color("font_outline_color", "Button", Color(0.12, 0.03, 0.02, 0.6))
+	t.set_color("font_disabled_color", "Button", Color(0.45, 0.43, 0.4))
+	t.set_color("font_outline_color", "Button", Color(0, 0, 0, 0.8))
 	t.set_constant("outline_size", "Button", 2)
 	# Menu rows (UI.option): choices read as a list on paper, not a wall of buttons
 	t.set_type_variation("OptionRow", "Button")
@@ -86,15 +100,16 @@ static func theme() -> Theme:
 	t.set_stylebox("disabled", "OptionRow", UISkin.row_box("normal"))
 	t.set_stylebox("focus", "OptionRow", UISkin.row_box("hover"))
 	t.set_font("font", "OptionRow", UISkin.font("body"))
-	t.set_color("font_color", "OptionRow", INK)
-	t.set_color("font_hover_color", "OptionRow", Color(0.45, 0.08, 0.04))
-	t.set_color("font_pressed_color", "OptionRow", UISkin.CINNABAR)
-	t.set_color("font_focus_color", "OptionRow", Color(0.45, 0.08, 0.04))
-	t.set_color("font_disabled_color", "OptionRow", Color(0.5, 0.45, 0.4))
-	t.set_constant("outline_size", "OptionRow", 0)
+	t.set_color("font_color", "OptionRow", Color(0.95, 0.92, 0.85))
+	t.set_color("font_hover_color", "OptionRow", Color(0.16, 0.08, 0.03))
+	t.set_color("font_pressed_color", "OptionRow", Color(0.16, 0.08, 0.03))
+	t.set_color("font_focus_color", "OptionRow", Color(0.16, 0.08, 0.03))
+	t.set_color("font_disabled_color", "OptionRow", Color(0.52, 0.48, 0.42))
+	t.set_color("font_outline_color", "OptionRow", Color(0, 0, 0, 0.7))
+	t.set_constant("outline_size", "OptionRow", 2)
 	# Inputs
-	t.set_stylebox("normal", "LineEdit", UISkin.flat(Color(1, 0.98, 0.93), BROWN, 1, 2, 8))
-	t.set_stylebox("focus", "LineEdit", UISkin.flat(Color(1, 0.99, 0.95), UISkin.CINNABAR, 2, 2, 8))
+	t.set_stylebox("normal", "LineEdit", UISkin.flat(Color(0.04, 0.035, 0.03), UISkin.GOLD, 1, 0, 8))
+	t.set_stylebox("focus", "LineEdit", UISkin.flat(Color(0.05, 0.045, 0.04), UISkin.GOLD_PALE, 2, 0, 8))
 	t.set_color("font_color", "LineEdit", INK)
 	t.set_color("caret_color", "LineEdit", UISkin.CINNABAR)
 	for ty in ["CheckBox", "CheckButton"]:
@@ -152,7 +167,7 @@ static func label(text: String, size: int = 17, color: Color = INK, wrap: bool =
 	return l
 
 static func title(text: String, size: int = 26) -> Label:
-	var l := label(text, size, Color(0.38, 0.1, 0.05))
+	var l := label(text, size, Color(0.97, 0.96, 0.92))
 	l.add_theme_font_override("font", UISkin.font("display"))
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return l
@@ -163,7 +178,7 @@ static func rich(text: String, min_w: float = 400.0) -> RichTextLabel:
 	r.fit_content = true
 	r.scroll_active = false
 	r.custom_minimum_size.x = min_w
-	r.text = scale_bbcode(text)
+	r.text = _light_colours(scale_bbcode(text))
 	r.add_theme_color_override("default_color", INK)
 	r.add_theme_font_size_override("normal_font_size", px(18))
 	r.add_theme_font_size_override("bold_font_size", px(18))

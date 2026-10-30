@@ -266,7 +266,7 @@ func _build_hud() -> void:
 ## The HUD's lacquer band: dark red-brown with a gold rule along its edge.
 func _banner_box() -> StyleBoxFlat:
 	var b := StyleBoxFlat.new()
-	b.bg_color = Color(0.2, 0.07, 0.05, 0.94)
+	b.bg_color = Color(0.05, 0.045, 0.04, 0.9)
 	b.border_color = UISkin.GOLD
 	b.border_width_bottom = 2
 	b.border_width_top = 2

@@ -5,18 +5,25 @@ extends RefCounted
 ## generated here once and cached, so nothing is a flat colour block and the
 ## project needs no image files for its interface.
 
-const PAPER := Color(0.94, 0.9, 0.81)
-const PAPER_SHADE := Color(0.84, 0.77, 0.64)
-const INK := Color(0.13, 0.09, 0.07)
-const SEPIA := Color(0.42, 0.22, 0.12)
-const LACQUER := Color(0.4, 0.1, 0.07)
-const LACQUER_HI := Color(0.56, 0.15, 0.09)
-const LACQUER_LO := Color(0.24, 0.06, 0.04)
-const GOLD := Color(0.83, 0.65, 0.3)
-const GOLD_PALE := Color(0.95, 0.85, 0.6)
-const CINNABAR := Color(0.7, 0.17, 0.1)
-const JADE := Color(0.18, 0.45, 0.34)
-const INDIGO := Color(0.2, 0.33, 0.55)
+# The interface after PS2-era menus (the reference is Kengo's form editor):
+# dark, slightly translucent panels with fine grain, a bronze border and steel
+# corner caps; white serif titles over a red rule; menu entries on dark wood
+# planks that light up as an amber bar when chosen; light text with a drop
+# shadow. The old constant names are kept, with new meanings.
+const PAPER := Color(0.92, 0.9, 0.85)            # light text and marks
+const PAPER_SHADE := Color(0.06, 0.055, 0.05)    # panel body
+const INK := Color(0.92, 0.9, 0.85)              # body text
+const SEPIA := Color(0.86, 0.7, 0.42)            # headings
+const LACQUER := Color(0.1, 0.09, 0.09)          # tablets, dark end
+const LACQUER_HI := Color(0.24, 0.22, 0.21)      # tablets, light end
+const LACQUER_LO := Color(0.05, 0.045, 0.045)
+const GOLD := Color(0.62, 0.47, 0.26)            # bronze
+const GOLD_PALE := Color(0.98, 0.8, 0.36)        # amber highlight
+const CINNABAR := Color(0.72, 0.12, 0.08)        # the red rule and seals
+const JADE := Color(0.32, 0.62, 0.45)
+const INDIGO := Color(0.42, 0.55, 0.85)
+const STEEL := Color(0.44, 0.48, 0.55)
+const WOOD := Color(0.3, 0.19, 0.11)
 
 static var _tex := {}
 static var _fonts := {}
@@ -80,57 +87,54 @@ static func _noise(seed_v: int, freq: float) -> FastNoiseLite:
 	n.fractal_octaves = 4
 	return n
 
-## A framed sheet of paper for 9-slice panels: mottled centre, burnt edge,
-## an ink rule and a gold hairline inside it.
+## A dark panel for 9-slice: grained near-black, a black outer line, a
+## bronze border with a lit top edge, and a faint inner line.
 static func panel_texture(edge: int = 18, rule: bool = true) -> ImageTexture:
 	var key := "panel_%d_%s" % [edge, rule]
 	if _tex.has(key):
 		return _tex[key]
-	var sz := 128
+	var sz := 96
 	var img := Image.create(sz, sz, false, Image.FORMAT_RGBA8)
-	var n := _noise(7, 0.035)
-	var fib := _noise(19, 0.4)
+	var n := _noise(7, 0.08)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
 	for y in sz:
 		for x in sz:
 			var v := n.get_noise_2d(x, y) * 0.5 + 0.5
-			var f2 := fib.get_noise_2d(x * 0.25, y * 3.0) * 0.5 + 0.5
-			var c := PAPER.lerp(PAPER_SHADE, clampf(v * 0.55 + f2 * 0.15, 0.0, 1.0) * 0.55)
+			var c := PAPER_SHADE.lightened(v * 0.05 + rng.randf() * 0.025)
+			c.a = 0.97
 			var d := mini(mini(x, y), mini(sz - 1 - x, sz - 1 - y))
-			if d < edge:
-				var t := 1.0 - float(d) / edge
-				c = c.lerp(Color(0.6, 0.46, 0.3), t * t * 0.75)
 			if rule:
-				if d == 3 or d == 4:
-					c = c.lerp(INK, 0.85)
-				elif d == 7:
-					c = c.lerp(GOLD, 0.8)
+				if d == 0:
+					c = Color(0, 0, 0, 1)
+				elif d == 1 or d == 2:
+					c = GOLD.lightened(0.2 if y < sz / 2 else 0.0).darkened(0.0 if d == 1 else 0.25)
+				elif d == 3:
+					c = Color(0, 0, 0, 0.95)
+				elif d == 6:
+					c = Color(GOLD, 0.35)
 			img.set_pixel(x, y, c)
 	var t2 := ImageTexture.create_from_image(img)
 	_tex[key] = t2
 	return t2
 
-## A tileable paper texture for large backgrounds.
+## A faint grain laid over large panels.
 static func paper_tile() -> ImageTexture:
 	if _tex.has("paper_tile"):
 		return _tex.paper_tile
-	var sz := 256
+	var sz := 128
 	var img := Image.create(sz, sz, false, Image.FORMAT_RGBA8)
-	var n := _noise(3, 0.02)
-	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	var fib := _noise(11, 0.25)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
 	for y in sz:
 		for x in sz:
-			# periodic sampling on a torus makes the tile seamless
-			var ax := TAU * x / sz
-			var ay := TAU * y / sz
-			var v := n.get_noise_3d(cos(ax) * 40.0, sin(ax) * 40.0, cos(ay) * 40.0 + sin(ay) * 17.0) * 0.5 + 0.5
-			var f2 := fib.get_noise_3d(cos(ax) * 10.0, sin(ax) * 10.0, sin(ay) * 90.0) * 0.5 + 0.5
-			img.set_pixel(x, y, Color(1, 1, 1, 0).lerp(Color(0.55, 0.42, 0.28, 1.0), clampf((v - 0.5) * 0.35 + (f2 - 0.5) * 0.18 + 0.08, 0.0, 0.25)))
+			img.set_pixel(x, y, Color(1, 1, 1, rng.randf() * 0.025))
 	var t := ImageTexture.create_from_image(img)
 	_tex.paper_tile = t
 	return t
 
-## Lacquered wood tablets for buttons, in four states.
+## Action buttons: dark gunmetal tablets with a bronze edge; the selected
+## state is the amber bar.
 static func lacquer(state: String) -> ImageTexture:
 	var key := "lacquer_" + state
 	if _tex.has(key):
@@ -138,80 +142,87 @@ static func lacquer(state: String) -> ImageTexture:
 	var w := 64
 	var h := 36
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	var grain := _noise(23, 0.08)
-	var top: Color = {"normal": LACQUER_HI, "hover": Color(0.7, 0.22, 0.12), "pressed": LACQUER_LO, "disabled": Color(0.55, 0.5, 0.46), "selected": Color(1.0, 0.9, 0.6)}[state]
-	var bot: Color = {"normal": LACQUER, "hover": LACQUER_HI, "pressed": Color(0.3, 0.08, 0.05), "disabled": Color(0.45, 0.41, 0.38), "selected": Color(0.78, 0.58, 0.26)}[state]
-	var line: Color = {"normal": GOLD, "hover": GOLD_PALE, "pressed": GOLD.darkened(0.3), "disabled": Color(0.62, 0.58, 0.52), "selected": LACQUER}[state]
+	var grain := _noise(23, 0.1)
+	var top: Color = {"normal": LACQUER_HI, "hover": Color(0.34, 0.31, 0.28), "pressed": LACQUER_LO, "disabled": Color(0.16, 0.15, 0.15), "selected": Color(1.0, 0.86, 0.4)}[state]
+	var bot: Color = {"normal": LACQUER, "hover": Color(0.16, 0.14, 0.13), "pressed": Color(0.12, 0.1, 0.1), "disabled": Color(0.1, 0.1, 0.1), "selected": Color(0.86, 0.55, 0.14)}[state]
+	var line: Color = {"normal": GOLD, "hover": GOLD_PALE, "pressed": GOLD.darkened(0.3), "disabled": Color(0.3, 0.28, 0.26), "selected": Color(0.4, 0.22, 0.06)}[state]
 	for y in h:
 		for x in w:
 			var t := float(y) / (h - 1)
 			if state == "pressed":
 				t = 1.0 - t
 			var c := top.lerp(bot, t)
-			c = c.darkened(grain.get_noise_2d(x * 0.15, y * 2.5) * 0.08)
+			c = c.darkened(grain.get_noise_2d(x * 0.3, y * 1.5) * 0.06)
 			var d := mini(mini(x, y), mini(w - 1 - x, h - 1 - y))
 			if d == 0:
-				c = Color(0.1, 0.03, 0.02)
-			elif d == 1 and y < h / 2:
-				c = c.lightened(0.18)    # lacquer catches the light on the top edge
-			elif d == 3:
-				c = c.lerp(line, 0.75)
+				c = Color(0, 0, 0)
+			elif d == 1:
+				c = line.lightened(0.15) if y < h / 2 else line.darkened(0.2)
+			elif d == 2 and y < h / 2:
+				c = c.lightened(0.12)
 			img.set_pixel(x, y, c)
-	# rounded corners
-	for p in [Vector2i(0, 0), Vector2i(w - 1, 0), Vector2i(0, h - 1), Vector2i(w - 1, h - 1)]:
-		img.set_pixelv(p, Color(0, 0, 0, 0))
 	var tex := ImageTexture.create_from_image(img)
 	_tex[key] = tex
 	return tex
 
-## Menu rows: text on paper, an ink rule beneath, a cinnabar tick on hover.
+## Menu entries: dark wood planks with grain and worn ends; hovered or
+## chosen, the plank becomes a bright amber bar.
 static func row(state: String) -> ImageTexture:
 	var key := "row_" + state
 	if _tex.has(key):
 		return _tex[key]
-	var w := 64
+	var w := 128
 	var h := 32
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	var grain := _noise(41, 0.06)
+	var knots := _noise(43, 0.02)
 	for y in h:
 		for x in w:
-			var c := Color(0, 0, 0, 0)
-			match state:
-				"hover":
-					c = Color(0.62, 0.38, 0.2, 0.16 * (1.0 - float(x) / w) + 0.05)
-				"pressed":
-					c = Color(0.55, 0.3, 0.15, 0.28)
-			if y == h - 1 and (x % 3) != 2:
-				c = c.blend(Color(INK, 0.22))
-			if x < 4 and state in ["hover", "pressed"] and y > 3 and y < h - 4:
-				c = CINNABAR
+			var c: Color
+			if state in ["hover", "pressed"]:
+				var t := float(y) / (h - 1)
+				c = Color(1.0, 0.88, 0.42).lerp(Color(0.9, 0.58, 0.14), t)
+				if state == "pressed":
+					c = c.darkened(0.15)
+			else:
+				var g := grain.get_noise_2d(x * 0.12, y * 2.2) * 0.5 + 0.5
+				var k := knots.get_noise_2d(x * 1.0, y * 1.0)
+				c = WOOD.lerp(WOOD.darkened(0.45), g * 0.7 + maxf(k, 0.0) * 0.6)
+				# darker, worn ends like a plank in a frame
+				var ends := minf(float(x), float(w - 1 - x)) / 18.0
+				c = c.darkened((1.0 - clampf(ends, 0.0, 1.0)) * 0.35)
+				c.a = 0.92
+			var d := mini(mini(x, y), mini(w - 1 - x, h - 1 - y))
+			if d == 0:
+				c = Color(0, 0, 0, 0.9)
+			elif d == 1 and y < 3:
+				c = c.lightened(0.18)
 			img.set_pixel(x, y, c)
 	var tex := ImageTexture.create_from_image(img)
 	_tex[key] = tex
 	return tex
 
-## A brush stroke: thick in the middle, dry at the ends.
+## The rule under titles: a red line that fades out to the right.
 static func brush_rule() -> ImageTexture:
 	if _tex.has("brush"):
 		return _tex.brush
 	var w := 512
-	var h := 8
+	var h := 6
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	var n := _noise(31, 0.05)
 	for x in w:
-		var t := float(x) / (w - 1)
-		var thick := sin(t * PI) * 3.2 + 0.6
+		var a := clampf(1.0 - float(x) / w, 0.0, 1.0)
 		for y in h:
-			var dy := absf(y - h * 0.5 + 0.5)
-			var a := clampf(thick - dy, 0.0, 1.0)
-			var dry := n.get_noise_2d(x * 1.0, y * 6.0)
-			if dry > 0.35 - t * 0.2 and (t < 0.15 or t > 0.85):
-				a *= 0.2
-			img.set_pixel(x, y, Color(INK, a * 0.85))
+			var c := Color(0, 0, 0, 0)
+			if y == 2 or y == 3:
+				c = Color(CINNABAR, a)
+			elif y == 4:
+				c = Color(0, 0, 0, a * 0.6)
+			img.set_pixel(x, y, c)
 	var tex := ImageTexture.create_from_image(img)
 	_tex.brush = tex
 	return tex
 
-## Simple check-box marks: an ink square, and the same with a brush tick.
+## Check boxes: a dark box with a bronze edge, and an amber tick.
 static func check_icon(checked: bool) -> ImageTexture:
 	var key := "check_%s" % checked
 	if _tex.has(key):
@@ -223,16 +234,16 @@ static func check_icon(checked: bool) -> ImageTexture:
 			var d := mini(mini(x, y), mini(s - 1 - x, s - 1 - y))
 			var c := Color(0, 0, 0, 0)
 			if d >= 2:
-				c = Color(1, 0.98, 0.92)
-			if d == 2 or d == 3:
-				c = INK
+				c = Color(0.08, 0.07, 0.07)
+			if d == 2:
+				c = GOLD
 			img.set_pixel(x, y, c)
 	if checked:
 		for i in 12:
 			var x := 5 + i
 			var y := 12 + (i if i < 4 else 0) - (0 if i < 4 else (i - 4))
 			for k in 3:
-				img.set_pixel(clampi(x, 0, s - 1), clampi(y + k - 1, 0, s - 1), CINNABAR)
+				img.set_pixel(clampi(x, 0, s - 1), clampi(y + k - 1, 0, s - 1), GOLD_PALE)
 	var tex := ImageTexture.create_from_image(img)
 	_tex[key] = tex
 	return tex
@@ -289,7 +300,7 @@ static func seal(glyph: String, size: float = 40.0, col: Color = CINNABAR) -> Co
 		var r := size * 0.5
 		var ctr := Vector2(r, r)
 		c.draw_circle(ctr, r - 1.0, col)
-		c.draw_arc(ctr, r - 3.5, 0.0, TAU, 48, Color(PAPER, 0.85), 1.5, true)
+		c.draw_arc(ctr, r - 3.5, 0.0, TAU, 48, Color(0, 0, 0, 0.6), 1.5, true)
 		var f := font("seal")
 		var fs := int(size * 0.62)
 		var tw := f.get_string_size(glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
