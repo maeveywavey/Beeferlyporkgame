@@ -56,6 +56,14 @@ var weather: CPUParticles3D
 var weather_kind := ""
 ## What bending leaves on the ground: fire, water, rocks, walls and pillars.
 var field
+## A coastal field: the land falls into the sea beyond shore_x (+x side).
+var coast := false
+var shore_x := 999.0
+const SEA_LEVEL := -0.4
+## Trees that can be torn up: {"node", "p", "ob"}
+var trees: Array = []
+## While true the battle leaves the camera alone (cut-scenes and showcases).
+var cinematic := false
 var _reinforce_t := 2.0
 var _sep_t := 0.0
 var _finished := false
@@ -109,6 +117,8 @@ func _ready() -> void:
 	_plan_landscape()
 	_build_environment()
 	_build_ground()
+	if coast:
+		_build_sea()
 	if arena >= 0 or duel != "":
 		_build_arena()
 	else:
@@ -172,6 +182,12 @@ func _debug_setup() -> void:
 # ---------------------------------------------------------------------------
 func _build_heights() -> void:
 	heights.resize(GRID * GRID)
+	coast = GS.pending_battle.get("coast", false)
+	var shore_noise := FastNoiseLite.new()
+	shore_noise.seed = 77
+	shore_noise.frequency = 0.03
+	if coast:
+		shore_x = 36.0
 	var n := FastNoiseLite.new()
 	n.seed = randi()
 	n.frequency = 0.015
@@ -199,6 +215,14 @@ func _build_heights() -> void:
 			var border := maxf(absf(x), absf(z))
 			if border > 70.0:
 				h += (border - 70.0) * 0.6
+			if coast:
+				# the beach shelves into the sea past the shoreline
+				var sx := shore_x + shore_noise.get_noise_1d(z) * 7.0
+				if x > sx - 6.0:
+					var k := clampf((x - (sx - 6.0)) / 10.0, 0.0, 1.0)
+					h = lerpf(h, -3.5, k)
+				if x > 70.0:
+					h = minf(h, -3.5)
 			if siege != "":
 				var dz := (z - wall_z) * signf(wall_z)
 				if dz > 1.0 and dz < 5.0:
@@ -362,6 +386,25 @@ func _build_environment() -> void:
 	add_child(sun)
 	_build_weather()
 
+## Open sea beyond the shore, for coastal fields.
+var sea: MeshInstance3D
+
+func _build_sea() -> void:
+	sea = MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(260, 400)
+	pm.subdivide_width = 40
+	pm.subdivide_depth = 40
+	sea.mesh = pm
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.16, 0.3, 0.34, 0.86)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.roughness = 0.12
+	m.metallic_specular = 0.7
+	sea.material_override = m
+	add_child(sea)
+	sea.position = Vector3(shore_x + 110.0, SEA_LEVEL, 0)
+
 func _build_weather() -> void:
 	var kind := ""
 	if biome == "snow":
@@ -425,6 +468,8 @@ func _build_props() -> void:
 		if absf(p.x) > 76.0 or absf(p.y) > 46.0:
 			continue
 		var h := ground_height(p.x, p.y)
+		if coast and h < 0.3:
+			continue
 		var node: Node3D
 		match it.kind:
 			"cliff":
@@ -441,7 +486,9 @@ func _build_props() -> void:
 				else:
 					node = Land.tree(biome, "broad", rng, light)
 				node.rotation.y = rng.randf() * TAU
-				obstacles.append({"p": p, "r": 0.5})
+				var ob := {"p": p, "r": 0.5}
+				obstacles.append(ob)
+				trees.append({"node": node, "p": p, "ob": ob})
 			"bush":
 				if dead:
 					continue
@@ -652,6 +699,12 @@ func _apply_avatar_mods(u) -> void:
 
 ## The Avatar State: a shockwave, and every eye on the field turns.
 func avatar_state(u) -> void:
+	# an Avatar who came to stop a tyrant unleashes the elements on their army
+	if GS.pending_battle.get("avatar", {}).get("wrath", false) and u.troop_id == "avatar":
+		var w = load("res://scripts/battle/avatar_wrath.gd").new()
+		w.name = "AvatarWrath"
+		add_child(w)
+		w.start(self, u)
 	if autotest:
 		print("AVATAR STATE: %s at %.0f/%.0f hp, elements %s" % [u.display_name, u.hp, u.max_hp, u.avatar_elements])
 	feed_msg("%s's eyes blaze white. The Avatar State!" % u.display_name, Color(0.8, 0.95, 1))
@@ -724,6 +777,29 @@ func _initial_spawn() -> void:
 		_spawn_wave(t, active_cap[t])
 	if player_unit == null:
 		player_controlled = false
+	# a furious Avatar does not wait to be worn down: once the enemy is close
+	# enough to crush, or after twenty seconds, it enters the Avatar State
+	if GS.pending_battle.get("avatar", {}).get("wrath", false):
+		var tm := Timer.new()
+		tm.wait_time = 0.5
+		add_child(tm)
+		var since := [0.0]
+		tm.timeout.connect(func():
+			since[0] += 0.5
+			for t2 in 2:
+				for u in team_units[t2]:
+					if u.troop_id != "avatar" or not u.alive:
+						continue
+					var near := false
+					for o in team_units[1 - t2]:
+						if o.alive and o.dist_to(u) < 30.0:
+							near = true
+							break
+					if near or since[0] >= 20.0:
+						u.enter_avatar_state(14.0)
+						tm.queue_free()
+						return)
+		tm.start()
 
 func _check_reinforcements(delta: float) -> void:
 	_reinforce_t -= delta
@@ -779,7 +855,8 @@ func _tick_opening(delta: float) -> void:
 			Sfx.play("horn", -8.0)
 
 func _process(delta: float) -> void:
-	_update_camera(delta)
+	if not cinematic:
+		_update_camera(delta)
 	if weather != null and cam != null:
 		weather.global_position = cam.global_position + Vector3(0, 12.0, 0)
 	_update_hud(delta)

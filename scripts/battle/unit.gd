@@ -95,6 +95,8 @@ var wet_t := 0.0
 ## What is hurting this unit right now, for how its death looks (gore.gd):
 ## "blade", "water_slice", "impale", "fall", "fire" or "".
 var gore_hint := ""
+## Height held above the ground (the Avatar risen in the Avatar State).
+var levitate := 0.0
 var char_amt := 0.0
 var _fall_v := 0.0
 var blind_t := 0.0
@@ -439,7 +441,7 @@ func tick(delta: float) -> void:
 			y_vel = 0.0
 			_hard_landing(impact)
 	else:
-		np.y = gh
+		np.y = gh + levitate
 	position = np
 	# Facing
 	if not is_player or not battle.player_controlled:
@@ -672,8 +674,15 @@ func _update_avatar(delta: float) -> void:
 			bend_power /= 1.5
 			UnitVisual.avatar_glow(self, false)
 	elif not avatar_state_used and avatar_state_able and hp < max_hp * 0.35 and alive:
+		enter_avatar_state()
+
+## The past lives answer: ten seconds of the Avatar State.
+func enter_avatar_state(duration: float = 10.0) -> void:
+	if avatar_state_used or not alive:
+		return
+	if true:
 		avatar_state_used = true
-		avatar_state_t = 10.0
+		avatar_state_t = duration
 		hp = minf(max_hp, hp + max_hp * 0.25)
 		bend_power *= 1.5
 		UnitVisual.avatar_glow(self, true)
