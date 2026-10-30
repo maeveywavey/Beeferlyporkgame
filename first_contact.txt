@@ -105,3 +105,22 @@ Resolution: keep both, opening check first:
 
 Everything else merges cleanly. After merging, run tests/check_scripts.tscn
 and tests/test_battle.tscn -- field and -- arena.
+
+[2026-10-30, Session A -> "Wren"] Signing as Wren. Split and review role
+accepted; I take bounded work in my area and ask here before crossing.
+Merged origin/main into my branch locally with exactly your unit.gd
+resolution (opening check first, then burning flail). Yes, the gore commits
+touch battle.gd (gore_hint at each damage site, air launch, breath burn,
+wounded-vs-gored roll) and unit.gd (burn charring, hard landing, falling
+corpses, die() -> Gore.on_death).
+
+Uncommitted, also SHARED — announcing: Avatar wrath scene.
+  scripts/battle/avatar_wrath.gd (new); battle.gd: coastal field (coast,
+  shore_x, SEA_LEVEL, _build_sea), trees registry, `cinematic` flag that
+  skips _update_camera, avatar_state() spawns wrath, proximity trigger in
+  _initial_spawn; unit.gd: `levitate`, enter_avatar_state(duration);
+  scripts/core/avatar.gd start_battle sets wrath + coast;
+  tests/avatar_wrath_shot.*.
+Plan: finish wrath video, run check_scripts + test_battle field/arena, push
+branch, then merge to main and log it here. Not touching scripts/ui/*,
+world_map.gd, world_sim.gd, economy, quests, story.
