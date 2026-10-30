@@ -39,17 +39,17 @@ The project uses the *Compatibility* (OpenGL) renderer, so it runs on modest har
 ### World map
 | Input | Action |
 |---|---|
-| Left click | Travel to the ground, a settlement or a party |
+| Left click | Travel to the ground, a settlement or a party. A click on a settlement or its name always means the settlement; armies resting inside a friendly settlement are not shown, and you meet them in its hall |
 | Mouse wheel / right-drag / middle-drag or WASD | Zoom / rotate / pan (F re-centres) |
 | M | Whole-world overview |
 | Space, Ctrl or `>>` | Stop, fast travel |
 | T / Esc | Camp: wait, talk with companions, bending around camp, the Avatar, save/load, settings |
 | P, C, I, J, N | Party; Character (with **Bending Forms** and **Techniques**); Inventory; Quests; Nations (with **The Avatar**) |
 
-A gold ★ on a settlement's label means a story beat is waiting there.
+A gold ★ on a settlement's label means a story beat is waiting there. Teachers and other standing services are listed in the settlement's menu without a star.
 
-### Conversations
-Choices are numbered: press **1–9** to choose, and **Enter** to continue.
+### Conversations and menus
+Choices in every window are numbered: press **1–9** (or **0** for a tenth) to choose, and **Enter** to continue. **Esc** closes a window, or takes its way out (Leave, Farewell, Back, Never mind) when it has no close button.
 
 ### Walking a settlement
 Choose **Walk around** in any friendly settlement's menu.
@@ -72,6 +72,8 @@ Choose **Walk around** in any friendly settlement's menu.
 | F | Your bending form |
 | F1 / F2 / F3 | Hold / follow / charge |
 | Tab, Esc | Leave when the battle is decided; pause menu |
+
+Nobody attacks for the first two seconds of a battle; arena fights and Agni Kai count down from three. If a bending move cannot be made, the bottom of the screen says why.
 
 ## What's in the game
 
@@ -153,8 +155,28 @@ Each can be switched off in Settings. Each adds:
 - **The Southern council** can be swayed on war and peace.
 - **Air Temples** cannot be attacked, heal you for free, and sell no meat.
 
-### Attributes
-Nine, after Dark Souls 3: Vigor, Attunement (bending and chi), Endurance, Vitality, Strength, Dexterity, Intelligence, Spirit (in place of Faith) and Luck, two points per level. Bending draws on Attunement and two attributes of its element: earth on Endurance and Vigor, water on Intelligence and Dexterity, air on Dexterity and Spirit, fire on Strength and Vitality.
+### Attributes and party skills
+Nine attributes, after Dark Souls 3: Vigor, Attunement (bending and chi), Endurance, Vitality, Strength, Dexterity, Intelligence, Spirit (in place of Faith) and Luck, two points per level. Bending draws on Attunement and two attributes of its element: earth on Endurance and Vigor, water on Intelligence and Dexterity, air on Dexterity and Spirit, fire on Strength and Vitality.
+
+Ten **party skills**, after Mount & Blade: Leadership, Trainer, Healing, Surgery, Pathfinding, Spotting, Tactics, Trade, Engineer and Prisoner Management. You get two party points at the start and one per level, spent under Character, up to 2 + half your level in each skill (at most 10). Attributes and companions add to them.
+
+| Skill | Effect |
+|---|---|
+| Leadership | Party size, morale, lower wages |
+| Trainer | Troops gain experience every day |
+| Healing | Wounded troops recover faster |
+| Surgery | +4% a level that a fallen soldier is wounded rather than killed |
+| Pathfinding / Spotting | Map travel speed / how far you see on the map |
+| Tactics | Auto-resolved battles |
+| Trade | Prices |
+| Engineer | Siege ladders ready 1.5 hours sooner a level (at least 4 hours) |
+| Prisoner Management | Prisoners you can keep |
+
+### War, sieges and fiefs
+- **Lords' errands:** lords offer road-clearing errands until you have 50 renown, raids from 50 and battles against enemy armies from 100.
+- **Restraining conquerors:** when one power holds half again the strongholds it started with (and at least two more), the Avatar steps in. While the Avatar is an untold child, the Air Temple abbots do it instead. The conqueror must make peace with everyone it has taken land from, and may start no war for sixty days.
+- **Sieges and earthbenders:** walls count for less against attacking earthbenders and for more with defending ones. In a siege you fight, the breach is wider or narrower depending on which side has them.
+- **Feasts:** any hall you own can hold a feast once a month, for 400 gold and two days. Every friendly lord within two days' ride comes, and your relations and renown rise.
 
 ### Bending
 Fire is stronger by day, water by night and strongest under a full moon. The Great Comet, if it comes, makes fire burn far hotter; a lunar eclipse hides the full moon's strength. Only waterbenders heal with bending.
@@ -166,7 +188,7 @@ To use it, open **Character → Bending Forms**, chain movements whose stances c
 ![A designed firebending form, then Fire Blast and Lightning](docs/screenshots/bending.gif)
 
 ### Look
-- **3D:** realistic and muted, with a PS1 layer (Settings → Retro look; Heavy by default): vertices snap to a screen grid, and every surface (ground, rock, bark, foliage cards, people) shares one texel size. Ground and rock are computed from world position: hard-edged patches of ground, leaf litter under trees, and rock in zones of different stone with bedding, joints, staining, varnish and lichen. Mountains, canopies, pines and grass are painted cards. Character textures are repainted (`tools/paint_textures.py`).
+- **3D:** realistic and muted, with pixel textures (Settings → Pixel textures: Off, Light by default, or Heavy): every surface (ground, rock, bark, foliage cards, people) shares one texel size, and vertices are not snapped, so people stay clear. Ground and rock are computed from world position: hard-edged patches of ground, leaf litter under trees, and rock in zones of different stone with bedding, joints, staining, varnish and lichen. Mountains, canopies, pines and grass are painted cards. Character textures are repainted (`tools/paint_textures.py`).
 - **Interface:** after PS2-era menus. Dark grained panels with a bronze border and steel corner caps, white serif titles over a red rule, menu entries on dark wood planks that light up as an amber bar, steel tablets for actions, and light text with a drop shadow. All text is 1.5× the old size.
 
 Type is set in Alegreya and Alegreya SC, with a **Readable font** option (Atkinson Hyperlegible) and **Reduce motion**.
@@ -226,6 +248,8 @@ godot --headless --path . res://tests/test_ui.tscn          # open every window,
 godot --headless --path . res://tests/test_flows.tscn       # siege defence, captivity, save/load
 godot --headless --path . res://tests/test_battle.tscn -- field   # also: siege, arena, duel, big, bend <element>,
                                                                    # avatar young|prime|elder, tech <element>
+godot --headless --path . res://tests/test_balance.tscn -- earth  # a new character vs an equal outlaw band (or fire|water|air|none);
+                                                                   # run 10+ times: the player should win 7 in 10 or more
 ```
 
 ## Notes
