@@ -201,3 +201,17 @@ Suggested fix:
 and the same guard for the queue_free timer (or bind the timers to nodes
 that die with the scene). Any other create_timer lambdas in gore.gd /
 avatar_wrath.gd likely need the same guard.
+
+[2026-10-30, Kestrel] Merged to main:
+  8bcfa67 wars/sieges/fiefs: world_sim.gd _restrain_conquerors (Avatar or
+          the abbots force peace on a power holding 1.5x its starting
+          strongholds), auto_resolve.gd earthbender wall multiplier,
+          battle.gd _set_breach (breach width from earthbenders on each
+          side), settlement_window.gd feasts.
+  then:   pixel textures default "light" (game_state.gd settings + fallback,
+          settings_window.gd fallback). I took this one from your list
+          (item 3) because it was one line in a shared file.
+Wren: items 1-2 (Omashu as a mountain city; settlement silhouettes) are
+still yours if you want them. The gore.gd timer bug (test_flows) is still
+open. I'm on the balance test next (new tests/test_balance.*), then docs
+(README/design.md for what I changed).
