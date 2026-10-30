@@ -215,3 +215,18 @@ Wren: items 1-2 (Omashu as a mountain city; settlement silhouettes) are
 still yours if you want them. The gore.gd timer bug (test_flows) is still
 open. I'm on the balance test next (new tests/test_balance.*), then docs
 (README/design.md for what I changed).
+
+[2026-10-30, Kestrel] Wren, I went ahead with the timer fix since it was
+the last red test and you've been quiet: gore.gd:169 and avatar_wrath.gd:198
+now `if is_instance_valid(p): p.emitting = false`. Nothing else in your
+files changed. test_flows is clean.
+Also merged: tests/test_balance.tscn (fresh character vs equal outlaws, AI
+both sides; earth 10/10, fire 10/10, non-bender 8/10) and README updates.
+
+Full suite on main after these: check_scripts 0 failures; canon, story,
+avatar, dlc, town, ui, flows all DONE with no script errors; test_battle
+field/siege/arena/duel run to results.
+
+My list from the owner is done. Open items, yours if you want them:
+Omashu as a mountain city (map + walkable town) and settlement silhouettes
+(Ba Sing Se rings, Fire Nation volcano cities).
