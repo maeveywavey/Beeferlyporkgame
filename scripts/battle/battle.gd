@@ -47,6 +47,10 @@ var wall_z := 0.0
 var breach_half := 6.0
 var heights := PackedFloat32Array()
 var player_kills := 0
+## Seconds before anyone may attack: an arena countdown, or a moment to take
+## in the field before the first volley.
+var opening_t := 0.0
+var _opening_said := -1
 var weather: CPUParticles3D
 var _reinforce_t := 2.0
 var _sep_t := 0.0
@@ -119,6 +123,7 @@ func _ready() -> void:
 	else:
 		_prepare_sides(b)
 		_initial_spawn()
+	opening_t = 3.0 if (arena >= 0 or duel != "") else 2.0
 	if not autotest:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	else:
@@ -480,14 +485,12 @@ func _build_arena() -> void:
 func _spawn_arena() -> void:
 	reserves = [[], []]
 	active_cap = [1, 1]
-	_spawn_entry({"kind": "player", "id": "player", "key": "player"}, 0, Vector3(0, 0, -8), 0.0)
+	_spawn_entry({"kind": "player", "id": "player", "key": "player"}, 0, Vector3(0, 0, -12), 0.0)
 	var u = Unit.new()
 	u.battle = self
 	u.setup_arena(Data.arena_fighters[arena], 1)
-	u.max_hp *= 1.5
-	u.hp = u.max_hp
 	add_child(u)
-	u.position = Vector3(0, 0, 8)
+	u.position = Vector3(0, 0, 12)
 	u.facing = PI
 	u.rotation.y = PI
 	units.append(u)
@@ -684,7 +687,7 @@ func _spawn_wave(team: int, count: int) -> void:
 		var x := (col - (n_in_row - 1) / 2.0) * spacing
 		var pos := Vector3(x, 0, z + dirz * (6.0 - row * 1.8))
 		if front[i].kind == "player":
-			pos = Vector3(0, 0, z + dirz * 9.0)
+			pos = Vector3(0, 0, z + dirz * 3.0)
 		_spawn_entry(front[i], team, pos, face)
 	for i in rng_units.size():
 		var row2 := int(i / per_row)
@@ -732,6 +735,7 @@ func _physics_process(delta: float) -> void:
 		_prof_us += Time.get_ticks_usec() - t0
 		_prof_n += 1
 	_update_walls()
+	_tick_opening(delta)
 	if not battle_over:
 		_check_reinforcements(delta)
 	if autotest:
@@ -739,6 +743,21 @@ func _physics_process(delta: float) -> void:
 		if battle_over or _autotest_t > 240.0:
 			if not _finished:
 				_finish(false)
+
+func _tick_opening(delta: float) -> void:
+	if opening_t <= 0.0:
+		return
+	opening_t -= delta
+	if arena < 0 and duel == "":
+		return
+	var n := int(ceil(opening_t))
+	if n != _opening_said:
+		_opening_said = n
+		if n > 0:
+			hud_note(str(n))
+		else:
+			hud_note("Fight!")
+			Sfx.play("horn", -8.0)
 
 func _process(delta: float) -> void:
 	_update_camera(delta)
@@ -1517,7 +1536,15 @@ func _player_cast(slot: String) -> void:
 		hud_note("Not enough chi.")
 		return
 	if pu.cooldowns.get(slot, 0.0) > 0.0:
+		hud_note("%s is not ready (%.1fs)." % [a.name, pu.cooldowns[slot]])
 		return
+	match pu.action:
+		"stagger":
+			hud_note("Staggered — you can't bend until you recover.")
+			return
+		"windup", "aim":
+			hud_note("Finish your attack first.")
+			return
 	pu.cast(slot, aim_point())
 
 func _order(o: String) -> void:
