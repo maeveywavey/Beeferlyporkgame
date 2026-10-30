@@ -97,16 +97,19 @@ static func terrain_mesh() -> ArrayMesh:
 	_terrain_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return _terrain_mesh
 
-## The world map's look: "atlas" (painted relief), "chart" (an old ink-and-
-## parchment chart) or "ink" (ink wash on rice paper). Settings > Map style.
-const MAP_STYLES := ["atlas", "chart", "ink"]
+## The world map's look: "painted" (the hand-painted fantasy map, after the
+## series' world maps; the default), "atlas" (painted relief), "chart" (an old
+## ink-and-parchment chart) or "ink" (ink wash on rice paper).
+## Settings > Map style. The index is the shaders' style number.
+const MAP_STYLES := ["atlas", "chart", "ink", "painted"]
+const PAINTED_FILE := "res://assets/world/painted.png"
 static var terrain_material: ShaderMaterial
 static var sea_material: ShaderMaterial
 static var vegetation: Node3D
 
 static func map_style() -> String:
-	var st: String = GS.settings.get("map_style", "atlas")
-	return st if st in MAP_STYLES else "atlas"
+	var st: String = GS.settings.get("map_style", "painted")
+	return st if st in MAP_STYLES else "painted"
 
 static func build_terrain(parent: Node3D) -> void:
 	var ht := Terrain.height_texture()
@@ -116,6 +119,8 @@ static func build_terrain(parent: Node3D) -> void:
 	terrain_material.set_shader_parameter("height_tex", ht)
 	terrain_material.set_shader_parameter("info_near", it)
 	terrain_material.set_shader_parameter("info_lin", it)
+	var painted := _painted_texture()
+	terrain_material.set_shader_parameter("painted_tex", painted)
 	var mi := MeshInstance3D.new()
 	mi.mesh = terrain_mesh()
 	mi.material_override = terrain_material
@@ -125,6 +130,7 @@ static func build_terrain(parent: Node3D) -> void:
 	sea_material.shader = load("res://shaders/map_sea.gdshader")
 	sea_material.set_shader_parameter("height_tex", ht)
 	sea_material.set_shader_parameter("info_lin", it)
+	sea_material.set_shader_parameter("painted_tex", painted)
 	var sea := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(Data.MAP_W * 3.0, Data.MAP_H * 3.0)
@@ -136,6 +142,41 @@ static func build_terrain(parent: Node3D) -> void:
 	parent.add_child(vegetation)
 	build_vegetation(vegetation)
 	apply_style()
+	update_borders()
+
+## Political borders: send every held settlement's position and its holder's
+## colour to the terrain shader (call when settlements change hands).
+static func update_borders() -> void:
+	if terrain_material == null:
+		return
+	var pos := PackedVector2Array()
+	var col := PackedColorArray()
+	var ids := Data.settlements.keys()
+	ids.sort()
+	for sid in ids:
+		if Data.settlements[sid].type == "ruin" or not GS.settlements.has(sid):
+			continue
+		pos.append(Data.settlements[sid].pos)
+		col.append(Data.factions.get(GS.settlements[sid].faction, Data.factions.neutral).color)
+		if pos.size() >= 128:
+			break
+	terrain_material.set_shader_parameter("site_pos", pos)
+	terrain_material.set_shader_parameter("site_color", col)
+	terrain_material.set_shader_parameter("site_count", pos.size())
+	terrain_material.set_shader_parameter("borders", 1.0 if GS.settings.get("map_borders", true) else 0.0)
+
+static var _painted: ImageTexture
+
+## The painted map (tools/paint_map.py), read straight from the PNG.
+static func _painted_texture() -> ImageTexture:
+	if _painted != null:
+		return _painted
+	var img := Image.new()
+	if img.load_png_from_buffer(FileAccess.get_file_as_bytes(PAINTED_FILE)) != OK:
+		return null
+	img.generate_mipmaps()
+	_painted = ImageTexture.create_from_image(img)
+	return _painted
 
 ## Switch the map's style in place.
 static func apply_style() -> void:

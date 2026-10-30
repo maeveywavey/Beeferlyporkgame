@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Generate the world map's terrain: land, height, biome, forest and rivers.
 
-The coastlines are drawn by hand as outlines (polygons, ellipses and capsules)
-and then broken up the way real coasts are: the coordinates are warped by
-low-frequency noise (bays and headlands) and the edge is roughened by fractal
-noise (coves and points). Mountain ranges follow hand-placed ridge lines;
-rivers follow hand-placed courses with noise meanders. Every settlement in
-scripts/autoload/game_data.gd is guaranteed dry land around it.
+The geography is the series' world as traced from a reference map by
+tools/trace_reference.py (assets/world/geography.png): its coasts, lakes,
+rivers, deserts, forests, ice and mountains. This script adds the few islands
+the tracing loses and the canon needs, joins Hamakaze to the mainland, gives
+every settlement in scripts/autoload/game_data.gd dry level ground, and builds
+heights from the traced mountains.
 
 Writes, at 2 map units per sample (801 x 601):
   assets/world/height.bin  float32 heights (sea floor negative)
@@ -115,144 +115,96 @@ def dist_polyline(px, py, pts):
     return d
 
 
-# --- the world ----------------------------------------------------------------
-EARTH = [(760, 300), (800, 240), (860, 215), (880, 165), (930, 140), (990, 160), (1040, 182), (1080, 162),
-         (1150, 176), (1200, 158), (1260, 150), (1330, 166), (1390, 148), (1450, 174), (1500, 200),
-         (1530, 262), (1508, 322), (1552, 372), (1538, 432), (1498, 462), (1530, 522), (1562, 582),
-         (1540, 650), (1566, 716), (1548, 790), (1512, 838), (1478, 812), (1462, 760), (1420, 742), (1380, 794), (1330, 836),
-         (1270, 812), (1236, 772), (1196, 748), (1150, 752), (1120, 790), (1090, 818), (1040, 834), (990, 842),
-         (940, 800), (900, 762), (860, 762), (830, 822), (800, 882), (760, 922), (733, 902), (745, 850),
-         (790, 780), (820, 730), (780, 700), (740, 652), (760, 600), (718, 560), (740, 500), (700, 450),
-         (730, 390)]
-FIRE_MAIN = [(285, 378), (322, 384), (352, 420), (357, 470), (346, 520), (372, 560), (422, 580), (452, 612),
-             (432, 662), (392, 677), (340, 652), (290, 642), (243, 637), (223, 600), (240, 560), (250, 500),
-             (258, 450), (265, 410)]
-NORTH_WEST_ICE = [(140, -30), (705, -30), (692, 40), (662, 80), (692, 120), (642, 142), (590, 126), (560, 152),
-                  (500, 142), (450, 157), (400, 152), (360, 122), (320, 97), (270, 107), (220, 92), (180, 72), (150, 40)]
-NORTH_EAST_ICE = [(920, -30), (1392, -30), (1382, 30), (1352, 70), (1362, 112), (1320, 122), (1270, 97),
-                  (1220, 102), (1170, 92), (1120, 107), (1060, 97), (1010, 82), (960, 62), (930, 30)]
-SOUTH_WEST_ICE = [(180, 1230), (1012, 1230), (1002, 1142), (962, 1102), (902, 1082), (860, 1066), (800, 1076),
-                  (740, 1062), (680, 1077), (620, 1087), (560, 1102), (500, 1122), (430, 1107), (380, 1112),
-                  (320, 1097), (260, 1102), (210, 1132), (185, 1170)]
-SOUTH_EAST_ICE = [(1130, 1230), (1422, 1230), (1412, 1160), (1382, 1122), (1332, 1112), (1272, 1102),
-                  (1222, 1112), (1172, 1132), (1142, 1162)]
+# --- the world ---------------------------------------------------------------
+# The geography is traced from a reference map of the series' world by
+# tools/trace_reference.py into assets/world/geography.png. This script adds
+# what the reference does not show or the canon needs, then builds heights,
+# biomes, forests and rivers from it.
 
-# ellipses: cx, cy, rx, ry, angle
-ISLANDS = [
-    (200, 470, 24, 20, 0),       # Crescent Island
-    (458, 508, 34, 24, 15),      # Ember Island
-    (328, 290, 58, 33, -5),      # Kurozan
-    (116, 570, 38, 56, 8),       # Kagari
-    (105, 722, 50, 46, 0),       # the Sun Warriors' isle
-    (262, 768, 58, 30, -10),     # Tsurugi
-    (356, 810, 24, 17, 20),      # Akashima
-    (430, 705, 21, 15, 0),       # Umibe
-    (520, 330, 82, 56, -15),     # Western Air Temple
-    (600, 982, 62, 46, 10),      # Patola peaks
-    (936, 1036, 38, 20, -20),    # Whaletail
-    (772, 54, 40, 24, 0),        # Tuktu's ice island
-    (1120, 960, 30, 22, 0),      # Pearl Isles: Tidehall
-    (1184, 1002, 24, 18, 30),    # Shellbay
-    (1058, 994, 22, 16, -20),    # Kelp Rock
-    (470, 900, 15, 12, 0),       # Gull Rock
-    (668, 762, 18, 13, 25),      # Oyster Isle
-    (180, 900, 20, 15, -10),     # Tern Isle
-    (1556, 862, 17, 13, 0),      # Driftwood Key
-    (1520, 1010, 20, 15, 15),    # Kelp Isle
-    (1050, 900, 9, 7, 0), (1250, 930, 8, 6, 0), (820, 990, 10, 7, 0), (1450, 900, 9, 7, 0),  # skerries
-    (60, 380, 12, 9, 0), (90, 850, 9, 7, 0), (1580, 300, 10, 8, 0),
+# islands the tracing loses (too small on the reference) or the game needs:
+# cx, cy, rx, ry in map units
+ISLETS = [
+    (322, 442, 26, 19),     # the Island of the Sun Warriors
+    (376, 466, 11, 9),      # the Boiling Rock
+    (902, 832, 9, 7),       # Oyster Isle, off Hamakaze
 ]
-# the Strait Isles: two long islands with a channel between them
-CAPSULES = [((560, 444), (567, 530), 17), ((555, 588), (571, 666), 16)]
-LAKES = [(305, 446, 8), (1062, 398, 11), (1385, 352, 13), (1180, 255, 9)]
-
-# ridges: points, peak height, half-width
-RIDGES = [
-    ([(760, 360), (800, 400), (845, 470), (852, 540), (880, 610)], 14, 26),      # the Kolau range by Omashu
-    ([(985, 205), (1060, 262), (1150, 250), (1250, 252), (1330, 238), (1405, 285)], 16, 28),  # the northern range
-    ([(1492, 280), (1480, 380), (1503, 480), (1490, 560), (1522, 640)], 14, 22),   # the eastern range
-    ([(1180, 440), (1232, 482), (1280, 525)], 9, 18),                               # the Serpent's spine
-    ([(935, 600), (1000, 560)], 6, 18),                                              # southern hills
-    ([(250, 470), (300, 470), (310, 410)], 13, 22),                                  # Fire main island volcanoes
-    ([(600, 980), (610, 965)], 17, 26),                                              # Patola
-    ([(320, 285), (340, 280)], 12, 16),                                              # Kurozan's peak
-    ([(450, 500), (452, 502)], 9, 10),                                               # Ember Island's volcano
-    ([(110, 560), (118, 590)], 7, 18),                                               # Kagari
-    ([(500, 320), (560, 330)], 8, 30),                                               # the Western Air Temple's cliffs
-]
-
-RIVERS = [
-    [(1252, 252), (1262, 330), (1243, 440), (1296, 520), (1302, 620), (1262, 700), (1290, 770), (1302, 840)],
-    [(830, 500), (792, 560), (760, 612), (722, 640)],
-    [(985, 560), (968, 655), (942, 722), (930, 800)],
-    [(1482, 470), (1520, 498), (1560, 500)],
-    [(1078, 262), (1094, 225), (1090, 190), (1084, 150)],
-    [(1150, 440), (1130, 520), (1078, 562)],
-]
-
-REGIONS = [  # cx, cy, rx, ry, biome (with ragged edges)
-    (1140, 592, 138, 86, "desert"),
-    (965, 655, 58, 42, "swamp"),
-    (1305, 785, 66, 40, "swamp"),
-    (330, 520, 175, 175, "volcanic"),
-    (328, 290, 62, 38, "volcanic"),
-    (105, 722, 58, 52, "forest"),
-    (520, 330, 86, 60, "highland"),
-]
+# Hamakaze is still joined to the mainland in this era (docs/canon.md §9)
+NECKS = [((928, 802), (950, 764), 7)]
+# hand-placed ranges are not needed: mountains come from the reference
 
 
 def settlements():
     src = open(os.path.join(ROOT, "scripts", "autoload", "game_data.gd")).read()
     start = src.index("var settlements := {")
-    out = []
-    for m in re.finditer(r'"pos": Vector2\(([\d.]+), ([\d.]+)\)', src[start:]):
-        out.append((float(m.group(1)), float(m.group(2))))
+    out = {}
+    for m in re.finditer(r'\n\t"([a-z_]+)": \{"name": "[^"]*", "type": "[a-z]+", "faction": "[a-z_]+", "pos": Vector2\(([\d.]+), ([\d.]+)\)', src[start:]):
+        out[m.group(1)] = (float(m.group(2)), float(m.group(3)))
     return out
 
 
-def main():
-    # warped coordinates: bays and headlands, then fine roughness
-    wx = fbm(7, 3, 11) * 34.0 + fbm(22, 2, 13) * 12.0 + fbm(60, 2, 12) * 5.0
-    wy = fbm(7, 3, 21) * 34.0 + fbm(22, 2, 23) * 12.0 + fbm(60, 2, 22) * 5.0
-    px, py = X + wx, Y + wy
-    sd = sd_polygon(px, py, EARTH)
-    for poly in (FIRE_MAIN, NORTH_WEST_ICE, NORTH_EAST_ICE, SOUTH_WEST_ICE, SOUTH_EAST_ICE):
-        sd = np.maximum(sd, sd_polygon(px, py, poly))
-    for e in ISLANDS:
-        sd = np.maximum(sd, sd_ellipse(px, py, *e))
-    for a, b, r in CAPSULES:
-        sd = np.maximum(sd, sd_capsule(px, py, a, b, r))
-    sd += fbm(60, 4, 31) * 5.0
-    for cx, cy, r in LAKES:
-        sd = np.minimum(sd, np.sqrt((X - cx) ** 2 + (Y - cy) ** 2) - r + fbm(80, 2, 41) * 2.0)
-    # dry land under every settlement
-    for (sx, sy) in settlements():
-        d = np.sqrt((X - sx) ** 2 + (Y - sy) ** 2)
-        sd = np.maximum(sd, 7.0 - d * 0.6)
-    land = sd > 0
+def depth_of(mask, steps):
+    """Distance into a mask in samples (alternating 4- and 8-neighbour erosion)."""
+    d = np.zeros(mask.shape, np.float32)
+    cur = mask.copy()
+    for k in range(steps):
+        d += cur
+        nxt = cur.copy()
+        nxt[1:] &= cur[:-1]
+        nxt[:-1] &= cur[1:]
+        nxt[:, 1:] &= cur[:, :-1]
+        nxt[:, :-1] &= cur[:, 1:]
+        if k % 2 == 1:
+            nxt[1:, 1:] &= cur[:-1, :-1]
+            nxt[:-1, :-1] &= cur[1:, 1:]
+            nxt[1:, :-1] &= cur[:-1, 1:]
+            nxt[:-1, 1:] &= cur[1:, :-1]
+        cur = nxt
+        if not cur.any():
+            break
+    return d
 
-    # height
-    # the sea floor follows a smoothed coast, so depth has no blotches
-    sd_soft = blur(sd, 6)
+
+def main():
+    geo = np.asarray(Image.open(os.path.join(ROOT, "assets", "world", "geography.png"))).astype(np.int32)
+    land = geo[..., 0] > 0
+    biome = geo[..., 1].astype(np.uint8).copy()
+    mtn = geo[..., 2].astype(np.float32) / 255.0
+    river = (geo[..., 3] > 0).astype(np.float32)
+    for cx, cy, rx, ry in ISLETS:
+        isl = ((X - cx) / rx) ** 2 + ((Y - cy) / ry) ** 2 < 1.0 + fbm(80, 2, 5) * 0.3
+        biome[isl & ~land] = BIOMES.index("forest")
+        land |= isl
+    for a, b, r in NECKS:
+        neck = sd_capsule(X, Y, a, b, r) > 0
+        biome[neck & ~land] = BIOMES.index("forest")
+        land |= neck
+    sites = settlements()
+    for (sx, sy) in sites.values():
+        disc = (X - sx) ** 2 + (Y - sy) ** 2 < 36.0
+        biome[disc & ~land] = BIOMES.index("grass")
+        land |= disc
+    # signed distance to the coast in map units, softened a little
+    sd = (depth_of(land, 40) - depth_of(~land, 40)) * STEP
+    sd = np.where(land, np.maximum(sd - STEP * 0.5, 0.3), np.minimum(sd + STEP * 0.5, -0.3))
+    sd = blur(sd, 1)
+    sd = np.where(land, np.maximum(sd, 0.2), np.minimum(sd, -0.2))
+
+    # heights: a gentle rise inland, rolling hills, and the reference's mountains
+    sd_soft = blur(np.where(land, sd, np.minimum(sd, 0)), 6)
     sea = -0.5 - np.clip(-np.minimum(sd_soft, sd), 0, 70) / 70.0 * 6.0
-    h = np.where(land, 0.6 + np.clip(sd, 0, 50) / 50.0 * 3.0, sea)
+    h = np.where(land, 0.6 + np.clip(sd, 0, 40) / 40.0 * 2.0, sea)
     hills = fbm(24, 4, 51) * 0.5 + 0.5
-    h += np.where(land, hills * 2.5 * np.clip(sd / 12.0, 0, 1), 0)
-    ridged = 1.0 - np.abs(fbm(30, 4, 61))
-    for pts, peak, width in RIDGES:
-        d = dist_polyline(X + wx * 0.5, Y + wy * 0.5, pts)
-        h += np.where(land, peak * np.exp(-(d / width) ** 2) * (0.45 + 0.75 * ridged ** 2) * np.clip(sd / 8.0, 0, 1), 0)
+    h += np.where(land, hills * 1.6 * np.clip(sd / 10.0, 0, 1), 0)
+    ridged = 1.0 - np.abs(fbm(36, 4, 61))
+    m = np.clip(blur(mtn, 3) * 2.2, 0, 1)
+    h += np.where(land, m * (9.0 + 12.0 * ridged ** 2) * np.clip(sd / 6.0, 0, 1), 0)
     # Caldera: a ring crater around the capital
-    d = np.sqrt((X - 318) ** 2 + (Y - 560) ** 2)
-    h += 8.0 * np.exp(-((d - 20) / 7.0) ** 2)
-    # rivers
-    river = np.zeros((H, W), np.float32)
-    for course in RIVERS:
-        rd = dist_polyline(X + fbm(50, 2, 71) * 9.0, Y + fbm(50, 2, 72) * 9.0, course)
-        river = np.maximum(river, np.clip(1.0 - rd / 3.2, 0, 1))
-    h = np.where(land, np.maximum(0.3, h - river * 1.2), h)
-    # settlements stand on level ground
-    for (sx, sy) in settlements():
+    if "caldera" in sites:
+        cx, cy = sites["caldera"]
+        d = np.sqrt((X - cx) ** 2 + (Y - cy) ** 2)
+        h += np.where(land, 7.0 * np.exp(-((d - 18) / 6.0) ** 2), 0)
+    h = np.where(land, np.maximum(0.3, h - river * 1.0), h)
+    for (sx, sy) in sites.values():
         d = np.sqrt((X - sx) ** 2 + (Y - sy) ** 2)
         k = np.clip(1.0 - (d - 5.0) / 12.0, 0, 1) ** 2
         ring = land & (d > 14) & (d < 26)
@@ -260,27 +212,19 @@ def main():
         base = max(0.6, min(base, 7.0))
         h = np.where(land, h * (1 - k) + base * k, h)
 
-    # biomes
-    biome = np.full((H, W), BIOMES.index("grass"), np.uint8)
-    rough = fbm(50, 3, 81) * 0.18
-    for cx, cy, rx, ry, b in REGIONS:
-        r = np.sqrt(((X - cx) / rx) ** 2 + ((Y - cy) / ry) ** 2) + rough
-        biome[r < 1.0] = BIOMES.index(b)
-    forest = np.clip((fbm(18, 4, 91) * 0.5 + 0.5 - 0.52) * 4.0 + river * 0.4, 0, 1)
-    is_grass = biome == BIOMES.index("grass")
-    biome[is_grass & (forest > 0.35)] = BIOMES.index("forest")
-    biome[(h > 9.5) & (biome != BIOMES.index("desert"))] = BIOMES.index("mountain")
-    polar = (Y + wy * 2 < 172) | (Y + wy * 2 > 1035)
-    biome[polar] = BIOMES.index("snow")
-    biome[land & (sd < 1.6) & ~polar & (biome != BIOMES.index("swamp"))] = BIOMES.index("beach")
+    # biomes: as traced, with mountains where the land is high, beaches at the edge
+    biome[land & (h > 9.0) & ~np.isin(biome, [BIOMES.index("snow"), BIOMES.index("desert")])] = BIOMES.index("mountain")
+    biome[land & (biome == BIOMES.index("ocean"))] = BIOMES.index("grass")
+    polar = (Y < 175) | (Y > 930)
+    biome[land & (sd < 1.4) & ~polar & ~np.isin(biome, [BIOMES.index("swamp"), BIOMES.index("snow")])] = BIOMES.index("beach")
     biome[~land] = BIOMES.index("ocean")
-    forest = np.where(np.isin(biome, [BIOMES.index("forest"), BIOMES.index("swamp")]), np.maximum(forest, 0.4), forest * 0.25)
+    forest = blur((biome == BIOMES.index("forest")).astype(np.float32), 2)
+    forest = np.clip(forest * 1.2, 0, 1)
     forest[~land] = 0
 
     coast = np.clip(128 + sd * 4.0, 0, 255).astype(np.uint8)
-    info = np.stack([biome, coast, (forest * 255).astype(np.uint8), (river * 255).astype(np.uint8)], axis=-1)
+    info = np.stack([biome, coast, (forest * 255).astype(np.uint8), (np.clip(river, 0, 1) * 255).astype(np.uint8)], axis=-1)
     out = os.path.join(ROOT, "assets", "world")
-    os.makedirs(out, exist_ok=True)
     h.astype("<f4").tofile(os.path.join(out, "height.bin"))
     info.astype(np.uint8).tofile(os.path.join(out, "info.bin"))
     print("land %.1f%%, height %.1f..%.1f" % (land.mean() * 100, h.min(), h.max()))
@@ -291,7 +235,7 @@ def main():
         shade = np.clip(1.0 + np.gradient(h, axis=1) * 0.25 - np.gradient(h, axis=0) * 0.25, 0.6, 1.3)
         img = img * shade[..., None]
         img[river > 0.3] = [60, 110, 170]
-        for (sx, sy) in settlements():
+        for (sx, sy) in sites.values():
             img[int(sy / STEP) - 1:int(sy / STEP) + 2, int(sx / STEP) - 1:int(sx / STEP) + 2] = [220, 30, 30]
         Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).save(sys.argv[1])
 

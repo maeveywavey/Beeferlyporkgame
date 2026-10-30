@@ -11,6 +11,8 @@ What happened, which the game never states outright (`docs/canon.md` §9): the A
 
 Somewhere, a child is the new Avatar. The sages of that child's nation have begun quietly testing children, as they always do, and say nothing; the game never says which nation. When the child is sixteen they will be told. Until then there is no bridge between the nations, and the people call this time **the Quiet Years**.
 
+**The map.** The geography is the series' world (see `docs/canon.md` §9): the Fire Islands in the west with the Mo Ce islands between them and the Earth continent; the Earth continent with its great northern ranges, the inland bay, the Si Wong Desert, the Foggy Swamp and the eastern lobe; the chain of southern islands around the Patola range; and the two polar islands of the Water Tribes.
+
 **The factions.** The world is divided far more finely than the four nations' names suggest. The Factions menu (N on the world map) lists them all, grouped by region.
 
 | Region | Who holds it |

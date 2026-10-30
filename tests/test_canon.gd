@@ -58,30 +58,42 @@ func _names() -> void:
 ## The Strait Isles, claimed by both crowns (docs/canon.md §9).
 const DISPUTED := ["kettle_rock", "fire_navy_harbor", "tieshan", "navy_docks"]
 
-## No Fire Islands faction starts with a holding on the mainland; the Strait
-## Isles are islands; Hamakaze is still joined to the mainland.
+## No Fire Islands faction starts with a holding on the Earth continent; the
+## Strait Isles are islands; Hamakaze is still joined to the mainland.
 func _map() -> void:
 	Terrain.ensure()
+	var continent := _landmass(Data.settlements.ba_sing_se.pos)
 	for sid in Data.settlements:
 		var d: Dictionary = Data.settlements[sid]
-		if Data.region_of(d.faction) == "fire" and not DISPUTED.has(sid) and d.pos.x > 500.0:
-			_err("Fire Islands holding %s stands east of the Fire Islands" % sid)
+		if Data.region_of(d.faction) == "fire" and continent.has(_cell(d.pos)):
+			_err("Fire Islands holding %s stands on the Earth continent" % sid)
+		if not Terrain.is_land(d.pos):
+			_err("%s stands in the sea" % sid)
 	for sid in DISPUTED:
-		var p: Vector2 = Data.settlements[sid].pos
-		var gap := false
-		for k in range(1, 40):
-			if not Terrain.is_land(p + Vector2(k * 4.0, 0.0)):
-				gap = true
-				break
-		if not gap:
+		if continent.has(_cell(Data.settlements[sid].pos)):
 			_err("disputed %s is joined to the mainland" % sid)
-	var a: Vector2 = Data.settlements.hamakaze.pos
-	var b := Vector2(850, 720)
-	for k in 21:
-		if not Terrain.is_land(a.lerp(b, k / 20.0)):
-			_err("Hamakaze is cut off from the mainland at %s (Kyoshi has not separated it yet)" % a.lerp(b, k / 20.0))
-			break
-	print("map: checked Fire Nation holdings, the Strait Isles and the Hamakaze neck")
+	if not continent.has(_cell(Data.settlements.hamakaze.pos)):
+		_err("Hamakaze is cut off from the mainland (Kyoshi has not separated it yet)")
+	print("map: checked Fire Islands holdings, the Strait Isles and the Hamakaze neck")
+
+func _cell(p: Vector2) -> Vector2i:
+	return Vector2i(int(p.x / 4.0), int(p.y / 4.0))
+
+## Every land cell (4 map units) connected to p.
+func _landmass(p: Vector2) -> Dictionary:
+	var seen := {}
+	var q := [_cell(p)]
+	seen[q[0]] = true
+	while not q.is_empty():
+		var c: Vector2i = q.pop_back()
+		for dc in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = c + dc
+			if seen.has(n) or n.x < 0 or n.y < 0 or n.x > 400 or n.y > 300:
+				continue
+			if Terrain.is_land(Vector2(n.x * 4.0 + 2.0, n.y * 4.0 + 2.0)):
+				seen[n] = true
+				q.append(n)
+	return seen
 
 ## The factions hang together: every settlement, lord and tribute names a
 ## faction that exists; every power has a head; the four temples are of the

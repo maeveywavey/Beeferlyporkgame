@@ -139,6 +139,7 @@ func _build_settlements() -> void:
 	_refresh_banners()
 
 func _refresh_banners() -> void:
+	MapBuilder.update_borders()
 	for sid in settlement_banners:
 		var f: String = GS.settlements[sid].faction
 		MapBuilder.set_banner_color(settlement_banners[sid], Data.factions.get(f, Data.factions.neutral).color)
@@ -462,6 +463,7 @@ func _update_lighting() -> void:
 	match MapBuilder.map_style():
 		"chart": sky = Color(0.62, 0.6, 0.52).lerp(Color(0.8, 0.76, 0.64), daylight)
 		"ink": sky = Color(0.6, 0.6, 0.58).lerp(Color(0.88, 0.88, 0.85), daylight)
+		"painted": sky = Color(0.08, 0.11, 0.12).lerp(Color(0.2, 0.28, 0.3), daylight)
 	env.background_color = sky
 	env.fog_light_color = sky.lightened(0.15)
 	env.fog_density = clampf(0.1 / cam_dist, 0.00015, 0.0015)

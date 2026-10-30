@@ -10,6 +10,7 @@ uniform vec2 grid = vec2(801.0, 601.0);
 uniform float step_m = 2.0;
 uniform vec2 map_size = vec2(1600.0, 1200.0);
 uniform float daylight = 1.0;
+uniform sampler2D painted_tex : source_color, filter_linear_mipmap, repeat_disable;
 
 varying vec3 wpos;
 
@@ -46,7 +47,13 @@ void fragment() {
 		discard;
 	}
 	vec3 c;
-	if (style == 0) {
+	if (style == 3) {
+		// the painted map's own sea; beyond its edges, its darkest slate
+		vec3 slate = vec3(0.2, 0.28, 0.3);
+		c = inside ? texture(painted_tex, xz / map_size).rgb : slate;
+		c *= mix(0.45, 1.0, daylight);
+		ALBEDO = c;
+	} else if (style == 0) {
 		vec3 shallow = vec3(0.32, 0.52, 0.58);
 		vec3 deep = vec3(0.1, 0.2, 0.32);
 		c = mix(shallow, deep, smoothstep(0.5, 6.5, depth));
@@ -79,6 +86,8 @@ void fragment() {
 		// a wash of grey hugging the coast
 		c = mix(c, vec3(0.55, 0.6, 0.64), (1.0 - smoothstep(0.0, 6.0, off)) * 0.35);
 	}
-	c *= mix(0.45, 1.0, daylight);
-	ALBEDO = c;
+	if (style != 3) {
+		c *= mix(0.45, 1.0, daylight);
+		ALBEDO = c;
+	}
 }

@@ -114,13 +114,20 @@ func build() -> void:
 	g.add_child(rl)
 	g.add_child(UI.label("Map style"))
 	var mst := OptionButton.new()
-	for k in ["Painted atlas", "Old chart", "Ink wash"]:
+	for k in ["Painted map", "Painted atlas", "Old chart", "Ink wash"]:
 		mst.add_item(k)
-	mst.selected = maxi(0, ["atlas", "chart", "ink"].find(String(GS.settings.get("map_style", "atlas"))))
+	mst.selected = maxi(0, ["painted", "atlas", "chart", "ink"].find(String(GS.settings.get("map_style", "painted"))))
 	mst.item_selected.connect(func(i):
-		GS.settings.map_style = ["atlas", "chart", "ink"][i]
+		GS.settings.map_style = ["painted", "atlas", "chart", "ink"][i]
 		load("res://scripts/world/map_builder.gd").apply_style())
 	g.add_child(mst)
+	g.add_child(UI.label("Show political borders on the map"))
+	var bd := CheckBox.new()
+	bd.button_pressed = GS.settings.get("map_borders", true)
+	bd.toggled.connect(func(v):
+		GS.settings.map_borders = v
+		load("res://scripts/world/map_builder.gd").update_borders())
+	g.add_child(bd)
 	g.add_child(UI.label("Reduce motion (no window animations)"))
 	var rm := CheckBox.new()
 	rm.button_pressed = GS.settings.get("reduce_motion", false)

@@ -5,6 +5,8 @@
 //   1  Old chart: parchment, ink coastline, hachured mountains, tree marks
 //   2  Ink wash: rice paper, mountains in graded ink, mist at their feet,
 //      forests as soft blots
+//   3  Painted map: the hand-painted fantasy map from tools/paint_map.py,
+//      draped over the relief
 shader_type spatial;
 render_mode unshaded, cull_disabled;
 
@@ -16,6 +18,15 @@ uniform vec2 grid = vec2(801.0, 601.0);
 uniform float step_m = 2.0;
 uniform vec3 light_dir = vec3(-0.6, 0.75, -0.35);
 uniform float daylight = 1.0;
+uniform sampler2D painted_tex : source_color, filter_linear_mipmap, repeat_disable;
+uniform vec2 map_size = vec2(1600.0, 1200.0);
+// political borders: each piece of land belongs to its nearest settlement
+// within reach, and takes the colour of the faction that holds it
+uniform float borders = 1.0;
+uniform int site_count = 0;
+uniform vec2 site_pos[128];
+uniform vec4 site_color[128];
+const float REACH = 95.0;
 
 varying vec3 wpos;
 
@@ -137,6 +148,10 @@ void fragment() {
 		// the coastline, inked, with a darker band just inside
 		c = mix(c, ink, max(line_px(coast, 1.8), 1.0 - smoothstep(0.0, 0.6, coast)));
 		c *= mix(0.92, 1.03, shade);
+	} else if (style == 3) {
+		// --- painted map ---
+		c = texture(painted_tex, xz / map_size).rgb;
+		c *= mix(0.86, 1.06, shade);
 	} else {
 		// --- ink wash ---
 		vec3 paper = vec3(0.92, 0.9, 0.84) * (0.95 + 0.07 * fbm(xz * 0.04));
@@ -162,6 +177,31 @@ void fragment() {
 		// a brush stroke along the coast, thick and thin
 		float thick = 1.2 + 2.2 * vnoise(xz * 0.03);
 		c = mix(c, ink, max(line_px(coast, thick), 1.0 - smoothstep(0.0, 0.5, coast)) * 0.88);
+	}
+	if (borders > 0.0 && site_count > 0 && coast > 0.0) {
+		// nearest settlement, and the nearest one held by another faction
+		float d1 = 1e9;
+		vec4 c1 = vec4(0.0);
+		for (int i = 0; i < site_count; i++) {
+			float d = distance(xz, site_pos[i]);
+			if (d < d1) { d1 = d; c1 = site_color[i]; }
+		}
+		float d2 = 1e9;
+		for (int i = 0; i < site_count; i++) {
+			if (distance(site_color[i].rgb, c1.rgb) > 0.01) {
+				d2 = min(d2, distance(xz, site_pos[i]));
+			}
+		}
+		if (d1 < REACH) {
+			// faint wash of the holder's colour, stronger near the line
+			float edge = (d2 - d1) * 0.5;
+			c = mix(c, c1.rgb, 0.16 * borders);
+			float line = 1.0 - smoothstep(0.0, max(fwidth(edge), 1e-3) * 2.4, edge);
+			// a dashed line, as on a political map
+			float dash = step(0.35, fract((xz.x + xz.y) / max(6.0, fwidth(xz.x) * 14.0)));
+			c = mix(c, mix(vec3(0.38, 0.06, 0.05), c1.rgb * 0.5, 0.3), line * dash * 0.95 * borders);
+			c = mix(c, c1.rgb, (1.0 - smoothstep(0.0, max(fwidth(edge), 1e-3) * 9.0, edge)) * 0.3 * borders);
+		}
 	}
 	c *= mix(0.45, 1.0, daylight);
 	ALBEDO = c;
