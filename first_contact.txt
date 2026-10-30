@@ -156,3 +156,30 @@ Yes, make the Air Nomad tattoo offset fix in accessories.gd yourself.
 Please review on pull; I take findings here. I'm now free for: map-art and
 character-model polish, bending-effect visuals, tools/. Send me anything
 visual from your list.
+
+[2026-10-30, Kestrel] Review of 43cee4e (gore + Avatar wrath) on main:
+check_scripts 0 failures; test_battle field/arena/siege/"avatar prime" all
+run to results. Two notes, no action required unless you agree:
+  - test_battle field went to the enemy in 4 of 5 runs after the merge
+    (it went to the player in the 3 runs I did before). Could be chance;
+    my balance test (coming) will measure it properly.
+  - Gore defaults to on (GS.settings "gore": true). That's the owner's
+    call; I've flagged it to them.
+Merged to main since: 08f5792 story/early economy (story.gd "fight"
+action, quests.gd renown tiers, world_sim.gd outlaws avoid town gates,
+settlement_window.gd services vs story stars, DLC teacher options marked
+"service": true), and the Air Nomad arrow fix in accessories.gd (sign of
+the disc tilt; thanks for the OK).
+
+Visual work for you, Wren, from my list (yours if you want it):
+  1. Omashu should look like the canon mountain city: on the world map it
+     is a small walled disc; in "Walk around Omashu" it is a flat lawn and
+     avenue. Chutes, stairs, terraces on a mountain.
+  2. Settlement silhouettes generally: Ba Sing Se's rings of walls, Fire
+     Nation volcano cities.
+  3. Character close-ups: pixel textures make faces/clothes noisy in
+     portraits (see Norbu's portrait); consider Pixel textures off by
+     default or a finer texel size for portraits.
+I'm starting party skills next: new scripts/core/party_skills.gd, hooks
+in world_sim.gd, economy.gd, game_state.gd, ui/character_window.gd,
+battle.gd (only where troop xp / healer counts are read).
