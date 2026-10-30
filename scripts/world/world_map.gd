@@ -175,12 +175,20 @@ func _build_hud() -> void:
 	top_label = UI.rich("", 330)
 	top_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	top_label.add_theme_color_override("default_color", Color(0.92, 0.85, 0.72))
-	top_label.add_theme_font_size_override("normal_font_size", 15)
-	top_label.add_theme_font_size_override("italics_font_size", 15)
+	top_label.add_theme_font_size_override("normal_font_size", UI.px(15))
+	top_label.add_theme_font_size_override("italics_font_size", UI.px(15))
 	dbox.add_child(top_label)
-	var chips := UI.hbox(12)
-	chips.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(chips)
+	# stats on the first line, the window buttons on the second, so the
+	# larger text fits across the screen
+	var right := UI.vbox(4)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(right)
+	var chips := UI.hbox(14)
+	chips.alignment = BoxContainer.ALIGNMENT_END
+	right.add_child(chips)
+	var buttons := UI.hbox(6)
+	buttons.alignment = BoxContainer.ALIGNMENT_END
+	right.add_child(buttons)
 	for k in [["gold", "Gold"], ["party", "Party"], ["wounded", "Wounded"], ["prisoners", "Captives"], ["food", "Food"], ["morale", "Morale"], ["renown", "Renown"], ["hp", "Health"]]:
 		var cb := UI.vbox(0)
 		var cap := UI.label(k[1].to_upper(), 11, Color(UISkin.GOLD, 0.9))
@@ -195,13 +203,13 @@ func _build_hud() -> void:
 			["Inventory", "I", _open_inventory], ["Quests", "J", _open_quests], ["Nations", "N", _open_factions]]:
 		var tb := UI.button("%s %s" % [b[0], b[1]], b[2])
 		tb.tooltip_text = "%s (%s)" % [b[0], b[1]]
-		tb.add_theme_font_size_override("font_size", 16)
+		tb.add_theme_font_size_override("font_size", UI.px(16))
 		for st in ["normal", "hover", "pressed"]:
 			var bx: StyleBoxTexture = UISkin.button_box(st)
 			bx.content_margin_left = 9
 			bx.content_margin_right = 9
 			tb.add_theme_stylebox_override(st, bx)
-		row.add_child(tb)
+		buttons.add_child(tb)
 	# Bottom-left message log
 	log_box = UI.vbox(2)
 	log_box.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
@@ -273,7 +281,7 @@ func _make_world_label(text: String, size: int) -> Label:
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_override("font", UISkin.font("display"))
-	l.add_theme_font_size_override("font_size", size + 2)
+	l.add_theme_font_size_override("font_size", UI.px(size + 2))
 	l.add_theme_color_override("font_color", Color(1, 0.96, 0.86))
 	l.add_theme_color_override("font_outline_color", Color(0.12, 0.05, 0.03))
 	l.add_theme_constant_override("outline_size", 6)
@@ -802,7 +810,7 @@ func _add_log_line(text: String, color: Color) -> void:
 		return
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", 15)
+	l.add_theme_font_size_override("font_size", UI.px(15))
 	l.add_theme_color_override("font_color", Color(0.97, 0.92, 0.82).lerp(color, 0.35))
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0.08, 0.05, 0.03, 0.62)

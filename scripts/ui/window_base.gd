@@ -38,7 +38,9 @@ func _ready() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 	panel = PanelContainer.new()
-	panel.custom_minimum_size = window_size
+	# windows grow with the larger text, but never past the screen
+	var room := get_viewport_rect().size - Vector2(40, 30) if is_inside_tree() else Vector2(1560, 870)
+	panel.custom_minimum_size = (window_size * 1.3).min(room)
 	panel.add_theme_stylebox_override("panel", UISkin.panel_box(22, 22))
 	panel.draw.connect(_draw_ornaments)
 	center.add_child(panel)
@@ -64,9 +66,17 @@ func _ready() -> void:
 	if closable:
 		head.add_child(_close_button())
 	outer.add_child(UI.sep())
+	# The content scrolls if the larger text makes it taller or wider than
+	# the window can be on screen.
+	var body := ScrollContainer.new()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	body.custom_minimum_size = panel.custom_minimum_size - Vector2(48, 110)
+	outer.add_child(body)
 	content = UI.vbox(6)
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	outer.add_child(content)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(content)
 	refresh()
 	if not GS.settings.get("reduce_motion", false):
 		panel.modulate.a = 0.0
@@ -90,7 +100,7 @@ func _close_button() -> Button:
 	for st in ["normal", "hover", "pressed"]:
 		var bx := UISkin.flat({"normal": UISkin.LACQUER, "hover": UISkin.LACQUER_HI, "pressed": UISkin.LACQUER_LO}[st], UISkin.GOLD, 2, 20, 0)
 		b.add_theme_stylebox_override(st, bx)
-	b.add_theme_font_size_override("font_size", 24)
+	b.add_theme_font_size_override("font_size", UI.px(24))
 	b.tooltip_text = "Close (Esc)"
 	return b
 

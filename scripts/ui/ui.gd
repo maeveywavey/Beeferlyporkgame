@@ -19,6 +19,23 @@ const GOLD := Color(0.8, 0.6, 0.22)
 
 static var _theme: Theme
 
+## Every text size in the game is multiplied by this (1.5 since the text was
+## too small to read at the 1600x900 base canvas scaled to smaller windows).
+const TEXT_SCALE := 1.5
+
+static func px(size: float) -> int:
+	return int(round(size * TEXT_SCALE))
+
+## Scales [font_size=N] tags inside BBCode text.
+static func scale_bbcode(text: String) -> String:
+	if text.find("[font_size=") < 0:
+		return text
+	var re := RegEx.create_from_string("\\[font_size=(\\d+)\\]")
+	var out := text
+	for m in re.search_all(text):
+		out = out.replace(m.get_string(), "[font_size=%d]" % px(int(m.get_string(1))))
+	return out
+
 static func _box(bg: Color, border: Color, bw: int = 2, radius: int = 4, pad: int = 8) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = bg
@@ -41,7 +58,7 @@ static func theme() -> Theme:
 		return _theme
 	var t := Theme.new()
 	t.default_font = UISkin.font("body")
-	t.default_font_size = 18
+	t.default_font_size = px(18)
 	# Panels: a framed sheet of paper
 	t.set_stylebox("panel", "PanelContainer", UISkin.panel_box(18, 16))
 	t.set_stylebox("panel", "Panel", UISkin.panel_box(18, 16))
@@ -123,12 +140,12 @@ static func theme() -> Theme:
 static func label(text: String, size: int = 17, color: Color = INK, wrap: bool = false) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", px(size))
 	l.add_theme_color_override("font_color", color)
 	# Section headings (larger, sepia) are set in small capitals
 	if size >= 18 and color == BROWN:
 		l.add_theme_font_override("font", UISkin.font("display_med"))
-		l.add_theme_font_size_override("font_size", size + 1)
+		l.add_theme_font_size_override("font_size", px(size + 1))
 	if wrap:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size.x = 200
@@ -146,11 +163,11 @@ static func rich(text: String, min_w: float = 400.0) -> RichTextLabel:
 	r.fit_content = true
 	r.scroll_active = false
 	r.custom_minimum_size.x = min_w
-	r.text = text
+	r.text = scale_bbcode(text)
 	r.add_theme_color_override("default_color", INK)
-	r.add_theme_font_size_override("normal_font_size", 18)
-	r.add_theme_font_size_override("bold_font_size", 18)
-	r.add_theme_font_size_override("italics_font_size", 18)
+	r.add_theme_font_size_override("normal_font_size", px(18))
+	r.add_theme_font_size_override("bold_font_size", px(18))
+	r.add_theme_font_size_override("italics_font_size", px(18))
 	return r
 
 static func button(text: String, cb: Callable, min_w: float = 0.0, enabled: bool = true) -> Button:

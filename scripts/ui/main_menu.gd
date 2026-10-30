@@ -50,7 +50,7 @@ func _ready() -> void:
 	# Title page: a hanging scroll on the left
 	scroll_root = MarginContainer.new()
 	scroll_root.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
-	scroll_root.offset_right = 520
+	scroll_root.offset_right = 640
 	for side in ["left", "top", "bottom"]:
 		scroll_root.add_theme_constant_override("margin_" + side, 56 if side == "left" else 48)
 	add_child(scroll_root)
@@ -59,18 +59,28 @@ func _ready() -> void:
 	sp.modulate_color = Color(1, 1, 1, 0.93)
 	scroll_panel.add_theme_stylebox_override("panel", sp)
 	scroll_root.add_child(scroll_panel)
+	# the title menu scrolls if the larger text makes it taller than the screen
+	var ts := ScrollContainer.new()
+	ts.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll_panel.add_child(ts)
 	scroll_body = UI.vbox(10)
-	scroll_panel.add_child(scroll_body)
+	scroll_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ts.add_child(scroll_body)
 	# Creation pages: a centred sheet
 	center = CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 	panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(900, 600)
+	panel.custom_minimum_size = Vector2(1300, 820)
 	panel.add_theme_stylebox_override("panel", UISkin.panel_box(22, 24))
 	center.add_child(panel)
+	var bs := ScrollContainer.new()
+	bs.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	bs.custom_minimum_size = Vector2(1250, 770)
+	panel.add_child(bs)
 	body = UI.vbox(10)
-	panel.add_child(body)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bs.add_child(body)
 	_build()
 
 func _build() -> void:
@@ -122,7 +132,7 @@ func _build_title() -> void:
 func _menu_button(text: String, cb: Callable, enabled: bool = true) -> Button:
 	var b := UI.option(text, cb, enabled)
 	b.add_theme_font_override("font", UISkin.font("display_med"))
-	b.add_theme_font_size_override("font_size", 25)
+	b.add_theme_font_size_override("font_size", UI.px(25))
 	return b
 
 func _load(path: String) -> void:

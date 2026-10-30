@@ -445,11 +445,11 @@ func _build_ui() -> void:
 	hud.add_theme_constant_override("outline_size", 6)
 	hud.add_theme_color_override("font_outline_color", Color(0.1, 0.06, 0.04))
 	var d: Dictionary = Data.settlements[sid]
-	hud.text = "[font_size=26][b]%s[/b][/font_size]\n%s  ·  %s\n[font_size=14]WASD move · Shift walk · Mouse look · E talk · Tab or the gate: back to the map · Esc: free the mouse[/font_size]" % [
-		d.name, Data.factions.get(GS.settlements[sid].faction, Data.factions.neutral).name, GS.date_string()]
+	hud.text = UI.scale_bbcode("[font_size=26][b]%s[/b][/font_size]\n%s  ·  %s\n[font_size=14]WASD move · Shift walk · Mouse look · E talk · Tab or the gate: back to the map · Esc: free the mouse[/font_size]" % [
+		d.name, Data.factions.get(GS.settlements[sid].faction, Data.factions.neutral).name, GS.date_string()])
 	rootc.add_child(hud)
 	prompt = Label.new()
-	prompt.add_theme_font_size_override("font_size", 22)
+	prompt.add_theme_font_size_override("font_size", UI.px(22))
 	prompt.add_theme_color_override("font_color", Color(1, 0.92, 0.6))
 	prompt.add_theme_constant_override("outline_size", 6)
 	prompt.add_theme_color_override("font_outline_color", Color(0.1, 0.06, 0.04))

@@ -1595,6 +1595,8 @@ func _build_hud() -> void:
 	bl.offset_top = -128
 	bl.offset_right = 430
 	bl.offset_bottom = -12
+	# grow up from the bottom edge as the larger text needs more room
+	bl.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	root.add_child(bl)
 	var v := UI.vbox(4)
 	bl.add_child(v)
@@ -1615,6 +1617,8 @@ func _build_hud() -> void:
 	br.offset_top = -100
 	br.offset_right = -12
 	br.offset_bottom = -12
+	br.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	br.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	root.add_child(br)
 	count_label = UI.label("", 15)
 	br.add_child(count_label)
