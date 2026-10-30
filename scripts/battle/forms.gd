@@ -84,8 +84,9 @@ const RELEASES := {
 	"wall": {"name": "Wall (a barrier)", "kind": "wall", "mult": 0.0},
 	"burst": {"name": "Burst (a ring around you)", "kind": "quake", "mult": 0.6},
 	"volley": {"name": "Volley (a fan of shards)", "kind": "volley", "mult": 0.45},
+	"pillar": {"name": "Pillar (a column under the target, left standing)", "kind": "pillar", "mult": 0.9},
 }
-const ART_RELEASES := {"fire": ["strike", "wave", "burst"], "earth": ["strike", "wall", "burst", "volley"], "water": ["strike", "wave", "volley", "wall"], "air": ["strike", "wave", "burst"]}
+const ART_RELEASES := {"fire": ["strike", "wave", "burst"], "earth": ["strike", "wall", "burst", "volley", "pillar"], "water": ["strike", "wave", "volley", "wall"], "air": ["strike", "wave", "burst"]}
 const FX := {"fire": "fire", "earth": "rock", "water": "water", "air": "air"}
 const MAX_MOVES := 6
 
@@ -210,6 +211,8 @@ static func _ability(art: String, rel: Dictionary, ev: Dictionary, rel_id: Strin
 			a.merge({"dmg": p * 0.7 * rel.mult, "speed": 34.0, "radius": 0.3, "knock": 1.5, "gravity": 0.0, "range": 26.0, "count": 3 + int(p / 12.0), "spread": 24.0})
 			if art == "water":
 				a.fx = "ice"
+		"pillar":
+			a.merge({"dmg": p * 1.0 * rel.mult, "range": 14.0, "radius": 0.9, "height": 2.6 + p * 0.03, "knock": 2.0, "launch": 8.0 + p * 0.1})
 		"wall":
 			a.merge({"width": 4.0 + p * 0.06, "height": 2.2 + p * 0.03, "life": 8.0 + p * 0.2, "dist": 3.0})
 			if art == "water":

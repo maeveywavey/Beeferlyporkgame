@@ -20,6 +20,8 @@ uniform float texel_mult = 1.0;
 // painted grain for untextured, single-colour parts (hats, armour, weapons,
 // mounts): wear and shading worked out from the snapped model-space position
 uniform float grain = 0.0;
+// cut-out textures (leaves, hair cards): alpha below this is discarded
+uniform float alpha_cut = 0.0;
 
 varying vec3 obj_pos;
 
@@ -63,4 +65,6 @@ void fragment() {
 	float grey = dot(c, vec3(0.299, 0.587, 0.114));
 	ALBEDO = mix(vec3(grey), c, saturation);
 	EMISSION = emission_color.rgb * emission_strength;
+	ALPHA = alpha_cut > 0.0 ? mix(a.a, b.a, tex_mix) : 1.0;
+	ALPHA_SCISSOR_THRESHOLD = max(alpha_cut, 0.001);
 }

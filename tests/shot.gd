@@ -43,6 +43,8 @@ func _ready() -> void:
 		GS.flags.town_sid = parts[1]
 		if parts.size() > 2:
 			GS.hours = float(parts[2])
+		if parts.size() > 6:
+			GS.settlements[parts[1]].prosperity = float(parts[6])
 		load("res://scripts/town/town_scene.gd").autotest = true
 		get_tree().change_scene_to_file.call_deferred("res://scenes/town.tscn")
 		get_tree().create_timer(0.8).timeout.connect(func():
@@ -51,10 +53,10 @@ func _ready() -> void:
 				t.cam_yaw = float(parts[3])
 			if parts.size() > 4:
 				t.cam_pitch = float(parts[4])
-			if parts.size() > 5:
+			if parts.size() > 5 and parts[5] != "":
 				var xz := parts[5].split(",")
 				t.player.position = Vector3(float(xz[0]), 0, float(xz[1]))
-			t.cam_dist = 7.0
+			t.cam_dist = 7.0 if parts.size() < 8 else float(parts[7])
 			t._update_camera(1.0))
 	if mode == "mounts":
 		var pm := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
@@ -156,7 +158,7 @@ func _ready() -> void:
 					mm.c_bend = "air"
 					mm.c_background = "air_nomad"
 				mm._build())
-		"world", "town", "party", "encounter", "char", "factions", "people", "wars", "trade", "far", "inv", "quests", "society", "forms", "avatar", "techniques", "work", "settings", "talk":
+		"world", "town", "party", "encounter", "char", "factions", "people", "wars", "council", "trade", "far", "inv", "quests", "society", "forms", "avatar", "techniques", "work", "settings", "talk":
 			var p := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 			GS.new_game(p)
 			GS.flags.seen_help = true
@@ -284,7 +286,7 @@ static func _open(mode: String) -> void:
 			fw2.draft = GS.player.forms[0].duplicate(true)
 			fw2.editing = 0
 			fw2.call_deferred("refresh")
-		"factions", "people", "wars":
+		"factions", "people", "wars", "council":
 			# a few months of history first, so wars and tribute have moved
 			for i in 24 * 90:
 				GS.sim.advance(1.0)

@@ -23,6 +23,10 @@ var lights: Array = []         # Vector3 positions for night lanterns
 var spawn := Vector3(0, 0, 30)
 var bounds := 50.0
 var ice := false
+## 0 poor, 1 middling, 2 rich: from the settlement's prosperity. Poor places
+## have empty stalls, gaps where houses fell, mud, debris and beggars; rich
+## ones taller houses, more lanterns, stocked stalls, gardens and crowds.
+var wealth := 1
 var _prop_cache := {}
 
 static func build(parent: Node3D, p_sid: String) -> RefCounted:
@@ -38,12 +42,17 @@ func _make() -> void:
 	kind = d.type
 	ice = culture in ["north", "south"]
 	rng.seed = hash(sid)
+	var pr: float = GS.settlements.get(sid, {}).get("prosperity", 50.0)
+	wealth = 0 if pr < 35.0 else (2 if pr > 68.0 else 1)
+	if GS.settlements.get(sid, {}).get("looted_until", -1.0) > GS.hours:
+		wealth = 0
 	match kind:
 		"town": _town()
 		"castle": _castle()
 		"village": _village()
 		"temple": _temple()
 		_: _village()
+	_wealth_dressing()
 	_backdrop()
 
 # ---------------------------------------------------------------------------
@@ -120,13 +129,20 @@ func ground_patch(c: Vector3, w: float, d: float, col: Color, y: float = 0.03) -
 	add(mi, c)
 
 func paving() -> Color:
+	var c := Color(0.66, 0.62, 0.54)
 	if ice:
-		return Color(0.78, 0.86, 0.95)
-	match culture:
-		"fire": return Color(0.36, 0.32, 0.31)
-		"air": return Color(0.82, 0.8, 0.74)
-		"swamp": return Color(0.35, 0.3, 0.2)
-	return Color(0.66, 0.62, 0.54)
+		c = Color(0.78, 0.86, 0.95)
+	else:
+		match culture:
+			"fire": c = Color(0.36, 0.32, 0.31)
+			"air": c = Color(0.82, 0.8, 0.74)
+			"swamp": c = Color(0.35, 0.3, 0.2)
+	# poor streets are trodden mud over broken paving; rich ones are swept
+	if wealth == 0 and not ice:
+		c = c.lerp(Color(0.36, 0.3, 0.22), 0.45)
+	elif wealth == 2:
+		c = c.lightened(0.06)
+	return c
 
 func tree(pos: Vector3) -> void:
 	var names: Array
@@ -137,6 +153,9 @@ func tree(pos: Vector3) -> void:
 		"air": names = ["Pine_2", "Pine_4", "CommonTree_1"]
 		_: names = ["CommonTree_1", "CommonTree_3", "CommonTree_4", "Pine_2"]
 	if not free_at(pos, 1.0):
+		return
+	# never in the middle of the main street or the village path
+	if absf(pos.x) < (6.0 if kind == "town" else 3.5) and pos.z > -30.0:
 		return
 	var inside := Vector2(pos.x, pos.z).length() < bounds
 	if ice and inside:
@@ -175,6 +194,7 @@ func building(pos: Vector3, w: float, d: float, floors: int, rot_y: float, opts:
 		block(pos, (w if absf(sin(rot_y)) < 0.5 else d) + 0.4, (d if absf(sin(rot_y)) < 0.5 else w) + 0.4)
 	else:
 		n = Arch.hall(culture, w, d, floors, rot_y, opts)
+		_weather(n)
 		var ww := (w if absf(sin(rot_y)) < 0.5 else d) + 1.0
 		var dd := (d if absf(sin(rot_y)) < 0.5 else w) + 1.0
 		block(pos, ww, dd)
@@ -240,9 +260,12 @@ func _town() -> void:
 	for i in stall_spots.size():
 		var sp: Vector3 = stall_spots[i]
 		var rot := PI * 0.5 if sp.x < 0 else -PI * 0.5
+		if wealth == 0 and i % 2 == 1:
+			continue   # stalls given up
 		prop("Stall_Empty" if i % 2 == 0 else "Stall_Cart_Empty", sp, rot, 1.0, 1.4)
 		var goods := ["FarmCrate_Apple", "FarmCrate_Carrot", "Barrel_Apples", "Vase_2", "Pot_1"]
-		prop(goods[i % goods.size()], sp + Vector3(signf(-sp.x) * 1.3, 0, 1.1), rng.randf() * TAU, 0.8, 0.4)
+		for k in [0, 1, 2][wealth]:
+			prop(goods[(i + k) % goods.size()], sp + Vector3(signf(-sp.x) * 1.3, 0, 1.1 - k * 1.1), rng.randf() * TAU, 0.8, 0.4)
 	interact(Vector3(-8.2, 0, 0), "Browse the market", "trade", "merchant", PI * 0.5, "talk")
 	npc_spot(Vector3(-8.2, 0, -8), PI * 0.5, "talk")
 	npc_spot(Vector3(8.2, 0, 8), -PI * 0.5, "talk")
@@ -286,7 +309,11 @@ func _town() -> void:
 			var face := -PI * 0.5 if p.x > 0 else PI * 0.5
 			if absf(p.x) > 24.0:
 				face = 0.0
-			building(p, w, dd, 2 if rng.randf() < 0.25 else 1, face)
+			if wealth == 0 and rng.randf() < 0.3:
+				_ruin(p, w, dd)
+				continue
+			var tall: float = [0.08, 0.25, 0.55][wealth]
+			building(p, w, dd, (3 if wealth == 2 and rng.randf() < 0.2 else 2) if rng.randf() < tall else 1, face)
 	for i in 18:
 		tree(Vector3(rng.randf_range(-half + 5, half - 5), 0, rng.randf_range(-half + 5, half - 5)))
 	# a few people about
@@ -362,6 +389,9 @@ func _village() -> void:
 			continue
 		var face := atan2(-p.x, -p.z)
 		face = round(face / (PI * 0.5)) * PI * 0.5
+		if wealth == 0 and not ice and rng.randf() < 0.3:
+			_ruin(p, 6.0, 5.0)
+			continue
 		building(p, rng.randf_range(5.5, 7.0), rng.randf_range(4.5, 5.5), 1, face)
 	# fields and work
 	if ice:
@@ -448,3 +478,77 @@ func _backdrop() -> void:
 		var a2 := rng.randf() * TAU
 		var r2 := rng.randf_range(bounds + 10.0, bounds + 40.0)
 		tree(Vector3(cos(a2) * r2, 0, sin(a2) * r2))
+
+## A fallen house: a low broken shell with rubble.
+func _ruin(p: Vector3, w: float, d: float) -> void:
+	var b = Arch.Builder.new()
+	var st: Dictionary = Arch.style(culture)
+	var wallc: Color = st.get("wall", Color(0.6, 0.55, 0.48)) * 0.75
+	for side in 4:
+		if rng.randf() < 0.35:
+			continue
+		var hgt := rng.randf_range(0.6, 2.0)
+		var along := side % 2 == 0
+		var off := Vector3(0, hgt * 0.5, (d * 0.5 if side == 0 else -d * 0.5)) if along else Vector3((w * 0.5 if side == 1 else -w * 0.5), hgt * 0.5, 0)
+		b.box(off, Vector3(w * rng.randf_range(0.5, 1.0), hgt, 0.35) if along else Vector3(0.35, hgt, d * rng.randf_range(0.5, 1.0)), wallc)
+	for i in 6:
+		b.box(Vector3(rng.randf_range(-w, w) * 0.4, 0.15, rng.randf_range(-d, d) * 0.4), Vector3(rng.randf_range(0.4, 1.0), 0.3, rng.randf_range(0.4, 1.0)), wallc * rng.randf_range(0.7, 1.0))
+	var mi := MeshInstance3D.new()
+	mi.mesh = b.commit()
+	mi.material_override = Arch.material(false)
+	add(mi, p, rng.randf() * TAU)
+	block(p, w * 0.8, d * 0.8)
+
+## What prosperity adds or takes away, after the plan is laid out.
+func _wealth_dressing() -> void:
+	if kind == "temple":
+		return
+	var r := 40.0 if kind == "town" else (26.0 if kind == "castle" else 30.0)
+	if wealth == 0:
+		# debris, beggars by the gate, weeds, half the lanterns dark
+		for i in 10 + (6 if kind == "town" else 0):
+			var p := Vector3(rng.randf_range(-r, r), 0, rng.randf_range(-r, r))
+			if free_at(p, 1.2):
+				prop(["Crate_Wooden", "Barrel", "Bag", "Rock_Medium_1"][rng.randi() % 4], p, rng.randf() * TAU, rng.randf_range(0.6, 0.9), 0.4)
+		# beggars on upturned crates at the roadside, facing the passers-by
+		for i in 3:
+			var bp := Vector3(-4.2 - i * 1.3, 0, r * 0.55 + i * 0.4)
+			if free_at(bp, 0.5):
+				prop("Crate_Wooden", bp + Vector3(-0.15, 0, 0), 0.0, 0.55, 0.0)
+				npc_spot(bp, PI * 0.5, "sit", "", {"look": "beggar"})
+		var keep := []
+		for i in lights.size():
+			if i % 2 == 0:
+				keep.append(lights[i])
+		lights = keep
+	elif wealth == 2:
+		# gardens, more lanterns and more people in the streets
+		for i in 8:
+			var a := TAU * i / 8.0
+			var p := Vector3(cos(a) * r * 0.45, 0, sin(a) * r * 0.45)
+			if free_at(p, 2.0):
+				if ice:
+					street_lantern(p, a)
+				else:
+					tree(p)
+		for i in 6:
+			var p2: Vector3 = waypoints[rng.randi() % waypoints.size()] if not waypoints.is_empty() else Vector3.ZERO
+			if free_at(p2 + Vector3(1.5, 0, 0), 0.6):
+				street_lantern(p2 + Vector3(1.5, 0, 0), rng.randf() * TAU)
+		for i in 6:
+			var sp: Vector3 = waypoints[rng.randi() % waypoints.size()] if not waypoints.is_empty() else Vector3.ZERO
+			npc_spot(sp + Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)), rng.randf() * TAU, "talk")
+
+static var _wealth_mats := {}
+
+## Poor houses are grimy and faded, rich ones fresh; middling ones as built.
+func _weather(n: Node) -> void:
+	if wealth == 1:
+		return
+	if not _wealth_mats.has(wealth):
+		var m: ShaderMaterial = Arch.material(false).duplicate()
+		m.set_shader_parameter("tint", Color(0.7, 0.66, 0.6) if wealth == 0 else Color(1.06, 1.04, 1.02))
+		m.set_shader_parameter("brush_strength", 0.22 if wealth == 0 else 0.06)
+		_wealth_mats[wealth] = m
+	for mi in n.find_children("*", "MeshInstance3D", true, false) + ([n] if n is MeshInstance3D else []):
+		(mi as MeshInstance3D).material_override = _wealth_mats[wealth]

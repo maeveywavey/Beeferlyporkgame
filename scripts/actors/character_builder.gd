@@ -94,6 +94,10 @@ static func toon_from(mat: Material, opts: Dictionary = {}) -> ShaderMaterial:
 	sm.set_shader_parameter("albedo_tex_b", tex)
 	sm.set_shader_parameter("tint", opts.get("tint", Color.WHITE))
 	sm.set_shader_parameter("saturation", opts.get("saturation", 1.12))
+	# leaves and other cut-outs keep their holes and show both faces
+	if mat is BaseMaterial3D and (mat as BaseMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+		sm.shader = TOON_DOUBLE
+		sm.set_shader_parameter("alpha_cut", 0.5)
 	return sm
 
 ## Skin uses a desaturated texture multiplied by a chosen skin colour so every

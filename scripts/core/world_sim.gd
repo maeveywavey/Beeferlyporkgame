@@ -11,6 +11,7 @@ const Economy = preload("res://scripts/core/economy.gd")
 const Quests = preload("res://scripts/core/quests.gd")
 const Story = preload("res://scripts/story/story.gd")
 const Fealty = preload("res://scripts/core/fealty.gd")
+const MoonCouncil = preload("res://scripts/core/moon_council.gd")
 
 const CONTACT := 3.0
 const SIGHT := 60.0
@@ -39,7 +40,16 @@ func party_size(p: Dictionary) -> int:
 		return GS.party_size()
 	return Roster.total(p.roster) + (1 if p.lord != "" else 0)
 
+## Party speed changes slowly (wounds, recruits, terrain), so it is cached
+## for half an hour of game time.
 func party_speed(p: Dictionary) -> float:
+	if GS.hours < float(p.get("_spd_until", -1.0)):
+		return float(p._spd)
+	p._spd = _party_speed(p)
+	p._spd_until = GS.hours + 0.5
+	return p._spd
+
+func _party_speed(p: Dictionary) -> float:
 	var n := maxi(1, party_size(p))
 	var base := 9.0
 	var mounted := float(Roster.count_mounted(p.roster)) / float(n)
@@ -159,7 +169,9 @@ func _on_arrive(p: Dictionary) -> void:
 # Encounters
 # ---------------------------------------------------------------------------
 func _check_encounters() -> void:
+	# sweep along x: only parties within CONTACT in x can touch
 	var ids := GS.parties.keys()
+	ids.sort_custom(func(x, y): return GS.parties[x].pos.x < GS.parties[y].pos.x)
 	var pp: Dictionary = GS.parties.get("player", {})
 	var player_free: bool = not pp.is_empty() and GS.player.get("captive_until", -1.0) <= GS.hours
 	for i in ids.size():
@@ -170,6 +182,8 @@ func _check_encounters() -> void:
 			if not GS.parties.has(ids[j]) or not GS.parties.has(ids[i]):
 				continue
 			var b: Dictionary = GS.parties[ids[j]]
+			if b.pos.x - a.pos.x > CONTACT:
+				break
 			if a.pos.distance_to(b.pos) > CONTACT:
 				continue
 			if a.id == "player" or b.id == "player":
@@ -321,8 +335,10 @@ func _daily() -> void:
 	_daily_lords()
 	_daily_spawns()
 	_daily_campaigns()
+	MoonCouncil.daily()
 	if GS.day() % 7 == 3:
 		Fealty.weekly()
+		MoonCouncil.weekly()
 	_daily_player()
 	Quests.daily()
 	if GS.day() % 3 == 0 and GS.game_active:
@@ -433,7 +449,7 @@ func _daily_diplomacy() -> void:
 				if lasted > 30 and randf() < 0.008 + losing * 0.04:
 					GS.make_peace(a, b)
 					GS.flags[since_key] = GS.day()
-			elif lasted > 40 and _neighbours(a, b) and randf() < 0.002 + 0.008 * maxf(Fealty.ruler_aggression(a), Fealty.ruler_aggression(b)):
+			elif lasted > 40 and _neighbours(a, b) and randf() < (0.002 + 0.008 * maxf(Fealty.ruler_aggression(a), Fealty.ruler_aggression(b))) * (0.5 if Data.region_of(a) == "water" and Data.region_of(b) == "water" else 1.0):
 				# Nobody opens a third front, nobody kicks a kingdom already on its
 				# knees, and the Sun Warriors are left alone by the sane
 				var sun_ok: bool = not (Data.factions[a].get("protected", false) or Data.factions[b].get("protected", false)) or _reckless(a if Data.factions[b].get("protected", false) else b, b if Data.factions[b].get("protected", false) else a)

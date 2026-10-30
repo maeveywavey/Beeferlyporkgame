@@ -13,6 +13,7 @@ const Dress = preload("res://scripts/battle/set_dressing.gd")
 const Land = preload("res://scripts/battle/landscape.gd")
 const Arch = preload("res://scripts/town/arch.gd")
 const ActorS = preload("res://scripts/actors/actor.gd")
+const FieldEffects = preload("res://scripts/battle/field_effects.gd")
 const LooksS = preload("res://scripts/actors/looks.gd")
 
 const HALF := 80.0
@@ -48,6 +49,9 @@ var breach_half := 6.0
 var heights := PackedFloat32Array()
 var player_kills := 0
 var weather: CPUParticles3D
+var weather_kind := ""
+## What bending leaves on the ground: fire, water, rocks, walls and pillars.
+var field
 var _reinforce_t := 2.0
 var _sep_t := 0.0
 var _finished := false
@@ -107,6 +111,9 @@ func _ready() -> void:
 		_build_props()
 	if siege != "":
 		_build_siege_walls()
+	field = FieldEffects.new()
+	add_child(field)
+	field.setup(self, biome if arena < 0 and duel == "" else "desert", weather_kind == "rain")
 	_build_hud()
 	cam = Camera3D.new()
 	cam.fov = 70.0
@@ -354,6 +361,7 @@ func _build_weather() -> void:
 		kind = "rain"
 	elif biome == "desert" and randf() < 0.3:
 		kind = "dust"
+	weather_kind = kind
 	if kind == "":
 		return
 	weather = CPUParticles3D.new()
@@ -1032,7 +1040,10 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				if d3.length() < a.range + e.radius and d3.length() > 0.01 and rad_to_deg(fwd.angle_to(d3.normalized())) < a.angle:
 					e.apply_damage(dmg, caster, "fire" if a.fx in ["fire", "blue_fire"] else "blunt", d3.normalized(), a.knock)
 					_apply_effect(e, a.get("effect", ""), dmg * 0.85)
+					if a.fx == "water":
+						e.wet_t = 20.0
 			_cone_fx(caster, a)
+			_field_cone(caster, a)
 		"wall":
 			var center: Vector3 = caster.position + fwd * a.dist
 			var axis := Vector2(fwd.z, -fwd.x).normalized()
@@ -1044,8 +1055,15 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 			add_child(node)
 			var tw := node.create_tween()
 			tw.tween_property(node, "position:y", gh + a.height / 2.0 - 0.2, 0.25)
-			walls.append({"c": Vector2(center.x, center.z), "axis": axis, "hl": a.width / 2.0, "ht": 0.4, "h": a.height,
-				"until": Time.get_ticks_msec() / 1000.0 + a.life, "node": node})
+			# stone walls stand for the rest of the battle; sand and ice give way
+			var lasting: bool = a.fx == "rock"
+			var rec := {"c": Vector2(center.x, center.z), "axis": axis, "hl": a.width / 2.0, "ht": 0.4, "h": a.height,
+				"until": INF if lasting else Time.get_ticks_msec() / 1000.0 + a.life, "node": node}
+			walls.append(rec)
+			if lasting and field != null:
+				field.add_structure(rec)
+			if a.fx == "ice" and field != null:
+				field.soak(center, a.width * 0.5, 25.0)
 			# shove anyone standing there
 			for t in 2:
 				for u in team_units[t]:
@@ -1065,6 +1083,13 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 						ally.blind_t = 0.0
 					spawn_burst(ally.chest(), Color(0.4, 0.75, 1.0) if a.amount > 0.0 else Color(0.9, 0.92, 0.85), 0.8)
 					healed += 1
+			if field != null:
+				if a.fx == "air":
+					var out: int = field.extinguish(caster.position, a.range)
+					if out > 0 and caster.is_player:
+						hud_note("The wind blows out %d fires" % out)
+				elif a.fx == "water":
+					field.soak(caster.position, 2.0, 30.0)
 			if caster.is_player:
 				hud_note(("Healing water mends %d wounds" if a.amount > 0.0 else "The wind clears %d of your people") % healed)
 		"quake":
@@ -1079,6 +1104,15 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 							e.airborne = true
 							e.y_vel = 4.0
 			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx))
+			if field != null:
+				if a.fx == "rock":
+					for k in 5:
+						var ang := randf() * TAU
+						field.leave_rock(caster.position + Vector3(cos(ang), 0, sin(ang)) * randf_range(1.5, a.range), randf_range(0.8, 1.6))
+				elif a.fx == "air":
+					field.extinguish(caster.position, a.range * 0.6)
+		"pillar":
+			_raise_pillar(caster, a, point, dmg)
 		"buff":
 			caster.start_buff(a)
 			spawn_burst(caster.chest(), Bending.fx_color(a.fx), 1.2)
@@ -1101,6 +1135,9 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 					e.apply_damage(dmg, caster, "fire" if a.fx == "fire" else "blunt", dir3.rotated(Vector3.UP, PI / 2.0 * signf(randf() - 0.5)), a.knock)
 					_apply_effect(e, a.get("effect", ""), dmg)
 			spawn_burst(start + Vector3(0, 0.6, 0), Bending.fx_color(a.fx), 1.0)
+			if field != null and a.fx == "fire":
+				for k in int(float(a.dist) / 2.0):
+					field.ignite(start + dir3 * (1.0 + k * 2.0), 0.6, 0.7)
 			caster.position = end3
 			caster.hold_pos = end3
 			spawn_burst(end3 + Vector3(0, 0.6, 0), Bending.fx_color(a.fx), 1.2)
@@ -1114,6 +1151,14 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 					_apply_effect(e, a.get("effect", ""), dmg)
 			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx))
 			spawn_burst(caster.chest(), Bending.fx_color(a.fx), 1.4)
+			if field != null:
+				for k in 10:
+					var ang2 := TAU * k / 10.0
+					var rp: Vector3 = caster.position + Vector3(cos(ang2), 0, sin(ang2)) * float(a.range) * 0.85
+					if a.fx in ["fire", "blue_fire"]:
+						field.ignite(rp, 0.6, 0.9)
+					elif a.fx == "water":
+						field.soak(rp, 0.8, 30.0)
 		"line":
 			var dir4: Vector3 = point - caster.position
 			dir4.y = 0.0
@@ -1133,7 +1178,10 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 			for k in steps:
 				var pt: Vector3 = caster.position + dir4 * (1.5 + k * 2.0)
 				pt.y = ground_height(pt.x, pt.z)
-				leave_debris(pt)
+				if field != null:
+					field.leave_rock(pt + Vector3(randf_range(-0.6, 0.6), 0, randf_range(-0.6, 0.6)), randf_range(0.7, 1.3))
+				else:
+					leave_debris(pt)
 				if k % 2 == 0:
 					spawn_burst(pt, Bending.fx_color(a.fx), 0.7)
 		"lightning":
@@ -1151,8 +1199,95 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 					hit = e
 			var end: Vector3 = from + dir2 * hit_d
 			if hit != null:
-				hit.apply_damage(dmg, caster, "fire", dir2, a.knock)
+				var wet_hit: bool = hit.wet_t > 0.0
+				hit.apply_damage(dmg * (1.5 if wet_hit else 1.0), caster, "fire", dir2, a.knock)
+				# water carries it on to everyone wet and close
+				if wet_hit:
+					for e2 in team_units[1 - caster.team].duplicate():
+						if e2 != hit and e2.alive and e2.wet_t > 0.0 and e2.dist_to(hit) < 4.0:
+							e2.apply_damage(dmg * 0.5, caster, "fire", Vector3.ZERO, 1.0)
+							_lightning_fx(hit.chest(), e2.chest())
+					if caster.is_player:
+						hud_note("The lightning runs through the water!")
+			elif field != null:
+				field.ignite(end, 0.8, 1.0)
 			_lightning_fx(from, end)
+
+## Fire cones set the grass alight along their reach, water cones soak it,
+## wind fans whatever is already burning.
+func _field_cone(caster, a: Dictionary) -> void:
+	if field == null:
+		return
+	var fwd: Vector3 = caster.forward()
+	for k in 7:
+		var ang := deg_to_rad(randf_range(-a.angle, a.angle) * 0.8)
+		var p: Vector3 = caster.position + fwd.rotated(Vector3.UP, ang) * randf_range(1.5, float(a.range))
+		match a.fx:
+			"fire", "blue_fire": field.ignite(p, 0.6, 0.8)
+			"water": field.soak(p, 1.0, 35.0)
+	if a.fx == "air":
+		field.gust(caster.position, fwd, float(a.range) + 4.0)
+
+## A column of rock driven up under the target point: everyone on it is thrown
+## up and hurt, and the column stays as an obstacle for the rest of the battle.
+func _raise_pillar(caster, a: Dictionary, point: Vector3, dmg: float) -> void:
+	var to: Vector3 = point - caster.position
+	to.y = 0.0
+	var rng_max: float = a.get("range", 14.0)
+	if to.length() > rng_max:
+		to = to.normalized() * rng_max
+	if to.length() < 2.0:
+		to = caster.forward() * 3.0
+	var c: Vector3 = caster.position + to
+	var gh := ground_height(c.x, c.z)
+	var r: float = a.get("radius", 0.9)
+	var h: float = a.get("height", 3.0)
+	var node := Node3D.new()
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = r * 0.85
+	cm.bottom_radius = r * 1.1
+	cm.height = h
+	cm.radial_segments = 7
+	cm.rings = 2
+	mi.mesh = cm
+	var rm: ShaderMaterial = Land.rock_material(biome).duplicate()
+	rm.set_shader_parameter("use_vertex_color", false)
+	mi.material_override = rm
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	node.add_child(mi)
+	node.rotation.y = randf() * TAU
+	add_child(node)
+	node.position = Vector3(c.x, gh - h * 0.5, c.z)
+	var tw := node.create_tween()
+	tw.tween_property(node, "position:y", gh + h * 0.5 - 0.1, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	for t in 2:
+		for u in team_units[t].duplicate():
+			var d := Vector2(u.position.x - c.x, u.position.z - c.z)
+			if d.length() < r + u.radius + 0.3:
+				if t != caster.team:
+					u.apply_damage(dmg, caster, "blunt", Vector3(d.x, 0, d.y).normalized(), a.get("knock", 2.0))
+				if u.alive and not u.mounted():
+					u.airborne = true
+					u.y_vel = float(a.get("launch", 9.0))
+					u._set_action("stagger", 1.0)
+				u.knock += Vector3(d.x, 0, d.y).normalized() * 3.0
+	var rec := {"c": Vector2(c.x, c.z), "axis": Vector2(1, 0), "hl": r, "ht": r, "h": h, "until": INF, "node": node, "pillar": true}
+	walls.append(rec)
+	if field != null:
+		field.add_structure(rec)
+	spawn_burst(Vector3(c.x, gh + 0.3, c.z), Bending.fx_color("rock"), 1.6)
+	if caster.is_player:
+		hud_note("A pillar of stone")
+
+## The oldest structure gives way when the field has too many.
+func crumble_structure(rec: Dictionary) -> void:
+	walls.erase(rec)
+	if is_instance_valid(rec.get("node")):
+		var n: Node3D = rec.node
+		var tw := n.create_tween()
+		tw.tween_property(n, "position:y", n.position.y - float(rec.h) - 0.5, 0.8)
+		tw.tween_callback(n.queue_free)
 
 func _cone_fx(caster, a: Dictionary) -> void:
 	var p := CPUParticles3D.new()

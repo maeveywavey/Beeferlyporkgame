@@ -66,6 +66,9 @@ static func ruler_aggression(f: String) -> float:
 ## victim was attacked by attacker: the victim's overlord answers for it.
 static func protect(victim: String, attacker: String) -> void:
 	var ov := overlord(victim)
+	if ov == "":
+		# free water tribes are protected by the High Chief of the Water Tribes
+		ov = load("res://scripts/core/moon_council.gd").protector_of(victim)
 	if ov == "" or ov == attacker or attacker == "":
 		return
 	var vname: String = Data.factions[victim].name

@@ -217,6 +217,16 @@ func _role_look(kind: String, rng: RandomNumberGenerator) -> Dictionary:
 	# Dyes vary from person to person; hats and hairstyles by culture
 	var dyes: Array = DYES.get(c, DYES.earth)
 	look.cloth_tint = dyes[rng.randi() % dyes.size()] * rng.randf_range(0.9, 1.08)
+	# the poor wear faded, patched peasant clothes; beggars more so
+	var w: int = layout.wealth if layout != null else 1
+	if kind == "beggar" or (w == 0 and not rich):
+		look.outfit = "peasant"
+		look.kit = ""
+		look.cloth_tint = look.cloth_tint.lerp(Color(0.45, 0.4, 0.33), 0.6 if kind == "beggar" else 0.35)
+		if kind == "beggar":
+			return look
+	elif w == 2 and rng.randf() < 0.5:
+		look.outfit = "ranger"
 	# many civilians, women especially, wear the long wrap robe of their people
 	if c != "air" and c != "water" and c != "south" and rng.randf() < (0.65 if look.sex == "f" else 0.25):
 		look.kit = "civ_robe"

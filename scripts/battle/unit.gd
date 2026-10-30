@@ -89,6 +89,8 @@ var hold_pos := Vector3.ZERO
 var slow_t := 0.0
 var burn_t := 0.0
 var burn_dps := 0.0
+## Soaked by water or rain: burns briefly, conducts lightning.
+var wet_t := 0.0
 var blind_t := 0.0
 var bend_block_t := 0.0
 var use_ranged := false
@@ -378,11 +380,19 @@ func tick(delta: float) -> void:
 			parts.glow.visible = false
 	bend_block_t = maxf(0.0, bend_block_t - delta)
 	cast_anim = maxf(0.0, cast_anim - delta)
+	wet_t = maxf(0.0, wet_t - delta)
+	if battle.field != null and battle.field.rain:
+		wet_t = maxf(wet_t, 1.0)
 	if burn_t > 0.0:
+		if wet_t > 0.0:
+			burn_t = minf(burn_t, 0.4)
 		burn_t -= delta
 		apply_damage(burn_dps * delta, null, "fire", Vector3.ZERO, 0.0, true)
 		if not alive:
 			return
+		# a burning soldier running through dry grass sets it alight
+		if battle.field != null and randf() < delta * 0.25:
+			battle.field.ignite(position, 0.5, 0.6)
 	if bend != "":
 		chi = minf(max_chi, chi + chi_regen * delta * float(buff_val("regen", 1.0)))
 	if not avatar_elements.is_empty():

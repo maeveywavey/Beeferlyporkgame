@@ -7,6 +7,7 @@ const Roster = preload("res://scripts/core/roster.gd")
 const Fealty = preload("res://scripts/core/fealty.gd")
 const AvatarSys = preload("res://scripts/core/avatar.gd")
 const Story = preload("res://scripts/story/story.gd")
+const MoonCouncil = preload("res://scripts/core/moon_council.gd")
 
 var map
 var tab := "factions"
@@ -21,7 +22,7 @@ func build() -> void:
 	set_title("Factions")
 	var tabs := UI.hbox()
 	content.add_child(tabs)
-	for t in [["factions", "Factions (%d)" % _listed().size()], ["people", "People"], ["wars", "Wars and Tribute"]]:
+	for t in [["factions", "Factions (%d)" % _listed().size()], ["people", "People"], ["wars", "Wars and Tribute"], ["council", "Moon Council"]]:
 		var b := UI.button(t[1], func():
 			tab = t[0]
 			note = ""
@@ -36,6 +37,7 @@ func build() -> void:
 		"factions": _build_factions()
 		"people": _build_people()
 		"wars": _build_wars()
+		"council": _build_council()
 
 func _open_avatar() -> void:
 	var w = load("res://scripts/ui/avatar_window.gd").new()
@@ -494,3 +496,82 @@ func _build_wars() -> void:
 
 func _coloured(f: String) -> String:
 	return UI.color_text(Data.factions[f].name, Data.factions[f].color.lightened(0.4))
+
+# ---------------------------------------------------------------------------
+# Moon Council tab
+# ---------------------------------------------------------------------------
+func _build_council() -> void:
+	var st := MoonCouncil.state()
+	var sc := UI.scroll(640)
+	sc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_child(sc)
+	var o := UI.vbox(5)
+	o.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(o)
+	var c := MoonCouncil.chief()
+	var years := int((GS.day() - int(st.since)) / 365)
+	var held := "for %d year%s" % [years, "" if years == 1 else "s"] if years > 0 else "since this year"
+	var who := "You" if c == "player" else "%s of the %s" % [MoonCouncil.chief_name(), Data.factions.get(c, Data.factions.neutral).name]
+	o.add_child(UI.label(MoonCouncil.TITLE, 24, UI.BROWN))
+	o.add_child(UI.rich("[b]%s[/b], %s.\nThe council next sits at the first full moon after day %d (today is day %d)." % [who, held, int(st.next), GS.day()], 1400))
+	o.add_child(UI.rich("[i]The Water Tribes are many small tribes on the ice, in the fens and on the islands, each governing itself. Seven electors choose a High Chief from among the great tribes' chiefs. The High Chief rules no one directly; the office brings a tithe from the free tribes, the duty to protect them, and the right to call the tribes to war, which they may or may not answer.[/i]", 1400))
+	if note != "":
+		o.add_child(UI.rich(note, 1400))
+	# Candidates
+	o.add_child(UI.spacer(4))
+	o.add_child(UI.label("Candidates, and the votes they would win today", 19, UI.BROWN))
+	var t := MoonCouncil.tally()
+	var row := UI.hbox(10)
+	o.add_child(row)
+	for cand in MoonCouncil.candidates():
+		var nm: String = "You" if cand == "player" else Data.factions[cand].short
+		var b := UI.button("%s — %d" % [nm, int(t.get(cand, 0))], func():
+			MoonCouncil.set_backing(cand)
+			note = "You back %s at the next council." % ("yourself" if cand == "player" else Data.factions[cand].name)
+			refresh(), 0)
+		if MoonCouncil.backing() == cand:
+			UI.mark_selected(b)
+		b.tooltip_text = "Back this candidate: your gifts to electors will speak for them."
+		row.add_child(b)
+	if not MoonCouncil.player_eligible():
+		o.add_child(UI.rich("[i](You may stand yourself once you rule a Water Tribes town or castle in your own name and have 250 renown.)[/i]", 1400))
+	# Electors
+	o.add_child(UI.spacer(4))
+	o.add_child(UI.label("Electors", 19, UI.BROWN))
+	var lean := MoonCouncil.leanings()
+	var g := UI.grid(4, 24, 4)
+	o.add_child(g)
+	for e in MoonCouncil.electors():
+		var fd: Dictionary = Data.factions[e]
+		g.add_child(UI.label(fd.name, 16, fd.color.lightened(0.4)))
+		var to: String = lean.get(e, "")
+		g.add_child(UI.label("leans to " + ("you" if to == "player" else Data.factions.get(to, Data.factions.neutral).short), 15))
+		g.add_child(UI.rich("standing " + _rel_text(GS.faction_rel(e)), 260))
+		var back := MoonCouncil.backing()
+		var can: bool = back != "" and GS.player_faction() == "player" and not GS.at_war("player", e)
+		g.add_child(UI.button("Send gifts (%d gold)" % MoonCouncil.lobby_cost(e), func():
+			note = MoonCouncil.lobby(e)
+			refresh(), 0, can and GS.player.gold >= MoonCouncil.lobby_cost(e)))
+	var last: Dictionary = st.get("last_votes", {})
+	if not last.is_empty():
+		o.add_child(UI.spacer(4))
+		o.add_child(UI.label("How they voted last time", 19, UI.BROWN))
+		var lines := []
+		for e in last:
+			if Data.factions.has(e):
+				lines.append("%s for %s" % [Data.factions[e].short, "you" if last[e] == "player" else Data.factions.get(last[e], Data.factions.neutral).short])
+		o.add_child(UI.rich(", ".join(lines) + ".", 1400))
+	# The tribes
+	o.add_child(UI.spacer(4))
+	o.add_child(UI.label("The tribes of the confederation", 19, UI.BROWN))
+	var free := []
+	var bound := []
+	for f in Data.factions:
+		if Data.region_of(f) != "water" or GS.faction_settlements(f).is_empty():
+			continue
+		var ov := Fealty.overlord(f)
+		if ov != "":
+			bound.append("%s (pays %s)" % [Data.factions[f].short, "you" if ov == "player" else Data.factions[ov].short])
+		elif Data.factions[f].get("community", false):
+			free.append(Data.factions[f].short)
+	o.add_child(UI.rich("[b]Free tribes under the High Chief's protection:[/b] %s.\n[b]Tribes paying a great tribe:[/b] %s." % [", ".join(free) if not free.is_empty() else "none", ", ".join(bound) if not bound.is_empty() else "none"], 1400))

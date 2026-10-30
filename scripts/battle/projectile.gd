@@ -145,6 +145,20 @@ func _physics_process(delta: float) -> void:
 func _impact(_u) -> void:
 	if fx in ["fire", "blue_fire", "rock", "water", "sand", "ice"]:
 		battle.spawn_burst(position, Bending.fx_color(fx), 1.0 if fx != "rock" else 1.4)
-	if fx == "rock" and _u == null:
-		battle.leave_debris(position)
+	var field = battle.field
+	if field != null:
+		match fx:
+			"rock":
+				if _u == null:
+					field.leave_rock(position, clampf(radius * 1.6, 0.6, 2.2))
+			"fire", "blue_fire":
+				field.ignite(position, 1.0, 0.9)
+			"water":
+				field.soak(position, 1.4)
+				if _u != null:
+					_u.wet_t = 20.0
+			"ice":
+				field.soak(position, 0.6, 20.0)
+				if _u != null:
+					_u.wet_t = 12.0
 	queue_free()
