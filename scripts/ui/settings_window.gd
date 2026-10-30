@@ -103,7 +103,7 @@ func build() -> void:
 	rf.button_pressed = GS.settings.get("reduce_flashing", false)
 	rf.toggled.connect(func(v): GS.settings.reduce_flashing = v)
 	g.add_child(rf)
-	g.add_child(UI.label("Retro look (PS1 vertex wobble and pixelated textures)"))
+	g.add_child(UI.label("Pixel textures"))
 	var rl := OptionButton.new()
 	for k in ["off", "light", "heavy"]:
 		rl.add_item(k.capitalize())

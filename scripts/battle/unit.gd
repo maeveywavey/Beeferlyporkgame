@@ -332,6 +332,8 @@ func ability_for(slot: String) -> Dictionary:
 		var a := Techniques.loadout_ability(loadout, slot)
 		if not a.is_empty() and Techniques.get_tech(loadout[slot]).element == Forms.art_of(bend):
 			return a
+	if slot == "r" and lord_id != "" and Data.lords.get(lord_id, {}).get("lightning", false):
+		return Bending.LIGHTNING
 	return Bending.ability(bend, slot)
 
 func buff_val(key: String, default):
@@ -810,8 +812,8 @@ func _ai_bend(dist: float) -> Vector3:
 	# Specials
 	if can_bend("r") and (is_hero or bend_power >= 1.6) and randf() < 0.02:
 		var r := ability_for("r")
-		# Only great masters (lords and heroes) can generate lightning
-		if r.kind == "lightning" and is_hero and lord_id != "" and bend_power >= 2.5 and dist < r.range and dist > 6.0:
+		# Lightning: only the two royals who can make it
+		if r.kind == "lightning" and dist < r.range and dist > 6.0:
 			cast("r", target.chest())
 			return Vector3.ZERO
 		if r.kind in ["quake", "nova"] and battle.enemies_near(self, r.range) >= 3:

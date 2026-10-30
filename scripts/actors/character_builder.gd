@@ -5,8 +5,8 @@ extends RefCounted
 ## libraries (Universal Animation Library 1 and 2). Everything is drawn with the
 ## cel shader and an ink outline to match the look of the animated series.
 
-const TOON := preload("res://shaders/toon.gdshader")
-const TOON_DOUBLE := preload("res://shaders/toon_double.gdshader")
+const MODEL := preload("res://shaders/model.gdshader")
+const MODEL_DOUBLE := preload("res://shaders/model_double.gdshader")
 const Accessories = preload("res://scripts/actors/accessories.gd")
 const FaceRig = preload("res://scripts/actors/face_rig.gd")
 
@@ -81,10 +81,10 @@ static func _tex(path: String) -> Texture2D:
 		_tex_cache[path] = load(path) if ResourceLoader.exists(path) else null
 	return _tex_cache[path]
 
-## A toon material based on an existing material's albedo texture.
-static func toon_from(mat: Material, opts: Dictionary = {}) -> ShaderMaterial:
+## A lit model material (shaders/model.gdshader) from an imported material: its albedo and normal maps, pixel-sized texels, tint and grain.
+static func model_material(mat: Material, opts: Dictionary = {}) -> ShaderMaterial:
 	var sm := ShaderMaterial.new()
-	sm.shader = TOON
+	sm.shader = MODEL
 	var tex: Texture2D = null
 	if mat is BaseMaterial3D:
 		tex = _painted(mat.albedo_texture)
@@ -100,7 +100,7 @@ static func toon_from(mat: Material, opts: Dictionary = {}) -> ShaderMaterial:
 		sm.set_shader_parameter("normal_strength", opts.get("normal_strength", 1.0))
 	# leaves and other cut-outs keep their holes and show both faces
 	if mat is BaseMaterial3D and (mat as BaseMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
-		sm.shader = TOON_DOUBLE
+		sm.shader = MODEL_DOUBLE
 		sm.set_shader_parameter("alpha_cut", 0.5)
 	return sm
 
@@ -156,7 +156,7 @@ static func set_texel_density(n: Node, root: Node3D) -> void:
 			p = p.get_parent()
 		for s in mi.mesh.get_surface_count():
 			var m := mi.get_active_material(s)
-			if m is ShaderMaterial and (m.shader == TOON or m.shader == TOON_DOUBLE):
+			if m is ShaderMaterial and (m.shader == MODEL or m.shader == MODEL_DOUBLE):
 				# characters (and what they wear) get pixels half the shared size
 				m.set_shader_parameter("texel_mult", CHARACTER_TEXEL_MULT)
 				m.set_shader_parameter("snap_mult", CHARACTER_SNAP_MULT)
@@ -167,7 +167,7 @@ static func set_texel_density(n: Node, root: Node3D) -> void:
 		set_texel_density(c, root)
 
 static func skin_material(mat: Material, skin: Color) -> ShaderMaterial:
-	var sm := toon_from(mat, {"tint": skin * 1.55, "saturation": 1.0})
+	var sm := model_material(mat, {"tint": skin * 1.55, "saturation": 1.0})
 	sm.set_shader_parameter("texture_desaturate", 1.0)
 	return sm
 
@@ -254,10 +254,10 @@ static func build(look: Dictionary) -> Dictionary:
 			mi.set_surface_override_material(0, skin_material(mi.mesh.surface_get_material(0), skin_c))
 			parts.head = mi
 		elif n == "Eyes":
-			mi.set_surface_override_material(0, toon_from(mi.mesh.surface_get_material(0), {"tint": Color(1, 1, 1).lerp(eye_c * 1.6, 0.55), "outline": false}))
+			mi.set_surface_override_material(0, model_material(mi.mesh.surface_get_material(0), {"tint": Color(1, 1, 1).lerp(eye_c * 1.6, 0.55), "outline": false}))
 			parts.eyes = mi
 		elif n == "Eyebrows":
-			mi.set_surface_override_material(0, toon_from(mi.mesh.surface_get_material(0), {"tint": hair_c * 1.4, "saturation": 0.5, "outline": false}))
+			mi.set_surface_override_material(0, model_material(mi.mesh.surface_get_material(0), {"tint": hair_c * 1.4, "saturation": 0.5, "outline": false}))
 			parts.brows = mi
 	# Outfit
 	var outfit: String = look.get("outfit", "peasant")
@@ -276,12 +276,12 @@ static func build(look: Dictionary) -> Dictionary:
 			var m: Material = mi.mesh.surface_get_material(s)
 			var mname := m.resource_name if m else ""
 			if String(mi.name).find("Hood") >= 0 and look.get("accessory", "") in ["parka", "wt_helm"]:
-				mi.set_surface_override_material(s, toon_from(m, {"texture": cloth_tex, "tint": Color(0.75, 0.85, 1.25)}))
+				mi.set_surface_override_material(s, model_material(m, {"texture": cloth_tex, "tint": Color(0.75, 0.85, 1.25)}))
 			elif mname.find("Regular") >= 0:
 				mi.set_surface_override_material(s, skin_material(m, skin_c))
 			else:
 				# civilians vary their dye; soldiers keep their uniform colours
-				mi.set_surface_override_material(s, toon_from(m, {"texture": cloth_tex, "tint": look.get("cloth_tint", Color.WHITE)}))
+				mi.set_surface_override_material(s, model_material(m, {"texture": cloth_tex, "tint": look.get("cloth_tint", Color.WHITE)}))
 	parts.meshes.append_array(outfit_meshes)
 	# Hair, beard
 	var hair: String = look.get("hair", "Hair_SimpleParted")
@@ -292,7 +292,7 @@ static func build(look: Dictionary) -> Dictionary:
 		hair_list.append("Hair_Beard")
 	for h in hair_list:
 		for mi in _graft(HAIR_DIR + h + ".gltf", skel):
-			var hm := toon_from(mi.mesh.surface_get_material(0), {"tint": hair_c * 2.4 + Color(0.04, 0.04, 0.04), "saturation": 1.0})
+			var hm := model_material(mi.mesh.surface_get_material(0), {"tint": hair_c * 2.4 + Color(0.04, 0.04, 0.04), "saturation": 1.0})
 			hm.set_shader_parameter("texture_desaturate", 1.0)
 			mi.set_surface_override_material(0, hm)
 			parts.meshes.append(mi)

@@ -8,23 +8,23 @@ const CB = preload("res://scripts/actors/character_builder.gd")
 
 static var _scenes := {}
 
-## A nature-kit model with toon materials, optionally tinted (snow, sand, ash).
+## A nature-kit model with model materials, optionally tinted (snow, sand, ash).
 static func nature(name: String, tint: Color = Color.WHITE) -> Node3D:
 	var ps: PackedScene = _scenes.get(name)
 	if ps == null:
 		ps = load("res://assets/nature/%s.gltf" % name)
 		_scenes[name] = ps
 	var n: Node3D = ps.instantiate()
-	_toon(n, tint)
+	_apply_materials(n, tint)
 	return n
 
-static func _toon(n: Node, tint: Color) -> void:
+static func _apply_materials(n: Node, tint: Color) -> void:
 	if n is MeshInstance3D:
 		var mi: MeshInstance3D = n
 		for s in mi.mesh.get_surface_count():
-			mi.set_surface_override_material(s, CB.toon_from(mi.mesh.surface_get_material(s), {"tint": tint, "saturation": 1.1}))
+			mi.set_surface_override_material(s, CB.model_material(mi.mesh.surface_get_material(s), {"tint": tint, "saturation": 1.1}))
 	for c in n.get_children():
-		_toon(c, tint)
+		_apply_materials(c, tint)
 
 ## Vegetation and rocks per biome: [trees, small plants, rocks, rock tint].
 static func palette(biome: String) -> Dictionary:

@@ -90,7 +90,7 @@ Episode references use book and episode numbers; for example, "2×05 *Avatar Day
 - **Source.** Firebending draws on the sun: stronger by day, gone during a total solar eclipse (2×10 *The Library*, 3×10, 3×11). It comes from breath and inner heat (1×16; 3×13).
 - **Energy and life.** The true meaning of firebending is energy and life. The idea that it is fuelled by rage is a distortion of Sozin's era (3×13). Before Sozin, the game's firebenders are taught breath, not anger.
 - **Dragons and the Eternal Flame.** Dragons are the original firebenders and are common before Sozin's hunts (3×13). The Sun Warriors keep the **Eternal Flame**, "the first fire" given by the dragons (3×13). No other place holds the first fire. In the game's era the Sun Warriors are a living, outward-facing culture, not ruins.
-- **Lightning.** "Cold-blooded fire" is a rare master's art (2×09 *Bitter Work*; 3×21).
+- **Lightning.** "Cold-blooded fire" is a rare master's art (2×09 *Bitter Work*; 3×21); the series shows only members of the royal family generating it. In the game only two people alive can: Fire Lord Haoren and Crown Princess Ryoko. No technique, form or teacher gives it to anyone else; ordinary firebenders' special is Dragon's Breath.
 - **Lightning redirection** was "independently developed" by Iroh from studying waterbenders (2×09). The game has no redirection technique.
 - **The Agni Kai** is an ancient firebending duel won when one duellist burns the other (1×12). Before Sozin it was rarely fought to the death (tier 2).
 - **Combustion** (third-eye) bending exists but is very rare (Book 3, Combustion Man).

@@ -1,13 +1,13 @@
 extends RefCounted
 ## Procedural architecture kit for walkable settlements. Builds whole
-## buildings as single meshes with vertex colours (painted by
-## shaders/toon_paint.gdshader, inked by the shared outline pass), in the
+## buildings as single meshes with vertex colours (lit by
+## shaders/building.gdshader), in the
 ## styles the original series drew: Earth Kingdom halls with green tile roofs
 ## and swept eaves, Fire Nation red-and-gold pagodas on black stone, Omashu's
 ## heavy mountain stone, Hamakaze timber, Water Tribe ice domes and Air Nomad
 ## towers with blue conical roofs.
 
-const PAINT = preload("res://shaders/toon_paint.gdshader")
+const PAINT = preload("res://shaders/building.gdshader")
 
 static var _mat_cache := {}
 

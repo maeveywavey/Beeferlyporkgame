@@ -92,12 +92,13 @@ var settings := {
 	"map_style": "painted",
 }
 
-## The PS1 look (shaders/ps1.gdshaderinc): vertex grid across the screen,
-## texels per metre on every surface, and how far UV-mapped textures go affine.
+## Pixel textures (shaders/ps1.gdshaderinc): texels per metre on every
+## surface. Only textures are pixelated: vertices are not snapped to a screen
+## grid and textures are not warped, so people and shapes stay clear.
 const RETRO := {
 	"off": {"snap": 0.0, "texel": 0.0, "affine": 0.0},
-	"light": {"snap": 480.0, "texel": 80.0, "affine": 0.0},
-	"heavy": {"snap": 200.0, "texel": 40.0, "affine": 0.25},
+	"light": {"snap": 0.0, "texel": 80.0, "affine": 0.0},
+	"heavy": {"snap": 0.0, "texel": 40.0, "affine": 0.0},
 }
 
 ## The PS1 look (shaders/ps1.gdshaderinc): vertex grid across the screen,

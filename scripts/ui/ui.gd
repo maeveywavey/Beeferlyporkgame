@@ -21,12 +21,14 @@ const GOLD := Color(0.98, 0.78, 0.34)
 
 static var _theme: Theme
 
-## Every text size in the game is multiplied by this (1.5 since the text was
-## too small to read at the 1600x900 base canvas scaled to smaller windows).
+## Every text size in the game is multiplied by this and then raised by
+## TEXT_BONUS points (the text was too small to read at the 1600x900 base
+## canvas scaled to smaller windows).
 const TEXT_SCALE := 1.5
+const TEXT_BONUS := 4
 
 static func px(size: float) -> int:
-	return int(round(size * TEXT_SCALE))
+	return int(round(size * TEXT_SCALE)) + TEXT_BONUS
 
 ## Older BBCode colours were picked for dark text on paper; lift them so they
 ## read on the dark panels.

@@ -137,6 +137,10 @@ func _ready() -> void:
 		msg += " The sun is dark — firebenders are powerless!"
 	elif fire_mult > 1.6:
 		msg += " The Great Comet burns overhead — firebending is at its peak!"
+	if weather_kind == "rain":
+		msg += " Rain is falling: fire gutters and water swells."
+	elif weather_kind == "snow":
+		msg += " Snow is falling: fire burns low, water runs strong."
 	if water_mult == 0.0:
 		msg += " The moon is eclipsed — waterbenders are powerless!"
 	elif water_mult > 1.4:
@@ -362,6 +366,13 @@ func _build_weather() -> void:
 	elif biome == "desert" and randf() < 0.3:
 		kind = "dust"
 	weather_kind = kind
+	# rain smothers fire and feeds water; snow does the same, a little
+	if kind == "rain":
+		fire_mult *= 0.7
+		water_mult *= 1.25
+	elif kind == "snow":
+		fire_mult *= 0.9
+		water_mult *= 1.1
 	if kind == "":
 		return
 	weather = CPUParticles3D.new()

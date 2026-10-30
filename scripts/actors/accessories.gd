@@ -7,8 +7,8 @@ extends RefCounted
 ## Each piece is modelled in the rig's T-pose model space (character faces +Z,
 ## ~1.8 m tall) and bound to a skeleton bone, so it follows the animation.
 
-const TOON := preload("res://shaders/toon.gdshader")
-const TOON_DOUBLE := preload("res://shaders/toon_double.gdshader")
+const MODEL := preload("res://shaders/model.gdshader")
+const MODEL_DOUBLE := preload("res://shaders/model_double.gdshader")
 
 static var _mats := {}
 
@@ -17,7 +17,7 @@ static func mat(c: Color, outline: bool = true, rim: float = 0.25, double: bool 
 	if _mats.has(key):
 		return _mats[key]
 	var m := ShaderMaterial.new()
-	m.shader = TOON_DOUBLE if double else TOON
+	m.shader = MODEL_DOUBLE if double else MODEL
 	var img := Image.create(4, 4, false, Image.FORMAT_RGB8)
 	img.fill(Color.WHITE)
 	var t := ImageTexture.create_from_image(img)

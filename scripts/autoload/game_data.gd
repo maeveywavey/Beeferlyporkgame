@@ -561,12 +561,12 @@ var goods := {
 const GREY := Color(0.62, 0.6, 0.58)
 var lords := {
 	# Fire Nation
-	"haoren": {"name": "Fire Lord Haoren", "faction": "fire_nation", "bend": "fire", "power": 2.6, "weapon": "fists", "hp": 200, "troops": 120, "home": "caldera", "king": true, "aggression": 0.25,
+	"haoren": {"name": "Fire Lord Haoren", "faction": "fire_nation", "bend": "fire", "power": 2.6, "weapon": "fists", "hp": 200, "troops": 120, "home": "caldera", "king": true, "lightning": true, "aggression": 0.25,
 		"look": {"sex": "m", "hair": "Hair_SimpleParted", "hair_color": GREY, "beard": true},
 		"bio": "Wants peace; fears being remembered as the man who let the Avatar die. He was the Avatar's friend in boyhood and still keeps a chipped Pai Sho tile they played with.",
 		"bio_sandbox": "Wants peace; fears being remembered as the Fire Lord who could not end a war the Avatar had to end for him. He keeps a chipped Pai Sho tile from a friend who died young.",
 		"line": "Sit. Everyone who comes before me wants something, and most of them want a war. Which are you?"},
-	"ryoko": {"name": "Crown Princess Ryoko", "faction": "fire_nation", "bend": "fire", "power": 2.5, "weapon": "fists", "hp": 180, "troops": 70, "home": "caldera", "aggression": 0.35,
+	"ryoko": {"name": "Crown Princess Ryoko", "faction": "fire_nation", "bend": "fire", "power": 2.5, "weapon": "fists", "hp": 180, "troops": 70, "home": "caldera", "lightning": true, "aggression": 0.35,
 		"look": {"sex": "f", "hair": "Hair_Buns"},
 		"bio": "Wants the Admiralty out of the Strait Isles; fears her father's disappointment more than any army. Her wife, Lady Satsuki, keeps the royal archives — and keeps Ryoko honest.",
 		"line": "If you've come to tell me the Strait Isles are worth dying for, save your breath. If you've come with an idea, I have tea."},

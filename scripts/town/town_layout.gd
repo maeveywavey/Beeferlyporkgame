@@ -80,7 +80,7 @@ func free_at(p: Vector3, margin: float) -> bool:
 			return false
 	return true
 
-## A CC0 prop (Fantasy Props MegaKit) repainted with the toon shader.
+## A CC0 prop (Fantasy Props MegaKit) with model materials.
 func prop(name: String, pos: Vector3, rot_y: float = 0.0, scale: float = 1.0, collide: float = 0.0) -> Node3D:
 	var ps: PackedScene = _prop_cache.get(name)
 	if ps == null:
@@ -90,20 +90,20 @@ func prop(name: String, pos: Vector3, rot_y: float = 0.0, scale: float = 1.0, co
 		ps = load(path)
 		_prop_cache[name] = ps
 	var n: Node3D = ps.instantiate()
-	_toonify(n)
+	_apply_model_materials(n)
 	n.scale = Vector3.ONE * scale
 	add(n, pos, rot_y)
 	if collide > 0.0:
 		circle(pos, collide)
 	return n
 
-func _toonify(n: Node) -> void:
+func _apply_model_materials(n: Node) -> void:
 	if n is MeshInstance3D:
 		var mi: MeshInstance3D = n
 		for s in mi.mesh.get_surface_count():
-			mi.set_surface_override_material(s, CB.toon_from(mi.mesh.surface_get_material(s), {"saturation": 1.15}))
+			mi.set_surface_override_material(s, CB.model_material(mi.mesh.surface_get_material(s), {"saturation": 1.15}))
 	for c in n.get_children():
-		_toonify(c)
+		_apply_model_materials(c)
 
 ## Paved ground laid in individual stones, each a slightly different shade,
 ## with mortar showing between them.

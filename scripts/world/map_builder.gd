@@ -281,7 +281,7 @@ static func build_vegetation(parent: Node3D) -> void:
 
 static var _nature_cache := {}
 
-## First mesh of a nature-kit model with toon materials, and its local transform.
+## First mesh of a nature-kit model with model materials, and its local transform.
 static func _nature_mesh(name: String) -> Array:
 	if _nature_cache.has(name):
 		return _nature_cache[name]
@@ -290,7 +290,7 @@ static func _nature_mesh(name: String) -> Array:
 	var mesh: ArrayMesh = mi.mesh.duplicate()
 	var CBs = load("res://scripts/actors/character_builder.gd")
 	for i in mesh.get_surface_count():
-		mesh.surface_set_material(i, CBs.toon_from(mesh.surface_get_material(i), {"saturation": 1.1, "outline": false}))
+		mesh.surface_set_material(i, CBs.model_material(mesh.surface_get_material(i), {"saturation": 1.1, "outline": false}))
 	var xf: Transform3D = inst.transform.affine_inverse() * mi.global_transform if mi.is_inside_tree() else _rel_xf(inst, mi)
 	inst.free()
 	_nature_cache[name] = [mesh, xf]

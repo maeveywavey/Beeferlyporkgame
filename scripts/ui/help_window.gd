@@ -24,7 +24,7 @@ const PAGES := [
 • Order your troops with F1 (hold), F2 (follow) and F3 (charge).
 
 [b]Bending[/b] (Q / E / R) uses chi, the blue bar.
-• Fire: Fire Blast, Fire Wave, Lightning (needs Bending skill 5)
+• Fire: Fire Blast, Fire Wave, Dragon's Breath. Lightning is the royal house's secret: only the Fire Lord and the Crown Princess can make it.
 • Earth: Rock Throw, Earth Wall, Earthquake
 • Water: Water Whip, Healing Water, Ice Spikes
 • Air: Air Blast, Air Sweep, Falling Wind

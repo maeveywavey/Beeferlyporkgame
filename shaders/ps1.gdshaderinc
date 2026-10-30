@@ -1,7 +1,8 @@
-// PS1-style rendering shared by every 3D shader. Driven by global shader
-// parameters (project.godot [shader_globals]) set from the Retro look setting:
-//   ps1_snap     vertex grid across the screen width (0 = off); vertices snap
-//                to it, so edges wobble as the camera moves
+// Pixel textures shared by every 3D shader. Driven by global shader
+// parameters (project.godot [shader_globals]) set from the Pixel textures
+// setting:
+//   ps1_snap     vertex grid across the screen width (0 = off, as every
+//                setting now leaves it: only textures are pixelated)
 //   ps1_texel_m  texels per metre of surface (0 = off). Every surface uses
 //                the same texel size: ground, rock, bark, cards and people.
 //   ps1_affine   0..1 blend towards affine texture mapping on UV-mapped

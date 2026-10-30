@@ -84,7 +84,7 @@ This plan is drawn from the twenty answers of 30 October and the follow-up answe
 - **Troop rebalance:** bender troop damage, health and cost drop to roughly 1.5–2× a soldier of the same tier.
 - **Companion power:** companion bending power is capped below master level, except for companions written as masters.
 - **Lords:** lords who are benders are capable, not masters, unless the setting says they are masters.
-- **Lightning:** generating lightning is restricted to masters.
+- **Lightning:** generating lightning is restricted to the two royals who know it (built).
 
 **Masters (Q17: sought out, rarely join, or hired at great cost).**
 - **Where they live:** the world holds a handful of named masters per element (about 3–5 each). Each lives somewhere, has a want, and teaches for a price or a deed.

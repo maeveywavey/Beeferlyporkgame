@@ -9,18 +9,18 @@ extends RefCounted
 ##   wall       — raises an earth/ice wall in front
 ##   heal       — heals self and nearby allies
 ##   quake      — radial stun around the bender
-##   lightning  — instant line strike
+##   lightning  — instant line strike (LIGHTNING only: the royal house's art)
 
 const ABILITIES := {
 	"fire": {
 		"q": {"name": "Fire Blast", "kind": "projectile", "cost": 14.0, "cd": 0.75, "dmg": 19.0, "speed": 30.0, "radius": 0.45, "knock": 2.5, "gravity": 0.0, "range": 30.0, "effect": "burn", "fx": "fire", "sfx": "fire"},
 		"e": {"name": "Fire Wave", "kind": "cone", "cost": 30.0, "cd": 3.0, "dmg": 24.0, "range": 6.0, "angle": 55.0, "knock": 5.0, "effect": "burn", "fx": "fire", "sfx": "fire"},
-		"r": {"name": "Lightning", "kind": "lightning", "cost": 60.0, "cd": 9.0, "dmg": 55.0, "range": 45.0, "knock": 4.0, "min_skill": 5, "fx": "lightning", "sfx": "fire"},
+		"r": {"name": "Dragon's Breath", "kind": "cone", "cost": 40.0, "cd": 7.0, "dmg": 34.0, "range": 10.0, "angle": 22.0, "knock": 3.0, "effect": "burn", "fx": "fire", "sfx": "fire", "breath": true},
 	},
 	"blue_fire": {
 		"q": {"name": "Blue Fire Blast", "kind": "projectile", "cost": 12.0, "cd": 0.6, "dmg": 24.0, "speed": 36.0, "radius": 0.5, "knock": 3.0, "gravity": 0.0, "range": 32.0, "effect": "burn", "fx": "blue_fire", "sfx": "fire"},
 		"e": {"name": "Blue Fire Arc", "kind": "cone", "cost": 28.0, "cd": 2.5, "dmg": 28.0, "range": 7.0, "angle": 70.0, "knock": 6.0, "effect": "burn", "fx": "blue_fire", "sfx": "fire"},
-		"r": {"name": "Lightning", "kind": "lightning", "cost": 55.0, "cd": 8.0, "dmg": 60.0, "range": 45.0, "knock": 4.0, "fx": "lightning", "sfx": "fire"},
+		"r": {"name": "Blue Dragon's Breath", "kind": "cone", "cost": 38.0, "cd": 6.5, "dmg": 40.0, "range": 11.0, "angle": 22.0, "knock": 3.5, "effect": "burn", "fx": "blue_fire", "sfx": "fire", "breath": true},
 	},
 	"earth": {
 		"q": {"name": "Rock Throw", "kind": "projectile", "cost": 16.0, "cd": 1.0, "dmg": 26.0, "speed": 24.0, "radius": 0.6, "knock": 7.0, "gravity": 6.0, "range": 28.0, "effect": "", "fx": "rock", "sfx": "earth"},
@@ -43,6 +43,12 @@ const ABILITIES := {
 		"r": {"name": "Sand Wall", "kind": "wall", "cost": 28.0, "cd": 7.0, "width": 5.0, "height": 2.2, "life": 9.0, "dist": 3.0, "fx": "sand", "sfx": "earth"},
 	},
 }
+
+## Lightning, "cold-blooded fire". In this age only two people alive can make
+## it, both of the royal house: Fire Lord Haoren and Crown Princess Ryoko
+## (their lords' entries carry "lightning": true). No technique, form or
+## teacher gives it to anyone else.
+const LIGHTNING := {"name": "Lightning", "kind": "lightning", "cost": 60.0, "cd": 9.0, "dmg": 55.0, "range": 45.0, "knock": 4.0, "fx": "lightning", "sfx": "fire"}
 
 static func ability(element: String, slot: String) -> Dictionary:
 	return ABILITIES.get(element, {}).get(slot, {})
