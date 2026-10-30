@@ -441,6 +441,7 @@ func _update_camera(_delta: float) -> void:
 	var offset := Vector3(0, sin(pitch), cos(pitch)).rotated(Vector3.UP, cam_yaw) * cam_dist
 	camera.position = cam_target + offset
 	camera.look_at(cam_target, Vector3.UP)
+	MapBuilder.update_zoom(cam_dist)
 
 func _update_lighting() -> void:
 	var h := GS.hour_of_day()
@@ -457,6 +458,10 @@ func _update_lighting() -> void:
 	if GS.is_comet():
 		sky = sky.lerp(Color(0.8, 0.25, 0.1), 0.45)
 		sun.light_color = sun.light_color.lerp(Color(1, 0.4, 0.2), 0.4)
+	MapBuilder.set_daylight(0.35 + 0.65 * daylight)
+	match MapBuilder.map_style():
+		"chart": sky = Color(0.62, 0.6, 0.52).lerp(Color(0.8, 0.76, 0.64), daylight)
+		"ink": sky = Color(0.6, 0.6, 0.58).lerp(Color(0.88, 0.88, 0.85), daylight)
 	env.background_color = sky
 	env.fog_light_color = sky.lightened(0.15)
 	env.fog_density = clampf(0.1 / cam_dist, 0.00015, 0.0015)

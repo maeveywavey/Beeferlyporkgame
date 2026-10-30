@@ -16,6 +16,22 @@ func _ready() -> void:
 			var m = Engine.get_main_loop().current_scene
 			m.cam_dist = 55.0
 			m.cam_yaw = 0.5)
+	if mode.begins_with("map:"):
+		# map:<style>:<camera distance>:<x>,<z>[:hour]
+		var mp := mode.split(":")
+		var pl2 := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
+		GS.new_game(pl2)
+		GS.flags.seen_help = true
+		GS.settings.map_style = mp[1]
+		if mp.size() > 4:
+			GS.hours = float(mp[4])
+		var xz := mp[3].split(",")
+		GS.player_party().pos = Vector2(float(xz[0]), float(xz[1]))
+		get_tree().change_scene_to_file.call_deferred("res://scenes/world_map.tscn")
+		get_tree().create_timer(0.8).timeout.connect(func():
+			var m = Engine.get_main_loop().current_scene
+			m.cam_dist = float(mp[2])
+			m.cam_target = Vector3(float(xz[0]), 0.0, float(xz[1])))
 	if mode.begins_with("walk:"):
 		# walk:<sid>[:hour[:yaw[:pitch[:x,z]]]]
 		var parts := mode.split(":")

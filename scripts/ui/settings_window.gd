@@ -112,6 +112,15 @@ func build() -> void:
 		GS.settings.retro = ["off", "light", "heavy"][i]
 		GS.apply_settings())
 	g.add_child(rl)
+	g.add_child(UI.label("Map style"))
+	var mst := OptionButton.new()
+	for k in ["Painted atlas", "Old chart", "Ink wash"]:
+		mst.add_item(k)
+	mst.selected = maxi(0, ["atlas", "chart", "ink"].find(String(GS.settings.get("map_style", "atlas"))))
+	mst.item_selected.connect(func(i):
+		GS.settings.map_style = ["atlas", "chart", "ink"][i]
+		load("res://scripts/world/map_builder.gd").apply_style())
+	g.add_child(mst)
 	g.add_child(UI.label("Reduce motion (no window animations)"))
 	var rm := CheckBox.new()
 	rm.button_pressed = GS.settings.get("reduce_motion", false)

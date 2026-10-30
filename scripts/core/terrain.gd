@@ -1,14 +1,18 @@
 extends RefCounted
-## World terrain: land mask, heights and biomes, sampled on a cached grid so
-## both the simulation and the map renderer agree.
+## World terrain: land, heights, biomes, forests and rivers, baked by
+## tools/make_world.py into assets/world/ and sampled on a grid of 2 map units,
+## so the simulation and the map renderer agree.
 
-const CELL := 8.0
-const GW := 201   # MAP_W / CELL + 1
-const GH := 151   # MAP_H / CELL + 1
+const CELL := 2.0
+const GW := 801   # MAP_W / CELL + 1
+const GH := 601   # MAP_H / CELL + 1
+const HEIGHT_FILE := "res://assets/world/height.bin"
+const INFO_FILE := "res://assets/world/info.bin"
 
 static var _land: PackedFloat32Array
 static var _height: PackedFloat32Array
 static var _biome: PackedByteArray
+static var _info: PackedByteArray
 static var _ready := false
 
 const BIOMES := ["ocean", "grass", "forest", "mountain", "snow", "desert", "swamp", "volcanic", "highland", "beach"]
@@ -27,64 +31,37 @@ static func ensure() -> void:
 	if _ready:
 		return
 	_ready = true
-	var n := FastNoiseLite.new()
-	n.seed = 1337
-	n.frequency = 0.012
-	n.fractal_octaves = 4
-	var mtn := FastNoiseLite.new()
-	mtn.seed = 4242
-	mtn.frequency = 0.006
-	mtn.fractal_type = FastNoiseLite.FRACTAL_RIDGED
-	mtn.fractal_octaves = 3
-	var forest := FastNoiseLite.new()
-	forest.seed = 99
-	forest.frequency = 0.02
-	_land.resize(GW * GH)
-	_height.resize(GW * GH)
-	_biome.resize(GW * GH)
-	var ell: Array = Data.land_ellipses
-	var regions: Array = Data.biome_regions
-	for gy in GH:
-		for gx in GW:
-			var p := Vector2(gx * CELL, gy * CELL)
-			var best := -2.0
-			for e in ell:
-				var d := Vector2(p.x - e[0], p.y - e[1]).rotated(-deg_to_rad(e[4]))
-				var v: float = 1.0 - sqrt(pow(d.x / e[2], 2) + pow(d.y / e[3], 2))
-				if v > best:
-					best = v
-			best += n.get_noise_2d(p.x, p.y) * 0.22
-			if p.y < 45.0:
-				best = maxf(best, (45.0 - p.y) / 45.0)
-			if p.y > Data.MAP_H - 45.0:
-				best = maxf(best, (p.y - (Data.MAP_H - 45.0)) / 45.0)
-			var i := gy * GW + gx
-			_land[i] = best
-			var h := 0.0
-			if best <= 0.0:
-				h = maxf(-6.0, best * 20.0) - 0.5
-			else:
-				var ridge := clampf((mtn.get_noise_2d(p.x, p.y) - 0.42) * 3.0, 0.0, 1.0)
-				h = 0.6 + minf(best, 0.4) * 6.0 + ridge * 16.0 * smoothstep(0.0, 0.25, best)
-			_height[i] = h
-			# biome
-			var b := "grass"
-			if best <= 0.0:
-				b = "ocean"
-			elif best < 0.04:
-				b = "beach"
-			else:
-				if forest.get_noise_2d(p.x, p.y) > 0.15:
-					b = "forest"
-				for r in regions:
-					var rd := Vector2((p.x - r[0]) / r[2], (p.y - r[1]) / r[3])
-					if rd.length() < 1.0:
-						b = r[4]
-				if h > 10.0 and b != "desert":
-					b = "mountain"
-				if p.y < 175.0 or p.y > 1030.0:
-					b = "snow"
-			_biome[i] = BIOMES.find(b)
+	_height = FileAccess.get_file_as_bytes(HEIGHT_FILE).to_float32_array()
+	_info = FileAccess.get_file_as_bytes(INFO_FILE)
+	var n := GW * GH
+	_land.resize(n)
+	_biome.resize(n)
+	for i in n:
+		_biome[i] = _info[i * 4]
+		# coast distance: 128 at the shore, 4 per map unit
+		_land[i] = (float(_info[i * 4 + 1]) - 128.0) / 4.0
+
+## The baked grids as textures for the map shaders: heights (RF) and
+## biome / coast / forest / river (RGBA8).
+static func height_texture() -> ImageTexture:
+	ensure()
+	var img := Image.create_from_data(GW, GH, false, Image.FORMAT_RF, _height.to_byte_array())
+	return ImageTexture.create_from_image(img)
+
+static func info_texture() -> ImageTexture:
+	ensure()
+	var img := Image.create_from_data(GW, GH, false, Image.FORMAT_RGBA8, _info)
+	return ImageTexture.create_from_image(img)
+
+## River strength at a point (0..1).
+static func river(p: Vector2) -> float:
+	ensure()
+	return float(_info[_idx(p) * 4 + 3]) / 255.0
+
+## Forest density at a point (0..1).
+static func forest(p: Vector2) -> float:
+	ensure()
+	return float(_info[_idx(p) * 4 + 2]) / 255.0
 
 static func _idx(p: Vector2) -> int:
 	var gx := clampi(int(round(p.x / CELL)), 0, GW - 1)

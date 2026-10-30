@@ -89,6 +89,7 @@ var settings := {
 	"ui_scale": 1.0, "plain_speech": false, "reduce_flashing": false, "reduce_motion": false, "readable_font": false,
 	"dlc_fire": true, "dlc_water": true, "dlc_earth": true, "dlc_air": true,
 	"retro": "heavy",
+	"map_style": "atlas",
 }
 
 ## The PS1 look (shaders/ps1.gdshaderinc): vertex grid across the screen,

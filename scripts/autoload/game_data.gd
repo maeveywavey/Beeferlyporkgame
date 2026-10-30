@@ -116,6 +116,11 @@ var factions := {
 		"trim": Color(0.95, 0.95, 0.95), "culture": "south", "king": "nuvuk", "capital": "kanguq_hall", "region": "water", "kind": "Tribe",
 		"desc": "A small tribe of the western ice, named for the snow geese that nest on its shore. It stays out of Wolf's Crown's council and out of its wars, and keeps the best sled-dogs in the South.",
 	},
+	"pearl_isles": {
+		"name": "Pearl Isles League", "short": "Pearl Isles", "color": Color(0.3, 0.62, 0.62),
+		"trim": Color(0.95, 0.92, 0.85), "culture": "south", "king": "kallik", "capital": "tidehall", "region": "water", "kind": "Island league",
+		"desc": "A league of waterbending island tribes in the southern sea, rich in pearls and poor in patience. Its captains want a High Chief who sails, not one who sits on ice, and have never yet had one.",
+	},
 	# --- The Air Temples ----------------------------------------------------
 	"air_nomads": {
 		"name": "Air Nomads", "short": "Air Nomads", "color": Color(0.95, 0.62, 0.15),
@@ -171,7 +176,7 @@ var factions := {
 }
 
 ## Display order and headings of the regions in the Factions window.
-const REGIONS := [["fire", "The Fire Islands"], ["earth", "The Earth Continent"], ["water", "The Water Tribes"], ["air", "The Air Temples"], ["outlaw", "Outlaws"]]
+const REGIONS := [["fire", "The Fire Islands"], ["earth", "The Earth Continent"], ["water", "The Water Tribes (Moon Council)"], ["air", "The Air Temples"], ["outlaw", "Outlaws"]]
 
 ## Factions that take part in diplomacy: everyone with lords and armies.
 ## Filled in _ready from the lords table; communities and temples are not in it.
@@ -713,6 +718,14 @@ var lords := {
 		"look": {"sex": "f", "hair": "Hair_Long"},
 		"bio": "Chief of the Aqsarniit Clans, a waterbender who learned combat from her grandmother on the open ice. Wants Agna Qel'a to admit the clans were right; fears it never will.",
 		"line": "Agna Qel'a sends us letters about tradition. We send back furs. They read the furs more carefully."},
+	"kallik": {"name": "Chieftain Kallik", "faction": "pearl_isles", "bend": "water", "power": 2.1, "weapon": "spear", "hp": 160, "troops": 80, "home": "tidehall", "king": true, "aggression": 0.5,
+		"look": {"sex": "f", "hair": "Hair_Long"},
+		"bio": "Captain of the Pearl Isles League. Wants to be the first High Chief from the warm seas; fears the ice tribes will close ranks against her, as they always have. Dives for pearls herself before every council, for luck.",
+		"line": "The ice tribes think the Moon only shines on snow. It shines on my lagoon too, and the view is better."},
+	"tulimaq": {"name": "Navigator Tulimaq", "faction": "pearl_isles", "bend": "", "power": 1.0, "weapon": "spear", "hp": 130, "troops": 50, "home": "tidehall", "aggression": 0.4,
+		"look": {"sex": "m", "hair": "Hair_Buzzed", "beard": true},
+		"bio": "The League's best navigator. Wants a chart of every current in the southern sea; fears dying before it is finished. Talks to his compass.",
+		"line": "Every island in this sea is somebody's. I just want to know where they all are before somebody else does."},
 	"nuvuk": {"name": "Chief Nuvuk", "faction": "kanguq", "bend": "", "power": 1.0, "weapon": "spear", "hp": 150, "troops": 70, "home": "kanguq_hall", "king": true, "aggression": 0.3,
 		"look": {"sex": "m", "hair": "Hair_Long", "beard": true},
 		"bio": "Wants the Kanguq left out of Wolf's Crown's wars; fears Qannik's raiders will drag them in anyway. Breeds sled-dogs and names each one after a council member he dislikes.",
@@ -852,7 +865,7 @@ var settlements := {
 		"produces": ["fish", "whale_oil"], "desc": "A sheltered bay on the eastern coast, far from every war and grateful for it."},
 	"hamakaze": {"name": "Hamakaze", "type": "village", "faction": "tide_wardens", "pos": Vector2(770, 890), "owner": "oyama", "culture": "hamakaze",
 		"produces": ["fish", "silk"], "desc": "A pine-covered peninsula of fishing villages joined to the mainland by a narrow neck, defended by the Tide Wardens. It belongs to the Earth Kingdom on paper and to itself in practice, which makes it the one place every nation's envoys will agree to meet. Watch out for the unagi."},
-	"foggy_swamp": {"name": "Foggy Swamp", "type": "village", "faction": "foggy_swamp", "pos": Vector2(965, 655), "community": {"fealty": "", "head": "the elders of the great tree", "kind": "Swamp tribe"}, "culture": "swamp",
+	"foggy_swamp": {"name": "Foggy Swamp", "type": "village", "faction": "foggy_swamp", "pos": Vector2(965, 655), "community": {"fealty": "", "head": "the elders of the great tree", "kind": "Swamp tribe", "region": "water"}, "culture": "swamp",
 		"produces": ["herbs", "fish"], "desc": "A misty swamp where a forgotten tribe of waterbenders lives among the roots of a single great tree."},
 	"agrarian_vale": {"name": "Jade Terraces", "type": "village", "faction": "earth_kingdom", "pos": Vector2(1340, 300), "bound": "ba_sing_se", "culture": "earth",
 		"produces": ["tea", "rice"], "desc": "The farmland between Ba Sing Se's walls, terraced with tea. Its harvest goes to the Upper Ring first."},
@@ -886,7 +899,7 @@ var settlements := {
 		"produces": [], "desc": "A raider harbour on the southern ice shelf, roofed with whale ribs. Qannik's canoes leave from here at night."},
 	"wolf_cove": {"name": "Wolf Cove", "type": "village", "faction": "southern_water", "pos": Vector2(610, 1120), "bound": "southern_tribe", "culture": "south",
 		"produces": ["fish", "furs"], "desc": "A sheltered cove where the tribe's canoes are hauled onto the ice."},
-	"whaletail": {"name": "Whaletail Island", "type": "village", "faction": "whalebone", "pos": Vector2(930, 1050), "bound": "hakodas_watch", "culture": "south",
+	"whaletail": {"name": "Whaletail Island", "type": "village", "faction": "whalebone", "pos": Vector2(935, 1035), "bound": "hakodas_watch", "culture": "south",
 		"produces": ["whale_oil", "seal_jerky"], "desc": "A rocky island shaped like the tail of a whale."},
 
 	# Fire Islands clans and the Sun Warriors
@@ -954,6 +967,46 @@ var settlements := {
 	"qamutik": {"name": "Qamutik Landing", "type": "village", "faction": "qamutik", "pos": Vector2(1250, 1135), "culture": "south", "community": {"fealty": "", "head": "Elder Siku", "kind": "Sled-trading post"},
 		"produces": ["furs", "sea_prunes"], "desc": "A sled-trading post on the eastern shelf where southern tribes trade without asking whose side anyone is on."},
 
+	# The Water Tribes: small tribes of the ice, the fens and the islands
+	"siku_narrows": {"name": "Siku Narrows", "type": "village", "faction": "siku_narrows", "pos": Vector2(300, 42), "culture": "north", "community": {"fealty": "northern_water", "head": "Elder Anuri", "kind": "Ice-fishing tribe"},
+		"produces": ["fish", "furs"], "desc": "A tribe of ice-fishers on the narrows west of Agna Qel'a. They send the city fish and one vote's worth of opinions, through Agna Qel'a's mouth."},
+	"tuktu_camp": {"name": "Tuktu Camp", "type": "village", "faction": "tuktu_camp", "pos": Vector2(772, 52), "culture": "north", "community": {"fealty": "northern_water", "head": "Hunter Qila", "kind": "Caribou-hunting tribe"},
+		"produces": ["furs", "seal_jerky"], "desc": "Caribou hunters on a lone ice island between the North's two great shelves, courted by both."},
+	"ukaliq": {"name": "Ukaliq Hollow", "type": "village", "faction": "ukaliq", "pos": Vector2(1000, 38), "culture": "north", "community": {"fealty": "aqsarniit", "head": "Elder Paniuq", "kind": "Hare-trapping tribe"},
+		"produces": ["furs", "sea_prunes"], "desc": "A sheltered hollow in the eastern ice where the Aqsarniit winter their sled-dogs and their grudges."},
+	"qanik_point": {"name": "Qanik Point", "type": "village", "faction": "qanik_point", "pos": Vector2(1322, 82), "culture": "north", "community": {"fealty": "", "head": "Elder Miki", "kind": "Snow-fishing tribe"},
+		"produces": ["fish", "whale_oil"], "desc": "The last camp before open ocean, where a tribe of forty fishes through the ice and owes nobody."},
+	"aqpik_shelf": {"name": "Aqpik Shelf", "type": "village", "faction": "aqpik_shelf", "pos": Vector2(222, 1168), "culture": "south", "community": {"fealty": "kanguq", "head": "Elder Saqpik", "kind": "Berry-gathering tribe"},
+		"produces": ["sea_prunes", "furs"], "desc": "A tribe on the western shelf that gathers cloudberries in the short summer and pays the Kanguq in jam."},
+	"puyuq_bay": {"name": "Puyuq Bay", "type": "village", "faction": "puyuq_bay", "pos": Vector2(480, 1162), "culture": "south", "community": {"fealty": "southern_water", "head": "Elder Nuka", "kind": "Seal-hunting tribe"},
+		"produces": ["seal_jerky", "whale_oil"], "desc": "Smoke-houses around a bay full of seals. Its tribe votes with Wolf's Crown because Wolf's Crown buys its seal oil."},
+	"natsiq_rocks": {"name": "Natsiq Rocks", "type": "village", "faction": "natsiq_rocks", "pos": Vector2(948, 1128), "culture": "south", "community": {"fealty": "whalebone", "head": "Elder Tiguak", "kind": "Raiding tribe"},
+		"produces": ["seal_jerky", "fish"], "desc": "A rocky hold whose young people crew Qannik's canoes and whose elders wish they would not."},
+	"amaruq_fold": {"name": "Amaruq Fold", "type": "village", "faction": "amaruq_fold", "pos": Vector2(1180, 1160), "culture": "south", "community": {"fealty": "", "head": "Elder Amka", "kind": "Wolf-herding tribe"},
+		"produces": ["furs", "seal_jerky"], "desc": "A tribe that keeps tame wolves on the eastern shelf and keeps out of everyone's council."},
+	"tikaani": {"name": "Tikaani Camp", "type": "village", "faction": "tikaani", "pos": Vector2(1360, 1150), "culture": "south", "community": {"fealty": "", "head": "Elder Sura", "kind": "Whaling tribe"},
+		"produces": ["whale_oil", "furs"], "desc": "Whalers at the far end of the southern ice. They sell oil to the Earth coast and have opinions about every price."},
+	"reedmere": {"name": "Reedmere", "type": "village", "faction": "reedmere", "pos": Vector2(1290, 770), "culture": "swamp", "community": {"fealty": "", "head": "Elder Moss-Hand", "kind": "Fen tribe"},
+		"produces": ["herbs", "fish"], "desc": "Stilt houses in the Weeping Fen, a second marsh of waterbenders where the eastern river spreads before the sea. They and the Foggy Swamp's people know of each other and argue about whose swamp is older."},
+	"lantern_fen": {"name": "Lantern Fen", "type": "village", "faction": "lantern_fen", "pos": Vector2(1336, 784), "culture": "swamp", "community": {"fealty": "", "head": "Elder Sloe", "kind": "Fen tribe"},
+		"produces": ["herbs", "pottery"], "desc": "Marsh-lights drift over this fen village at night. Its people say they are only gas. They say it very firmly."},
+	"tidehall": {"name": "Tidehall", "type": "castle", "faction": "pearl_isles", "pos": Vector2(1120, 958), "owner": "kallik", "walls": 1.1, "culture": "swamp", "troops_culture": "south",
+		"produces": [], "desc": "The Pearl Isles' moot-hall on stilts over a lagoon, where the League's captains meet at low tide and stop when their feet get wet."},
+	"shellbay": {"name": "Shellbay", "type": "village", "faction": "pearl_isles", "pos": Vector2(1182, 1000), "bound": "tidehall", "culture": "swamp", "troops_culture": "south",
+		"produces": ["fish", "sea_prunes"], "desc": "Pearl-divers' houses on a white-sand isle. The pearls go north to Ba Sing Se; the divers' lungs stay here."},
+	"kelp_rock": {"name": "Kelp Rock", "type": "village", "faction": "pearl_isles", "pos": Vector2(1058, 992), "bound": "tidehall", "culture": "swamp", "troops_culture": "south",
+		"produces": ["fish", "salt"], "desc": "Kelp racks on a black rock. The kelp is eaten, burned, sold and, by the young, worn."},
+	"gull_rock": {"name": "Gull Rock", "type": "village", "faction": "gull_rock", "pos": Vector2(470, 900), "culture": "swamp", "troops_culture": "south", "community": {"fealty": "", "head": "Elder Avik", "kind": "Island tribe"},
+		"produces": ["fish", "salt"], "desc": "A rock in the open sea between the Fire Islands and the Patola peaks. Its tribe of waterbenders has refused the clans, the royal house and the Moon Council, in that order."},
+	"oyster_isle": {"name": "Oyster Isle", "type": "village", "faction": "oyster_isle", "pos": Vector2(668, 762), "culture": "swamp", "troops_culture": "south", "community": {"fealty": "", "head": "Elder Kaya", "kind": "Island tribe"},
+		"produces": ["fish", "sea_prunes"], "desc": "A low isle off Hamakaze where water-tribe families farm oysters and trade with the Tide Wardens."},
+	"tern_isle": {"name": "Tern Isle", "type": "village", "faction": "tern_isle", "pos": Vector2(180, 900), "culture": "swamp", "troops_culture": "south", "community": {"fealty": "", "head": "Elder Ilu", "kind": "Island tribe"},
+		"produces": ["fish", "salt"], "desc": "A wind-scoured isle south of the Sun Warriors' jungle. Terns, fishers and nothing else."},
+	"driftwood_key": {"name": "Driftwood Key", "type": "village", "faction": "driftwood_key", "pos": Vector2(1556, 862), "culture": "swamp", "troops_culture": "south", "community": {"fealty": "", "head": "Elder Oki", "kind": "Island tribe"},
+		"produces": ["fish", "whale_oil"], "desc": "A key off the eastern coast built entirely from what the sea brings, including, once, a whole ship."},
+	"kelp_isle": {"name": "Kelp Isle", "type": "village", "faction": "kelp_isle", "pos": Vector2(1520, 1010), "culture": "swamp", "troops_culture": "south", "community": {"fealty": "pearl_isles", "head": "Elder Nauk", "kind": "Island tribe"},
+		"produces": ["fish", "sea_prunes"], "desc": "The Pearl Isles' easternmost friend, which pays the League in dried kelp and is protected in return."},
+
 	# Air Temples (cannot be besieged; free healing and shelter)
 	"southern_air_temple": {"name": "Southern Air Temple", "type": "temple", "faction": "air_south", "pos": Vector2(600, 990), "culture": "air", "abbot": "Abbot Dorje",
 		"produces": ["tea"], "desc": "A temple of monks on the peaks of the Patola range. Sky bison graze its terraces, and refugees from three wars sleep in its courtyards."},
@@ -975,48 +1028,8 @@ var settlements := {
 		"produces": [], "desc": "Stilt houses hidden in a reed marsh by the river, lit by red paper lanterns. The Brotherhood watches every barge that passes."},
 }
 
-# Land shape: ellipses [cx, cy, rx, ry, angle_deg]. The terrain builder
-# adds noise to the edges and polar ice caps.
-var land_ellipses := [
-	# Earth Kingdom mainland
-	[1110, 470, 360, 230, 0], [1280, 350, 250, 190, -10], [930, 560, 220, 190, 15],
-	[780, 520, 150, 120, 0], [1040, 740, 200, 115, 10], [1440, 600, 120, 170, 0],
-	[960, 260, 190, 120, 0], [1160, 620, 160, 120, 0],
-	[1400, 260, 140, 110, 0],
-	# Hamakaze: a peninsula, joined to the mainland by its neck (docs/canon.md §2)
-	[770, 890, 45, 35, 20], [815, 800, 84, 17, -67],
-	# The Strait Isles, claimed by both crowns (docs/canon.md §9)
-	[562, 545, 30, 100, 4], [570, 655, 26, 20, 0], [562, 455, 26, 22, 0],
-	# Fire Nation
-	[300, 520, 62, 125, 18], [370, 615, 110, 50, -18], [250, 612, 55, 38, 0],
-	[452, 508, 38, 24, 10], [200, 470, 30, 22, 0], [300, 405, 34, 28, 0],
-	[520, 330, 90, 65, -15], [330, 445, 30, 20, 0],
-	# Clan islands: Kagari (west), Tsurugi and Akashima (south), Kurozan (north), Umibe
-	[110, 565, 42, 58, 10], [258, 770, 62, 32, -10], [355, 810, 28, 18, 0], [330, 290, 58, 34, 0], [430, 705, 26, 16, 0],
-	# The Sun Warriors' jungle isle
-	[100, 715, 50, 50, 0],
-	# Patola mountains (Southern Air Temple)
-	[600, 985, 65, 48, 0],
-	# Whaletail
-	[930, 1050, 40, 26, 0],
-	# Northern ice shelf
-	[520, 100, 190, 60, 0],
-	# Southern ice shelf, with the Kanguq shelf to the west and Qamutik to the east
-	[760, 1110, 260, 70, 0], [320, 1135, 140, 35, 0], [1250, 1135, 150, 32, 0],
-	# Far northern ice: the Aqsarniit to the east, Umiak Point to the west
-	[1150, 60, 150, 30, 0], [230, 62, 100, 28, 0],
-]
-
-# Regions that change the biome of land inside them [cx, cy, rx, ry, biome]
-var biome_regions := [
-	[1140, 590, 135, 85, "desert"],
-	[965, 650, 55, 40, "swamp"],
-	[330, 540, 200, 170, "volcanic"],
-	[520, 330, 90, 65, "highland"],
-	[600, 985, 70, 50, "mountain"],
-	[100, 715, 55, 55, "forest"],
-	[330, 290, 60, 36, "volcanic"],
-]
+# The land itself (coasts, mountains, rivers, biomes) is drawn in
+# tools/make_world.py and baked into assets/world/; see scripts/core/terrain.gd.
 
 # Bandit spawn points: [pos, troop pool, faction, label]
 var bandit_spawns := [
@@ -1123,19 +1136,19 @@ func _ready() -> void:
 ## Each settlement with a "community" entry is a faction of its own: a village
 ## that answers to its elders, and pays tribute to an overlord or to no one.
 func _init_communities() -> void:
-	const REGION_OF := {"fire": "fire", "north": "water", "south": "water", "air": "air"}
+	const REGION_OF := {"fire": "fire", "north": "water", "south": "water", "swamp": "water", "air": "air"}
 	for sid in settlements:
 		var d: Dictionary = settlements[sid]
 		if not d.has("community"):
 			continue
 		var c: Dictionary = d.community
-		var base: Color = {"fire": Color(0.62, 0.38, 0.3), "north": Color(0.42, 0.55, 0.68), "south": Color(0.4, 0.5, 0.6)}.get(d.culture, Color(0.5, 0.52, 0.36))
+		var base: Color = {"fire": Color(0.62, 0.38, 0.3), "north": Color(0.42, 0.55, 0.68), "south": Color(0.4, 0.5, 0.6), "swamp": Color(0.35, 0.5, 0.45)}.get(d.culture, Color(0.5, 0.52, 0.36))
 		# a stable per-village shade, so neighbours can be told apart on the map
 		var h := float(absi(hash(sid)) % 1000) / 1000.0
 		factions[sid] = {
 			"name": d.name, "short": d.name, "color": base.lightened(h * 0.3 - 0.1),
 			"trim": Color(0.9, 0.88, 0.8), "culture": d.culture, "king": "", "capital": sid,
-			"region": REGION_OF.get(d.culture, "earth"), "kind": c.get("kind", "Community"),
+			"region": c.get("region", REGION_OF.get(d.culture, "earth")), "kind": c.get("kind", "Community"),
 			"fealty": c.get("fealty", ""), "head": c.get("head", "the elders"), "community": true,
 			"desc": d.desc,
 		}

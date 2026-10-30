@@ -62,110 +62,146 @@ static func roof(w: float, d: float, h: float, color: Color, pos: Vector3) -> Me
 # ---------------------------------------------------------------------------
 # Terrain
 # ---------------------------------------------------------------------------
+## The terrain as one mesh, every other grid sample (4 map units).
 static func terrain_mesh() -> ArrayMesh:
 	if _terrain_mesh != null:
 		return _terrain_mesh
 	Terrain.ensure()
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var gw := Terrain.GW
-	var gh := Terrain.GH
-	var cell := Terrain.CELL
-	var tint := FastNoiseLite.new()
-	tint.seed = 7
-	tint.frequency = 0.05
+	var stride := 2
+	var gw := (Terrain.GW - 1) / stride + 1
+	var gh := (Terrain.GH - 1) / stride + 1
 	var verts := PackedVector3Array()
-	var cols := PackedColorArray()
 	verts.resize(gw * gh)
-	cols.resize(gw * gh)
 	for gy in gh:
 		for gx in gw:
-			var h := Terrain.grid_height(gx, gy)
-			var b := Terrain.grid_biome(gx, gy)
-			var c: Color = Terrain.BIOME_COLOR[b]
-			if b == "ocean":
-				c = Color(0.55, 0.6, 0.5).lerp(Color(0.05, 0.12, 0.25), clampf(-h / 5.0, 0.0, 1.0))
-			else:
-				if h > 7.0 and b != "snow" and b != "desert":
-					c = c.lerp(Terrain.BIOME_COLOR.mountain, clampf((h - 7.0) / 6.0, 0.0, 1.0))
-				if h > 14.0:
-					c = c.lerp(Color(0.95, 0.95, 0.97), clampf((h - 14.0) / 5.0, 0.0, 0.9))
-			var n := tint.get_noise_2d(gx * 3.0, gy * 3.0) * 0.08
-			c = Color(clampf(c.r + n, 0, 1), clampf(c.g + n, 0, 1), clampf(c.b + n * 0.5, 0, 1))
-			var i := gy * gw + gx
-			verts[i] = Vector3(gx * cell, h, gy * cell)
-			cols[i] = c
+			var h := Terrain.grid_height(gx * stride, gy * stride)
+			verts[gy * gw + gx] = Vector3(gx * stride * Terrain.CELL, maxf(h, -2.0), gy * stride * Terrain.CELL)
+	var idx := PackedInt32Array()
+	idx.resize((gw - 1) * (gh - 1) * 6)
+	var k := 0
 	for gy in gh - 1:
 		for gx in gw - 1:
 			var i0 := gy * gw + gx
-			var i1 := i0 + 1
-			var i2 := i0 + gw
-			var i3 := i2 + 1
-			for idx in [i0, i1, i2, i1, i3, i2]:
-				st.set_color(cols[idx])
-				st.add_vertex(verts[idx])
-	st.generate_normals()
-	_terrain_mesh = st.commit()
+			idx[k] = i0
+			idx[k + 1] = i0 + 1
+			idx[k + 2] = i0 + gw
+			idx[k + 3] = i0 + 1
+			idx[k + 4] = i0 + gw + 1
+			idx[k + 5] = i0 + gw
+			k += 6
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_INDEX] = idx
+	_terrain_mesh = ArrayMesh.new()
+	_terrain_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return _terrain_mesh
 
+## The world map's look: "atlas" (painted relief), "chart" (an old ink-and-
+## parchment chart) or "ink" (ink wash on rice paper). Settings > Map style.
+const MAP_STYLES := ["atlas", "chart", "ink"]
+static var terrain_material: ShaderMaterial
+static var sea_material: ShaderMaterial
+static var vegetation: Node3D
+
+static func map_style() -> String:
+	var st: String = GS.settings.get("map_style", "atlas")
+	return st if st in MAP_STYLES else "atlas"
+
 static func build_terrain(parent: Node3D) -> void:
+	var ht := Terrain.height_texture()
+	var it := Terrain.info_texture()
+	terrain_material = ShaderMaterial.new()
+	terrain_material.shader = load("res://shaders/map_terrain.gdshader")
+	terrain_material.set_shader_parameter("height_tex", ht)
+	terrain_material.set_shader_parameter("info_near", it)
+	terrain_material.set_shader_parameter("info_lin", it)
 	var mi := MeshInstance3D.new()
 	mi.mesh = terrain_mesh()
-	# painted like the series' map backgrounds: vertex colours plus soft brushwork
-	var m: ShaderMaterial = load("res://scripts/town/arch.gd").material(false).duplicate()
-	m.set_shader_parameter("brush_scale", 0.03)
-	m.set_shader_parameter("brush_strength", 0.12)
-	mi.material_override = m
+	mi.material_override = terrain_material
 	parent.add_child(mi)
-	# Sea
+	# Sea: one plane over the whole map and beyond, drawn by its own shader
+	sea_material = ShaderMaterial.new()
+	sea_material.shader = load("res://shaders/map_sea.gdshader")
+	sea_material.set_shader_parameter("height_tex", ht)
+	sea_material.set_shader_parameter("info_lin", it)
 	var sea := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(Data.MAP_W * 3.0, Data.MAP_H * 3.0)
 	sea.mesh = pm
 	sea.position = Vector3(Data.MAP_W / 2.0, 0.0, Data.MAP_H / 2.0)
-	var sm := StandardMaterial3D.new()
-	sm.albedo_color = Color(0.12, 0.35, 0.6, 0.72)
-	sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	sm.roughness = 0.15
-	sm.metallic = 0.2
-	sea.material_override = sm
+	sea.material_override = sea_material
 	parent.add_child(sea)
-	build_vegetation(parent)
+	vegetation = Node3D.new()
+	parent.add_child(vegetation)
+	build_vegetation(vegetation)
+	apply_style()
 
+## Switch the map's style in place.
+static func apply_style() -> void:
+	var i := MAP_STYLES.find(map_style())
+	if terrain_material != null:
+		terrain_material.set_shader_parameter("style", i)
+		sea_material.set_shader_parameter("style", i)
+	update_zoom(_zoom)
+
+static var _zoom := 90.0
+
+## Trees on the map only up close and only in the painted atlas (the chart
+## and the ink wash draw their own); from far away the shader's canopy reads
+## better than thousands of tiny models.
+static func update_zoom(cam_dist: float) -> void:
+	_zoom = cam_dist
+	if vegetation != null and is_instance_valid(vegetation):
+		vegetation.visible = map_style() == "atlas" and cam_dist < 240.0
+
+static func set_daylight(d: float) -> void:
+	if terrain_material != null:
+		terrain_material.set_shader_parameter("daylight", d)
+		sea_material.set_shader_parameter("daylight", d)
+
+## Trees and rocks for the painted atlas, clustered where the baked forest is
+## dense and kept off settlements.
 static func build_vegetation(parent: Node3D) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 2024
 	var trees := []
 	var rocks := []
-	var cell := Terrain.CELL
-	for gy in Terrain.GH:
-		for gx in Terrain.GW:
-			var b := Terrain.grid_biome(gx, gy)
-			var count := 0
+	var near := {}
+	for sid in Data.settlements:
+		var c: Vector2 = Data.settlements[sid].pos
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				near[Vector2i(int(c.x / 14.0) + dx, int(c.y / 14.0) + dy)] = c
+	var step := 5.0
+	var y := 0.0
+	while y < Data.MAP_H:
+		var x := 0.0
+		while x < Data.MAP_W:
+			var p := Vector2(x + rng.randf_range(-2.0, 2.0), y + rng.randf_range(-2.0, 2.0))
+			x += step
+			if not Terrain.is_land(p):
+				continue
+			var b := Terrain.biome(p)
+			var f := Terrain.forest(p)
+			var want := 0.0
 			match b:
-				"forest": count = 3
-				"swamp": count = 2
-				"highland": count = 1 if rng.randf() < 0.5 else 0
-				"grass": count = 1 if rng.randf() < 0.12 else 0
-				"volcanic": count = 1 if rng.randf() < 0.15 else 0
-				"mountain": count = 1 if rng.randf() < 0.35 else 0
-				"snow": count = 1 if rng.randf() < 0.05 else 0
-			for i in count:
-				var p := Vector2(gx * cell + rng.randf_range(-4, 4), gy * cell + rng.randf_range(-4, 4))
-				if not Terrain.is_land(p):
-					continue
-				var too_close := false
-				for sid in Data.settlements:
-					if Data.settlements[sid].pos.distance_to(p) < 13.0:
-						too_close = true
-						break
-				if too_close:
-					continue
-				var h := Terrain.height(p)
-				if b == "mountain" or b == "snow":
-					rocks.append([Vector3(p.x, h, p.y), rng.randf_range(0.8, 2.0), b])
-				else:
-					trees.append([Vector3(p.x, h, p.y), rng.randf_range(0.8, 1.4), b])
+				"forest", "swamp": want = 0.25 + f * 0.6
+				"grass", "highland": want = f * 0.3
+				"volcanic": want = 0.04
+				"mountain": want = 0.08
+				"snow": want = 0.02
+			if rng.randf() > want:
+				continue
+			var kc := Vector2i(int(p.x / 14.0), int(p.y / 14.0))
+			if near.has(kc) and near[kc].distance_to(p) < 12.0:
+				continue
+			var h := Terrain.height(p)
+			if b == "mountain" or b == "snow":
+				rocks.append([Vector3(p.x, h, p.y), rng.randf_range(0.8, 2.0), b])
+			else:
+				trees.append([Vector3(p.x, h, p.y), rng.randf_range(0.8, 1.4), b])
+		y += step
 	# Trees and rocks: CC0 nature-kit meshes in multimeshes, one per species
 	var species := {}
 	for t in trees:
