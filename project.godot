@@ -42,7 +42,7 @@ ps1_snap={
 "type": "float",
 "value": 0.0
 }
-ps1_tex={
+ps1_texel_m={
 "type": "float",
 "value": 0.0
 }

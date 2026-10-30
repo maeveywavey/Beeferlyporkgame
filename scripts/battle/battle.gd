@@ -240,20 +240,22 @@ func _plan_landscape() -> void:
 				_stain[k] = []
 			_stain[k].append(it)
 
-## Ground colour multiplier at a point: brown leaf litter and bare soil under
-## trees, stony grey-brown at cliff feet, otherwise unchanged.
+## Ground colour at a point for the terrain shader: rgb multiplies the ground
+## (stony grey-brown at cliff feet), alpha is how much leaf litter lies there
+## (under trees); the shader breaks the litter into hard-edged clumps.
 func _ground_stain(x: float, z: float) -> Color:
-	var c := Color(1, 1, 1)
+	var c := Color(1, 1, 1, 0)
 	var k := Vector2i(floori(x / 8.0), floori(z / 8.0))
 	for dx in range(-1, 2):
 		for dz in range(-1, 2):
 			for it in _stain.get(k + Vector2i(dx, dz), []):
 				var d: float = Vector2(x, z).distance_to(it.pos)
 				if it.kind == "tree":
-					c = c.lerp(Color(1.05, 0.66, 0.42), clampf(1.0 - d / 5.5, 0.0, 1.0) * 0.9)
+					c.a = maxf(c.a, clampf(1.0 - d / 6.0, 0.0, 1.0))
 				else:
-					var reach: float = float(it.r) + 4.0
-					c = c.lerp(Color(1.12, 0.92, 0.8), clampf(1.0 - (d - float(it.r)) / 4.0, 0.0, 1.0) * 0.6 * float(d < reach + 1.0))
+					var near := clampf(1.0 - (d - float(it.r)) / 4.0, 0.0, 1.0)
+					var t := Color(1.0, 1.0, 1.0).lerp(Color(1.1, 0.95, 0.85), near * 0.6)
+					c = Color(t.r, t.g, t.b, c.a)
 	return c
 
 func _build_ground() -> void:
@@ -274,9 +276,10 @@ func _build_ground() -> void:
 			var h := heights[gz * GRID + gx]
 			verts.append(Vector3(gx - HALF, h, gz - HALF))
 			var v := cn.get_noise_2d(gx, gz) * 0.12
-			var c := Color(1.0 + v, 1.0 + v, 1.0 + v * 0.6) * _ground_stain(gx - HALF, gz - HALF)
+			var stain := _ground_stain(gx - HALF, gz - HALF)
+			var c := Color((1.0 + v) * stain.r, (1.0 + v) * stain.g, (1.0 + v * 0.6) * stain.b, stain.a)
 			if siege != "" and absf(gz - HALF - wall_z) < 9.0:
-				c = c.lerp(Color(0.85, 0.78, 0.7), 0.5)
+				c = c.lerp(Color(0.85, 0.78, 0.7, c.a), 0.5)
 			cols.append(c)
 	for iz in n - 1:
 		for ix in n - 1:

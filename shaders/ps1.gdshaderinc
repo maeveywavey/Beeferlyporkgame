@@ -1,13 +1,14 @@
 // PS1-style rendering shared by every 3D shader. Driven by global shader
 // parameters (project.godot [shader_globals]) set from the Retro look setting:
-//   ps1_snap    vertex grid across the screen width (0 = off); vertices snap
-//               to it, so edges wobble as the camera moves
-//   ps1_tex     texels across a texture (0 = off); textures are point-sampled
-//               at this resolution
-//   ps1_affine  0..1 blend towards affine (non-perspective) texture mapping
+//   ps1_snap     vertex grid across the screen width (0 = off); vertices snap
+//                to it, so edges wobble as the camera moves
+//   ps1_texel_m  texels per metre of surface (0 = off). Every surface uses
+//                the same texel size: ground, rock, bark, cards and people.
+//   ps1_affine   0..1 blend towards affine texture mapping on UV-mapped
+//                models (never on world-projected ground and rock)
 
 global uniform float ps1_snap;
-global uniform float ps1_tex;
+global uniform float ps1_texel_m;
 global uniform float ps1_affine;
 
 varying vec3 ps1_uvw;
@@ -25,22 +26,44 @@ vec4 ps1_position(mat4 projection_m, mat4 modelview, vec3 vertex) {
 }
 
 // Use at the end of vertex(): snaps the vertex on screen and records the
-// affine texture coordinates for ps1_uv().
+// affine texture coordinates.
 #define PS1_VERTEX(uv) POSITION = ps1_position(PROJECTION_MATRIX, MODELVIEW_MATRIX, VERTEX); ps1_uvw = vec3((uv) * POSITION.w, POSITION.w);
 
-// The texture coordinate to sample with: blended towards affine, then
-// quantised to the PS1 texel grid.
-vec2 ps1_uv(vec2 uv) {
-	vec2 u = mix(uv, ps1_uvw.xy / max(ps1_uvw.z, 1e-5), ps1_affine);
-	if (ps1_tex > 0.0) {
-		u = (floor(u * ps1_tex) + 0.5) / ps1_tex;
+// Snap a position given in metres to the centre of its texel.
+vec2 ps1_snap_m(vec2 p) {
+	if (ps1_texel_m <= 0.0) {
+		return p;
 	}
-	return u;
+	return (floor(p * ps1_texel_m) + 0.5) / ps1_texel_m;
 }
 
-vec4 ps1_texture(sampler2D tex, vec2 uv) {
-	if (ps1_tex > 0.0) {
-		return textureLod(tex, ps1_uv(uv), 0.0);
+vec3 ps1_snap_m3(vec3 p) {
+	if (ps1_texel_m <= 0.0) {
+		return p;
 	}
-	return texture(tex, mix(uv, ps1_uvw.xy / max(ps1_uvw.z, 1e-5), ps1_affine));
+	return (floor(p * ps1_texel_m) + 0.5) / ps1_texel_m;
+}
+
+// Sample a UV-mapped texture so that its texels are the same size in the world
+// as everyone else's. uv_per_m is how many UV units span one metre of this
+// surface (measured from the mesh when the material is made).
+vec4 ps1_texture(sampler2D tex, vec2 uv, float upm) {
+	vec2 u = mix(uv, ps1_uvw.xy / max(ps1_uvw.z, 1e-5), ps1_affine);
+	if (ps1_texel_m > 0.0 && upm > 0.0) {
+		float grid = ps1_texel_m / upm;
+		u = (floor(u * grid) + 0.5) / grid;
+		return textureLod(tex, u, 0.0);
+	}
+	return texture(tex, u);
+}
+
+// The same for surfaces whose two UV directions differ in scale (cards).
+vec4 ps1_texture2(sampler2D tex, vec2 uv, vec2 upm) {
+	vec2 u = mix(uv, ps1_uvw.xy / max(ps1_uvw.z, 1e-5), ps1_affine);
+	if (ps1_texel_m > 0.0 && upm.x > 0.0) {
+		vec2 grid = ps1_texel_m / upm;
+		u = (floor(u * grid) + 0.5) / grid;
+		return textureLod(tex, u, 0.0);
+	}
+	return texture(tex, u);
 }

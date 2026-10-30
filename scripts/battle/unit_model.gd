@@ -7,7 +7,7 @@ const MB = preload("res://scripts/world/map_builder.gd")
 static func _part(mesh: Mesh, color: Color, pos: Vector3, parent: Node3D, rot: Vector3 = Vector3.ZERO) -> MeshInstance3D:
 	var m := MeshInstance3D.new()
 	m.mesh = mesh
-	m.material_override = MB.mat(color, 0.85)
+	m.material_override = load("res://scripts/actors/accessories.gd").mat(color, false)
 	m.position = pos
 	m.rotation_degrees = rot
 	parent.add_child(m)

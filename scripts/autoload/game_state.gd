@@ -70,12 +70,15 @@ var settings := {
 }
 
 ## The PS1 look (shaders/ps1.gdshaderinc): vertex grid across the screen,
-## texels across a texture, and how far texture mapping goes affine.
+## texels per metre on every surface, and how far UV-mapped textures go affine.
 const RETRO := {
-	"off": {"snap": 0.0, "tex": 0.0, "affine": 0.0},
-	"light": {"snap": 480.0, "tex": 128.0, "affine": 0.0},
-	"heavy": {"snap": 200.0, "tex": 40.0, "affine": 0.6},
+	"off": {"snap": 0.0, "texel": 0.0, "affine": 0.0},
+	"light": {"snap": 480.0, "texel": 80.0, "affine": 0.0},
+	"heavy": {"snap": 200.0, "texel": 40.0, "affine": 0.25},
 }
+
+## The PS1 look (shaders/ps1.gdshaderinc): vertex grid across the screen,
+## texels per metre on every surface, and how far UV-mapped textures go affine.
 
 var sim
 
@@ -136,7 +139,7 @@ func save_settings() -> void:
 func apply_settings() -> void:
 	var r: Dictionary = RETRO.get(String(settings.get("retro", "heavy")), RETRO.heavy)
 	RenderingServer.global_shader_parameter_set("ps1_snap", r.snap)
-	RenderingServer.global_shader_parameter_set("ps1_tex", r.tex)
+	RenderingServer.global_shader_parameter_set("ps1_texel_m", r.texel)
 	RenderingServer.global_shader_parameter_set("ps1_affine", r.affine)
 	if is_inside_tree():
 		get_tree().root.content_scale_factor = clampf(float(settings.get("ui_scale", 1.0)), 0.75, 1.6)

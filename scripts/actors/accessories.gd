@@ -9,10 +9,8 @@ extends RefCounted
 
 const TOON := preload("res://shaders/toon.gdshader")
 const TOON_DOUBLE := preload("res://shaders/toon_double.gdshader")
-const OUTLINE := preload("res://shaders/outline.gdshader")
 
 static var _mats := {}
-static var _outline: ShaderMaterial
 
 static func mat(c: Color, outline: bool = true, rim: float = 0.25, double: bool = false) -> ShaderMaterial:
 	var key := "%s_%s_%s_%s" % [c.to_html(), outline, rim, double]
@@ -26,13 +24,9 @@ static func mat(c: Color, outline: bool = true, rim: float = 0.25, double: bool 
 	m.set_shader_parameter("albedo_tex", t)
 	m.set_shader_parameter("albedo_tex_b", t)
 	m.set_shader_parameter("tint", c)
-	m.set_shader_parameter("saturation", 1.0)
-	m.set_shader_parameter("rim_strength", rim)
-	if outline:
-		if _outline == null:
-			_outline = ShaderMaterial.new()
-			_outline.shader = OUTLINE
-		m.next_pass = _outline
+	# muted and worn rather than flat, bright paint
+	m.set_shader_parameter("saturation", 0.72)
+	m.set_shader_parameter("grain", 1.0)
 	_mats[key] = m
 	return m
 

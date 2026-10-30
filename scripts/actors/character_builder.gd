@@ -6,7 +6,7 @@ extends RefCounted
 ## cel shader and an ink outline to match the look of the animated series.
 
 const TOON := preload("res://shaders/toon.gdshader")
-const OUTLINE := preload("res://shaders/outline.gdshader")
+const TOON_DOUBLE := preload("res://shaders/toon_double.gdshader")
 const Accessories = preload("res://scripts/actors/accessories.gd")
 const FaceRig = preload("res://scripts/actors/face_rig.gd")
 
@@ -21,7 +21,9 @@ const OUTFITS := {
 	"f_ranger": "res://assets/characters/outfits/Female_Ranger.gltf",
 }
 const HAIR_DIR := "res://assets/characters/hair/"
-const CULTURE_TEX := "res://assets/characters/culture/%s_%s.jpg"
+const CULTURE_TEX := "res://assets/characters/painted/culture/%s_%s.png"
+# repainted skin and hair (tools/paint_textures.py), by original file name
+const PAINTED := ["res://assets/characters/painted/base/", "res://assets/characters/painted/hair/"]
 const ANIM_LIBS := {
 	"ual1": "res://assets/animations/UAL1_Standard.glb",
 	"ual2": "res://assets/animations/UAL2_Standard.glb",
@@ -48,14 +50,7 @@ const PALETTES := {
 
 static var _libs := {}
 static var _head_cache := {}
-static var _outline_mat: ShaderMaterial
 static var _tex_cache := {}
-
-static func outline_material() -> ShaderMaterial:
-	if _outline_mat == null:
-		_outline_mat = ShaderMaterial.new()
-		_outline_mat.shader = OUTLINE
-	return _outline_mat
 
 static func animation_libraries() -> Dictionary:
 	if _libs.is_empty():
@@ -71,6 +66,16 @@ static func animation_libraries() -> Dictionary:
 			scene.free()
 	return _libs
 
+## The repainted version of a pack texture, if there is one.
+static func _painted(tex: Texture2D) -> Texture2D:
+	if tex == null or tex.resource_path == "":
+		return tex
+	var file := tex.resource_path.get_file().get_basename() + ".png"
+	for dir in PAINTED:
+		if ResourceLoader.exists(dir + file):
+			return _tex(dir + file)
+	return tex
+
 static func _tex(path: String) -> Texture2D:
 	if not _tex_cache.has(path):
 		_tex_cache[path] = load(path) if ResourceLoader.exists(path) else null
@@ -82,23 +87,72 @@ static func toon_from(mat: Material, opts: Dictionary = {}) -> ShaderMaterial:
 	sm.shader = TOON
 	var tex: Texture2D = null
 	if mat is BaseMaterial3D:
-		tex = mat.albedo_texture
+		tex = _painted(mat.albedo_texture)
 	if opts.has("texture"):
 		tex = opts.texture
 	sm.set_shader_parameter("albedo_tex", tex)
 	sm.set_shader_parameter("albedo_tex_b", tex)
 	sm.set_shader_parameter("tint", opts.get("tint", Color.WHITE))
 	sm.set_shader_parameter("saturation", opts.get("saturation", 1.12))
-	if opts.get("outline", true):
-		sm.next_pass = outline_material()
 	return sm
 
 ## Skin uses a desaturated texture multiplied by a chosen skin colour so every
 ## body part (head from one kit, hands from another) matches exactly.
+static var _uv_density := {}
+
+## UV units per metre of a mesh surface (in the mesh's own units), measured
+## from triangle areas once and cached.
+static func _surface_uv_per_unit(mesh: Mesh, s: int) -> float:
+	var key := "%d_%d" % [mesh.get_instance_id(), s]
+	if _uv_density.has(key):
+		return _uv_density[key]
+	var arr := mesh.surface_get_arrays(s)
+	var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+	var uv = arr[Mesh.ARRAY_TEX_UV]
+	var idx = arr[Mesh.ARRAY_INDEX]
+	var wa := 0.0
+	var ua := 0.0
+	if uv != null and v.size() > 0:
+		var n: int = idx.size() if idx != null and idx.size() > 0 else v.size()
+		for t in range(0, n - 2, 3):
+			var a: int = idx[t] if idx != null and idx.size() > 0 else t
+			var b: int = idx[t + 1] if idx != null and idx.size() > 0 else t + 1
+			var c: int = idx[t + 2] if idx != null and idx.size() > 0 else t + 2
+			wa += (v[b] - v[a]).cross(v[c] - v[a]).length() * 0.5
+			var e1: Vector2 = uv[b] - uv[a]
+			var e2: Vector2 = uv[c] - uv[a]
+			ua += absf(e1.x * e2.y - e1.y * e2.x) * 0.5
+	var d := sqrt(ua / wa) if wa > 1e-6 else 0.0
+	_uv_density[key] = d
+	return d
+
+## Give every textured model surface under `n` its UV density, so the PS1
+## layer draws its texels at the same size in the world as the ground's
+## (shaders/ps1.gdshaderinc).
+static func set_texel_density(n: Node, root: Node3D) -> void:
+	if n is MeshInstance3D and n.mesh != null:
+		var mi: MeshInstance3D = n
+		# scale from the mesh's units to metres, through the node chain
+		var sc := 1.0
+		var p: Node = mi
+		while p != null and p != root.get_parent():
+			if p is Node3D:
+				sc *= (p as Node3D).transform.basis.get_scale().y
+			if p == root:
+				break
+			p = p.get_parent()
+		for s in mi.mesh.get_surface_count():
+			var m := mi.get_active_material(s)
+			if m is ShaderMaterial and (m.shader == TOON or m.shader == TOON_DOUBLE):
+				var tex = m.get_shader_parameter("albedo_tex")
+				if tex is Texture2D and tex.get_width() > 8:
+					m.set_shader_parameter("uv_per_m", _surface_uv_per_unit(mi.mesh, s) / maxf(sc, 1e-4))
+	for c in n.get_children():
+		set_texel_density(c, root)
+
 static func skin_material(mat: Material, skin: Color) -> ShaderMaterial:
 	var sm := toon_from(mat, {"tint": skin * 1.55, "saturation": 1.0})
 	sm.set_shader_parameter("texture_desaturate", 1.0)
-	sm.set_shader_parameter("shadow_tint", Color(0.78, 0.55, 0.6))
 	return sm
 
 static func _bind_names(mi: MeshInstance3D, skel: Skeleton3D) -> Array:
@@ -247,6 +301,7 @@ static func build(look: Dictionary) -> Dictionary:
 	# Proportions
 	var hgt: float = look.get("height", 1.0)
 	root.scale = Vector3(hgt, hgt, hgt)
+	set_texel_density(root, root)
 	# Animation
 	var ap := AnimationPlayer.new()
 	ap.name = "AnimationPlayer"

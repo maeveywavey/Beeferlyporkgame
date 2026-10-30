@@ -115,7 +115,6 @@ static func build_terrain(parent: Node3D) -> void:
 	var m: ShaderMaterial = load("res://scripts/town/arch.gd").material(false).duplicate()
 	m.set_shader_parameter("brush_scale", 0.03)
 	m.set_shader_parameter("brush_strength", 0.12)
-	m.set_shader_parameter("shadow_threshold", -0.3)   # only the steepest slopes fall into shade
 	mi.material_override = m
 	parent.add_child(mi)
 	# Sea

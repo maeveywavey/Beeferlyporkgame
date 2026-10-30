@@ -33,129 +33,39 @@ static func _noise(seed: int, freq: float, octaves: int = 4) -> FastNoiseLite:
 	n.fractal_octaves = octaves
 	return n
 
-## Large-scale patches across the ground: lighter and darker swathes, drier
-## and lusher ones, blending into each other over tens of metres. Grey 0.5
-## means no change (the shader doubles it).
-static func _macro_tex(kind: String = "ground") -> ImageTexture:
-	var key := "macro_" + kind
-	if _cache.has(key):
-		return _cache[key]
-	var size := 128
-	var light: Image = _noise(77, 0.035, 3).get_seamless_image(size, size)
-	var dry: Image = _noise(91, 0.04, 2).get_seamless_image(size, size)
-	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
-	for y in size:
-		for x in size:
-			var l := light.get_pixel(x, y).r
-			var d := dry.get_pixel(x, y).r
-			# brightness swings +-30%; dry patches go yellow-brown, lush ones green
-			var v := lerpf(0.3, 0.7, smoothstep(0.2, 0.8, l))
-			var c := Color(v, v, v)
-			if kind == "ground":
-				var t := smoothstep(0.45, 0.75, d)
-				c = c.lerp(Color(v * 1.18, v * 1.04, v * 0.7), t)
-				c = c.lerp(Color(v * 0.88, v * 1.08, v * 0.86), smoothstep(0.45, 0.15, d))
-			img.set_pixel(x, y, c)
-	img.generate_mipmaps()
-	var tex := ImageTexture.create_from_image(img)
-	_cache[key] = tex
-	return tex
-
-## The ground's close texture: grass, dry grass and bare soil in clumps, with
-## fine speckle.
-static func _ground_tex(biome: String) -> ImageTexture:
-	var key := "ground_" + biome
-	if _cache.has(key):
-		return _cache[key]
-	var c := colours(biome)
-	var size := 128
-	var clumps: Image = _noise(3, 0.07, 3).get_seamless_image(size, size)
-	var bare: Image = _noise(17, 0.11, 2).get_seamless_image(size, size)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 3
-	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
-	var dry: Color = c.g1.lerp(Color(0.62, 0.56, 0.36), 0.45)
-	for y in size:
-		for x in size:
-			var v := clumps.get_pixel(x, y).r
-			var col: Color = c.g1.lerp(dry, smoothstep(0.4, 0.7, v))
-			col = col.lerp(c.g2, smoothstep(0.62, 0.8, bare.get_pixel(x, y).r))
-			var sp := rng.randf()
-			if sp < 0.3:
-				col = col.darkened(rng.randf() * 0.22)
-			elif sp < 0.55:
-				col = col.lightened(rng.randf() * 0.14)
-			img.set_pixel(x, y, col)
-	img.generate_mipmaps()
-	var tex := ImageTexture.create_from_image(img)
-	_cache[key] = tex
-	return tex
-
-## Rock: bedding strata of different shades, chunks of differently coloured
-## stone (warm, cool, ochre-stained), dark cracks between chunks, and fine grain.
-static func _rock_tex(biome: String) -> ImageTexture:
-	var key := "rock_" + biome
-	if _cache.has(key):
-		return _cache[key]
-	var base: Color = colours(biome).rock
-	var size := 128
-	var cell := FastNoiseLite.new()
-	cell.seed = 23
-	cell.noise_type = FastNoiseLite.TYPE_CELLULAR
-	cell.frequency = 0.075
-	cell.cellular_return_type = FastNoiseLite.RETURN_CELL_VALUE
-	var edge := FastNoiseLite.new()
-	edge.seed = 23
-	edge.noise_type = FastNoiseLite.TYPE_CELLULAR
-	edge.frequency = 0.075
-	edge.cellular_return_type = FastNoiseLite.RETURN_DISTANCE2_SUB
-	var warp := _noise(31, 0.05, 2)
-	var grain := _noise(47, 0.35, 2)
-	var palette := [base, base.lerp(Color(0.62, 0.52, 0.4), 0.45), base.lerp(Color(0.4, 0.42, 0.46), 0.5),
-		base.lerp(Color(0.58, 0.44, 0.3), 0.35), base.darkened(0.25), base.lightened(0.15)]
-	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
-	for y in size:
-		for x in size:
-			# seamless sampling on a torus
-			var ax := TAU * x / size
-			var ay := TAU * y / size
-			var p := Vector3(cos(ax) * 20.0, sin(ax) * 20.0, 0.0)
-			var cv := cell.get_noise_3d(p.x + cos(ay) * 9.0, p.y, sin(ay) * 20.0)
-			var col: Color = palette[int((cv * 0.5 + 0.5) * palette.size()) % palette.size()]
-			# strata: horizontal bands, gently warped
-			var band := sin((y + warp.get_noise_3d(p.x, p.y, sin(ay) * 20.0) * 10.0) * TAU / 16.0)
-			col = col.lerp(col.darkened(0.32) if band > 0.0 else col.lightened(0.16), smoothstep(0.2, 0.9, absf(band)))
-			# cracks between chunks
-			var e := edge.get_noise_3d(p.x + cos(ay) * 9.0, p.y, sin(ay) * 20.0)
-			if e > -0.08:
-				col = col.darkened(0.45)
-			col = col.lightened(grain.get_noise_3d(p.x * 3.0, p.y * 3.0, sin(ay) * 60.0) * 0.12)
-			img.set_pixel(x, y, col)
-	img.generate_mipmaps()
-	var tex := ImageTexture.create_from_image(img)
-	_cache[key] = tex
-	return tex
-
-static func lit_material(tex: Texture2D, projection: int, scale: float, saturation: float = 0.75, vertex_color: bool = true) -> ShaderMaterial:
+static func lit_material(tex: Texture2D, projection: int, uv_per_m: float = 0.5, saturation: float = 0.8, vertex_color: bool = true) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = LIT
 	m.set_shader_parameter("detail_tex", tex)
-	m.set_shader_parameter("macro_tex", _macro_tex("ground" if projection == 1 else "plain"))
 	m.set_shader_parameter("proj_mode", projection)
-	m.set_shader_parameter("detail_scale", scale)
+	m.set_shader_parameter("uv_per_m", uv_per_m)
 	m.set_shader_parameter("saturation", saturation)
 	m.set_shader_parameter("use_vertex_color", vertex_color)
 	return m
 
+## Ground computed in the shader from world position (shaders/lit.gdshader).
 static func ground_material(biome: String) -> ShaderMaterial:
-	var m := lit_material(_ground_tex(biome), 1, 0.22, 0.85)
-	m.set_shader_parameter("macro_scale", 0.014)
-	m.set_shader_parameter("macro_strength", 1.0)
+	var c := colours(biome)
+	var m := lit_material(null, 1, 0.5, 0.85)
+	var lush: Color = c.g1
+	m.set_shader_parameter("g_lush", lush)
+	m.set_shader_parameter("g_dark", lush.darkened(0.28).lerp(Color(0.2, 0.3, 0.15), 0.2))
+	m.set_shader_parameter("g_dry", lush.lerp(Color(0.66, 0.6, 0.38), 0.55))
+	m.set_shader_parameter("g_bare", c.g2)
+	m.set_shader_parameter("g_litter", Color(0.36, 0.27, 0.17).lerp(c.g2, 0.2))
 	return m
 
+## Rock computed in the shader: zones of different stone, bedding in some,
+## joints in others, staining, varnish and lichen (shaders/lit.gdshader).
 static func rock_material(biome: String) -> ShaderMaterial:
-	var m := lit_material(_rock_tex(biome), 2, 0.22, 0.8)
-	m.set_shader_parameter("macro_strength", 0.25)
+	var base: Color = colours(biome).rock
+	var m := lit_material(null, 2, 0.5, 0.85)
+	m.set_shader_parameter("r_a", base)
+	m.set_shader_parameter("r_b", base.lerp(Color(0.66, 0.53, 0.38), 0.55))
+	m.set_shader_parameter("r_c", base.lerp(Color(0.4, 0.42, 0.46), 0.6))
+	m.set_shader_parameter("r_stain", Color(0.6, 0.34, 0.17))
+	m.set_shader_parameter("r_varnish", Color(0.17, 0.14, 0.12))
+	m.set_shader_parameter("r_lichen", Color(0.58, 0.6, 0.42) if biome != "desert" else Color(0.7, 0.62, 0.36))
 	return m
 
 # ---------------------------------------------------------------------------
@@ -265,6 +175,7 @@ static func card(tex: Texture2D, size: Vector2, mode: int, light: Color) -> Mesh
 	m.shader = SPRITE
 	m.set_shader_parameter("image", tex)
 	m.set_shader_parameter("billboard", mode)
+	m.set_shader_parameter("uv_per_m", Vector2(1.0 / size.x, 1.0 / size.y))
 	# no two clumps quite the same shade
 	var v := randf_range(0.85, 1.12)
 	m.set_shader_parameter("light_tint", Color(light.r * v * randf_range(0.95, 1.05), light.g * v, light.b * v * randf_range(0.9, 1.0)))
@@ -286,8 +197,9 @@ static func _limb(st: SurfaceTool, a: Vector3, b: Vector3, r0: float, r1: float,
 		var t1 := TAU * (i + 1) / sides
 		var p := [a + (side * cos(t0) + up * sin(t0)) * r0, a + (side * cos(t1) + up * sin(t1)) * r0,
 			b + (side * cos(t1) + up * sin(t1)) * r1, b + (side * cos(t0) + up * sin(t0)) * r1]
-		var u0 := float(i) / sides
-		var u1 := float(i + 1) / sides
+		# UVs at half a unit per metre, matching the bark material's uv_per_m
+		var u0 := float(i) / sides * TAU * r0 * 0.5
+		var u1 := float(i + 1) / sides * TAU * r0 * 0.5
 		var uv := [Vector2(u0, 0), Vector2(u1, 0), Vector2(u1, length * 0.5), Vector2(u0, length * 0.5)]
 		for k in [0, 1, 2, 0, 2, 3]:
 			st.set_color(Color.WHITE)
@@ -314,7 +226,7 @@ static func tree(biome: String, kind: String, rng: RandomNumberGenerator, light:
 	st.generate_normals()
 	var trunk := MeshInstance3D.new()
 	trunk.mesh = st.commit()
-	var bm := lit_material(BARK, 0, 1.0, 0.55, false)
+	var bm := lit_material(BARK, 0, 0.5, 0.6, false)
 	bm.set_shader_parameter("tint", Color(0.8, 0.75, 0.7) if kind != "dead" else Color(0.75, 0.72, 0.7))
 	trunk.material_override = bm
 	root.add_child(trunk)

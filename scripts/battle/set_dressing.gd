@@ -70,7 +70,6 @@ static func mountains(base: Color, snowy: bool, seed: int) -> MeshInstance3D:
 	var m: ShaderMaterial = Arch.material(false).duplicate()
 	m.set_shader_parameter("brush_scale", 0.04)
 	m.set_shader_parameter("brush_strength", 0.16)
-	m.set_shader_parameter("shadow_threshold", 0.25)
 	mi.material_override = m
 	return mi
 

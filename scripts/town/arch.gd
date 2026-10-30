@@ -8,7 +8,6 @@ extends RefCounted
 ## towers with blue conical roofs.
 
 const PAINT = preload("res://shaders/toon_paint.gdshader")
-const OUTLINE = preload("res://shaders/outline.gdshader")
 
 static var _mat_cache := {}
 
@@ -20,12 +19,6 @@ static func material(outline: bool = true, emission: float = 0.0) -> ShaderMater
 	var m := ShaderMaterial.new()
 	m.shader = PAINT
 	m.set_shader_parameter("emission_strength", emission)
-	if outline:
-		var o := ShaderMaterial.new()
-		o.shader = OUTLINE
-		o.set_shader_parameter("width", 0.012)
-		o.set_shader_parameter("max_distance", 70.0)
-		m.next_pass = o
 	_mat_cache[key] = m
 	return m
 

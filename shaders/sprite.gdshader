@@ -11,6 +11,8 @@ uniform vec4 light_tint : source_color = vec4(1.0);
 uniform int billboard = 1;
 uniform float cutoff : hint_range(0.0, 1.0) = 0.45;
 uniform float saturation : hint_range(0.0, 1.5) = 0.8;
+// UV units per metre across and up the card
+uniform vec2 uv_per_m = vec2(0.0);
 
 #include "res://shaders/ps1.gdshaderinc"
 
@@ -32,7 +34,7 @@ void vertex() {
 }
 
 void fragment() {
-	vec4 t = ps1_texture(image, UV);
+	vec4 t = ps1_texture2(image, UV, uv_per_m);
 	if (t.a < cutoff) {
 		discard;
 	}
