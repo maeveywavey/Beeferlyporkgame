@@ -183,7 +183,7 @@ static func weekly() -> void:
 				continue
 			if randf() < 0.12:
 				GS.declare_war(e, enemy)
-				GS.log_msg("The %s answers the High Chief's call to arms against the %s." % [Data.factions[e].name, Data.factions[enemy].name], Color(0.65, 0.8, 1))
+				GS.world_msg("The %s answers the High Chief's call to arms against the %s." % [Data.factions[e].name, Data.factions[enemy].name], Color(0.65, 0.8, 1), [e, enemy])
 
 ## The High Chief protects free water tribes as an overlord protects its
 ## tributaries.

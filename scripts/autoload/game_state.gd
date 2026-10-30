@@ -527,6 +527,30 @@ func log_msg(text: String, color: Color = Color(0.95, 0.92, 0.85)) -> void:
 		log_lines.pop_front()
 	message.emit(text, color)
 
+## News of the wider world. Everything goes into the chronicle (shown in the
+## Factions menu); only what concerns the player reaches the message log:
+## events near them, or involving their own faction, their enemies, their
+## tributaries, or factions that think strongly of them either way.
+func world_msg(text: String, color: Color, factions: Array, pos = null) -> void:
+	if not flags.has("chronicle"):
+		flags.chronicle = []
+	flags.chronicle.append({"t": text, "d": day()})
+	if flags.chronicle.size() > 300:
+		flags.chronicle.pop_front()
+	if _concerns_player(factions, pos):
+		log_msg(text, color)
+
+func _concerns_player(factions: Array, pos) -> bool:
+	if pos != null and parties.has("player") and (pos as Vector2).distance_to(parties.player.pos) < 260.0:
+		return true
+	var pf := player_faction()
+	for f in factions:
+		if f == "player" or f == pf or at_war(pf, f) or abs(faction_rel(f)) >= 15:
+			return true
+		if fealty.get(f, "") == "player" or fealty.get(f, "") == pf:
+			return true
+	return false
+
 # ---------------------------------------------------------------------------
 # Factions and hostility
 # ---------------------------------------------------------------------------
@@ -580,7 +604,7 @@ func declare_war(a: String, b: String) -> void:
 		return
 	if relations.get(_rel_key(a, b), "") != "war":
 		relations[_rel_key(a, b)] = "war"
-		log_msg("%s has declared war on %s!" % [Data.factions[a].name, Data.factions[b].name], Color(1, 0.4, 0.3))
+		world_msg("%s has declared war on %s!" % [Data.factions[a].name, Data.factions[b].name], Color(1, 0.4, 0.3), [a, b])
 
 func make_peace(a: String, b: String) -> void:
 	if a == "player" or b == "player":
@@ -591,7 +615,7 @@ func make_peace(a: String, b: String) -> void:
 		return
 	if relations.get(_rel_key(a, b), "") == "war":
 		relations[_rel_key(a, b)] = "peace"
-		log_msg("%s and %s have agreed to a truce." % [Data.factions[a].name, Data.factions[b].name], Color(0.6, 0.9, 1))
+		world_msg("%s and %s have agreed to a truce." % [Data.factions[a].name, Data.factions[b].name], Color(0.6, 0.9, 1), [a, b])
 
 ## The player's standing with a faction. A temple's standing includes the
 ## standing with the Air Nomads as a people.
@@ -690,6 +714,8 @@ func _duel_outcome(won: bool, lid: String, champion: String) -> void:
 	flags["agni_kai_" + lid] = day()
 	if won and champion == "":
 		flags["agni_won_" + lid] = true
+	if won:
+		load("res://scripts/core/ambitions.gd").bump("duels_won")
 	var who: String = player.name if champion == "" else champion
 	var lines := []
 	if won:
@@ -909,6 +935,7 @@ func finish_arena(won: bool, round_i: int, player_hp: float) -> void:
 	player.hp = maxi(1, int(player_hp))
 	var lines := []
 	if won:
+		load("res://scripts/core/ambitions.gd").bump("arena_wins")
 		add_gold(f.prize)
 		add_renown(3 + round_i * 3)
 		give_player_xp(100 + round_i * 150)
@@ -932,6 +959,8 @@ func finish_arena(won: bool, round_i: int, player_hp: float) -> void:
 func finish_battle(won: bool, casualties: Dictionary, player_downed: bool, companions_downed: Array, power_lost_extra: float = 0.0) -> void:
 	var b := pending_battle
 	var result := {"won": won, "lines": [], "prisoners": [], "loot_gold": 0, "goods": {}, "items": []}
+	if won:
+		load("res://scripts/core/ambitions.gd").bump("battles_won")
 	# Apply casualties
 	var enemy_power_lost := power_lost_extra
 	for pid in casualties:

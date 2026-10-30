@@ -97,10 +97,13 @@ const DIALOGUES := {
 		"hub": {"who": "bo_ren", "expr": "laugh", "text": "Ha! Another one! Omashu's earthbending is very simple: pick up the biggest rock you can, and then a slightly bigger one. What do you want?", "choices": [
 			{"text": "Learn the Boulder Toss (two days; Bending 5; 300 gold for broken roofs)", "next": "boulder", "if": {"no_tech": "e_boulder", "skill": ["bending", 5], "gold": 300}, "hint": "Bending 5 and 300 gold"},
 			{"text": "Learn Stone Armour (three days; Bending 6)", "next": "armor", "if": {"no_tech": "e_armor", "skill": ["bending", 6]}, "hint": "needs Bending 6"},
+			{"text": "Learn the Stone Pillar (two days; Bending 4)", "next": "pillar", "if": {"no_tech": "e_pillar", "skill": ["bending", 4]}, "hint": "needs Bending 4"},
 			{"text": "\"Another time.\"", "next": ""},
 		]},
 		"boulder": {"who": "bo_ren", "expr": "happy", "text": "From the hips! The hips! Your arms are just there to look decorative. — THERE. Through the bakery. Wonderful. We'll pay for the bakery.",
 			"do": [["gold", -300], ["wait", 48.0], ["learn", "e_boulder"]], "next": "hub"},
+		"pillar": {"who": "bo_ren", "expr": "laugh", "text": "Stamp, and lift! The rock wants to go up, it just needs permission. — See? A pillar. Now you have to walk around it for the rest of your life. That's the lesson.",
+			"do": [["wait", 48.0], ["learn", "e_pillar"]], "next": "hub"},
 		"armor": {"who": "bo_ren", "expr": "smirk", "text": "Wear the mountain! Not like a hat! Like a hug! A very heavy hug!",
 			"do": [["wait", 72.0], ["learn", "e_armor"]], "next": "hub"},
 	}},

@@ -33,6 +33,25 @@ func build() -> void:
 		list.add_child(UI.sep())
 	if not any:
 		list.add_child(UI.rich("You have no active quests. Village elders, guild masters and castle stewards may have work for you.", 760))
+	# Ambitions: what to aim for in a world without a campaign
+	var Amb = load("res://scripts/core/ambitions.gd")
+	list.add_child(UI.label("Ambitions", 19, UI.BROWN))
+	for a in Amb.open():
+		var pr: Array = Amb.progress(a.id)
+		var reward := "+%d renown" % int(a.renown)
+		if int(a.gold) > 0:
+			reward += ", %d gold" % int(a.gold)
+		if a.get("point", false):
+			reward += ", an attribute point"
+		list.add_child(UI.rich("[b]%s[/b]  [i](%s)[/i]\n%s  —  %d / %d" % [a.title, reward, a.desc, mini(int(pr[0]), int(pr[1])), int(pr[1])], 760))
+	var achieved: Dictionary = Amb.done()
+	if not achieved.is_empty():
+		var names := []
+		for a in Amb.LIST:
+			if achieved.has(a.id):
+				names.append(a.title)
+		list.add_child(UI.rich("[i]Achieved: %s.[/i]" % ", ".join(names), 760))
+	list.add_child(UI.sep())
 	var done := GS.quests.filter(func(q): return q.status != "active")
 	var jdone := keys.filter(func(k): return j[k].done)
 	if not done.is_empty() or not jdone.is_empty():

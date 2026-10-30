@@ -222,7 +222,7 @@ func _ai_battle(a: Dictionary, b: Dictionary) -> void:
 		var lname: String = _display_name(loser)
 		var wname: String = _display_name(winner)
 		var near := _nearest_settlement_name(loser.pos)
-		GS.log_msg("%s defeated %s near %s." % [wname, lname, near], Color(0.85, 0.8, 0.7))
+		GS.world_msg("%s defeated %s near %s." % [wname, lname, near], Color(0.85, 0.8, 0.7), [winner.faction, loser.faction], winner.pos)
 	on_party_defeated(loser.id, party_faction_of(winner))
 
 func party_faction_of(p: Dictionary) -> String:
@@ -336,6 +336,7 @@ func _daily() -> void:
 	_daily_spawns()
 	_daily_campaigns()
 	MoonCouncil.daily()
+	load("res://scripts/core/ambitions.gd").daily()
 	if GS.day() % 7 == 3:
 		Fealty.weekly()
 		MoonCouncil.weekly()
@@ -973,7 +974,7 @@ func _begin_siege(p: Dictionary, sid: String) -> void:
 	p.besieging = sid
 	if s.siege.is_empty():
 		s.siege = {"faction": p.faction, "leader": p.id, "hours": 0.0}
-		GS.log_msg("%s has laid siege to %s!" % [_display_name(p), Data.settlements[sid].name], Color(1, 0.55, 0.35))
+		GS.world_msg("%s has laid siege to %s!" % [_display_name(p), Data.settlements[sid].name], Color(1, 0.55, 0.35), [p.faction, GS.settlements[sid].faction], Data.settlements[sid].pos)
 
 func _leave_siege(p: Dictionary) -> void:
 	var sid: String = p.get("besieging", "")
@@ -1047,7 +1048,7 @@ func _update_sieges() -> void:
 				v.volunteers = 0
 				v.raider = ""
 				p.gold += 300
-				GS.log_msg("%s has raided and burned %s." % [_display_name(p), Data.settlements[vid].name], Color(1, 0.5, 0.3))
+				GS.world_msg("%s has raided and burned %s." % [_display_name(p), Data.settlements[vid].name], Color(1, 0.5, 0.3), [p.faction, v.faction], Data.settlements[vid].pos)
 				Fealty.protect(v.faction, p.faction)
 				if v.owner == "player":
 					GS.log_msg("Your village %s was raided!" % Data.settlements[vid].name, Color(1, 0.3, 0.3))
@@ -1089,7 +1090,7 @@ func _resolve_assault(sid: String) -> void:
 					Roster.remove(ap.roster, st.id, n)
 					Roster.add(s.garrison, st.id, n)
 	else:
-		GS.log_msg("The assault on %s was repulsed!" % name, Color(0.7, 0.9, 1))
+		GS.world_msg("The assault on %s was repulsed!" % name, Color(0.7, 0.9, 1), [s.faction, s.siege.get("faction", "")], Data.settlements[sid].pos)
 		for aid in attackers:
 			if GS.parties.has(aid) and Roster.healthy(GS.parties[aid].roster) <= 0:
 				on_party_defeated(aid, s.faction)
@@ -1110,7 +1111,7 @@ func capture_settlement(sid: String, faction: String, new_owner: String) -> void
 		for i in 30:
 			Roster.add(s.garrison, tree[mini(tree.size() - 1, randi() % 3)], 1)
 	var who: String = "you" if new_owner == "player" else (Data.lords[new_owner].name if Data.lords.has(new_owner) else Data.factions[faction].name)
-	GS.log_msg("%s has fallen! %s now holds it for the %s." % [d.name, who.capitalize() if who == "you" else who, Data.factions[faction].name], Color(1, 0.75, 0.3))
+	GS.world_msg("%s has fallen! %s now holds it for the %s." % [d.name, who.capitalize() if who == "you" else who, Data.factions[faction].name], Color(1, 0.75, 0.3), [faction, old_faction], d.pos)
 	for vid in Data.settlements:
 		if Data.settlements[vid].get("bound", "") == sid:
 			GS.settlements[vid].faction = faction
@@ -1133,14 +1134,16 @@ func _daily_campaigns() -> void:
 		if not c.is_empty():
 			if GS.hours > c.until or GS.settlements[c.target].faction == f:
 				GS.campaigns.erase(f)
+				# armies go home to rest, recruit and bring in the harvest
+				GS.flags["camp_rest_" + f] = GS.day() + 25
 				for id in GS.parties:
 					var p: Dictionary = GS.parties[id]
 					if p.faction == f and p.get("campaign", "") != "":
 						p.campaign = ""
 						if p.state == "besiege":
 							_leave_siege(p)
-		elif not Data.factions[f].get("protected", false):
-			if randf() < 0.012 + 0.04 * Fealty.ruler_aggression(f):
+		elif not Data.factions[f].get("protected", false) and GS.day() >= int(GS.flags.get("camp_rest_" + f, 0)):
+			if randf() < 0.006 + 0.025 * Fealty.ruler_aggression(f):
 				_start_campaign(f, false)
 
 func _start_campaign(f: String, forced: bool) -> void:
@@ -1181,7 +1184,7 @@ func _start_campaign(f: String, forced: bool) -> void:
 		GS.campaigns.erase(f)
 		return
 	var msg := "The armies of the %s march on %s!" % [Data.factions[f].name, Data.settlements[best].name]
-	GS.log_msg(msg, Color(1, 0.6, 0.4))
+	GS.world_msg(msg, Color(1, 0.6, 0.4), [f, GS.settlements[best].faction], Data.settlements[best].pos)
 
 # ---------------------------------------------------------------------------
 # Spawning

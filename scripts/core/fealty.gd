@@ -88,7 +88,7 @@ static func protect(victim: String, attacker: String) -> void:
 		return
 	if ov in Data.KINGDOMS and attacker in Data.KINGDOMS and not GS.at_war(ov, attacker):
 		GS.declare_war(ov, attacker)
-		GS.log_msg("The %s takes up arms for %s, which pays it tribute." % [Data.factions[ov].name, vname], Color(1, 0.6, 0.35))
+		GS.world_msg("The %s takes up arms for %s, which pays it tribute." % [Data.factions[ov].name, vname], Color(1, 0.6, 0.35), [ov, attacker, victim])
 
 ## The player asks a community for tribute. Returns a line for the window.
 static func player_demand(f: String) -> String:
@@ -146,7 +146,7 @@ static func _breakaways() -> void:
 			if ov == "player":
 				GS.log_msg("%s has stopped paying you tribute." % Data.factions[f].name, Color(1, 0.6, 0.35))
 			else:
-				GS.log_msg("%s stops paying tribute to the %s." % [Data.factions[f].name, Data.factions[ov].name], Color(0.85, 0.85, 0.7))
+				GS.world_msg("%s stops paying tribute to the %s." % [Data.factions[f].name, Data.factions[ov].name], Color(0.85, 0.85, 0.7), [f, ov])
 				if not gone and ov in Data.KINGDOMS and randf() < ruler_aggression(ov) * 0.5:
 					GS.declare_war(ov, f)
 
@@ -164,7 +164,7 @@ static func _uprisings() -> void:
 		if randf() < p:
 			s.faction = sid
 			s.owner = ""
-			GS.log_msg("%s has driven out the %s and governs itself again." % [d.name, Data.factions.get(holder, Data.factions.neutral).name], Color(0.85, 0.9, 0.7))
+			GS.world_msg("%s has driven out the %s and governs itself again." % [d.name, Data.factions.get(holder, Data.factions.neutral).name], Color(0.85, 0.9, 0.7), [sid, holder], d.pos)
 			if holder in Data.KINGDOMS:
 				GS.declare_war(holder, sid)
 
@@ -183,7 +183,7 @@ static func _expansion() -> void:
 		var ov := overlord(target)
 		if ov == "" and randf() < 0.35 + minf(0.35, strength(f) / 800.0):
 			GS.fealty[target] = f
-			GS.log_msg("%s agrees to pay tribute to the %s." % [tname, Data.factions[f].name], Color(0.85, 0.85, 0.7))
+			GS.world_msg("%s agrees to pay tribute to the %s." % [tname, Data.factions[f].name], Color(0.85, 0.85, 0.7), [target, f])
 		elif a >= 0.5 or ov != "":
 			_seize(f, target)
 
@@ -215,6 +215,6 @@ static func _seize(f: String, c: String) -> void:
 		s.owner = king if Data.lords.has(king) else ""
 		s.prosperity = maxf(5.0, s.prosperity - 15.0)
 		s.looted_until = GS.hours + 24.0 * 4.0
-		GS.log_msg("Soldiers of the %s take %s by force. Its granary burns; its elders are marched to %s." % [Data.factions[f].name, Data.settlements[sid].name, Data.settlements.get(Data.factions[f].get("capital", ""), {"name": "the capital"}).name], Color(1, 0.55, 0.35))
+		GS.world_msg("Soldiers of the %s take %s by force. Its granary burns; its elders are marched to %s." % [Data.factions[f].name, Data.settlements[sid].name, Data.settlements.get(Data.factions[f].get("capital", ""), {"name": "the capital"}).name], Color(1, 0.55, 0.35), [f, c], Data.settlements[sid].pos)
 	protect(c, f)
 	GS.fealty.erase(c)

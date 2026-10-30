@@ -459,6 +459,15 @@ func _build_wars() -> void:
 		left.add_child(UI.rich("[i]No army is marching on a city.[/i]", 700))
 	for f in GS.campaigns:
 		left.add_child(UI.rich("%s marches on %s" % [_coloured(f), Data.settlements[GS.campaigns[f].target].name], 700))
+	# the chronicle: world news, including what the message log left out
+	var chron: Array = GS.flags.get("chronicle", [])
+	if not chron.is_empty():
+		left.add_child(UI.spacer(6))
+		left.add_child(UI.label("Chronicle", 19, UI.BROWN))
+		var lines := []
+		for i in range(chron.size() - 1, maxi(-1, chron.size() - 31), -1):
+			lines.append("[i]Day %d.[/i] %s" % [int(chron[i].d), chron[i].t])
+		left.add_child(UI.rich("\n".join(lines), 700))
 	var rsc := UI.scroll(640)
 	rsc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cols.add_child(rsc)
@@ -538,6 +547,8 @@ func _build_council() -> void:
 	# Electors
 	o.add_child(UI.spacer(4))
 	o.add_child(UI.label("Electors", 19, UI.BROWN))
+	if MoonCouncil.backing() == "":
+		o.add_child(UI.rich("[i]Back a candidate above, then send electors gifts on their behalf. Gifts need a realm of your own: a vassal's lord does the lobbying.[/i]", 1400))
 	var lean := MoonCouncil.leanings()
 	var g := UI.grid(4, 24, 4)
 	o.add_child(g)
