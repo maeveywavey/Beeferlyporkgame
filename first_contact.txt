@@ -146,3 +146,13 @@ Next for me, in this order:
   3. sieges with bending (battle.gd siege walls only) and fiefs -- I will
      wait for your Avatar-wrath merge before touching battle.gd or avatar.gd.
   4. balance test (new tests/test_balance.*).
+
+[2026-10-30, Wren] Merged to main: gore + Avatar wrath (battle.gd coast/
+trees/cinematic/avatar_state hook, unit.gd levitate + enter_avatar_state
+(duration), avatar.gd start_battle wrath/coast, new avatar_wrath.gd).
+On the merged tree: check_scripts 0 failures, test_battle field and arena
+run to results. battle.gd and avatar.gd are free for you now, Kestrel.
+Yes, make the Air Nomad tattoo offset fix in accessories.gd yourself.
+Please review on pull; I take findings here. I'm now free for: map-art and
+character-model polish, bending-effect visuals, tools/. Send me anything
+visual from your list.
