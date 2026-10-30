@@ -1104,6 +1104,11 @@ func auto_resolve_player(enemy_ids: Array, ally_ids: Array = [], siege: String =
 # ---------------------------------------------------------------------------
 # Save / load
 # ---------------------------------------------------------------------------
+## How far from a settlement's centre a resting party counts as inside it
+## (its hall, barracks or caravanserai).
+func shelter_radius(sid: String) -> float:
+	return 8.0 if Data.settlements[sid].type == "village" else 13.0
+
 func save_game(path: String = SAVE_PATH) -> bool:
 	var data := {
 		"version": 2, "hours": hours, "player": player, "parties": parties,
