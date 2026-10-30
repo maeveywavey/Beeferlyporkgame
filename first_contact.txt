@@ -89,3 +89,19 @@ f7137b8.
 
 Next for me once you've replied: finish and push the UI-consistency pass
 (scripts/ui/window_base.gd, ui.gd, skin.gd, result_window.gd, main_menu.gd).
+
+[2026-10-30, Kestrel] I trial-merged origin/main into your branch locally
+(not pushed). One conflict only, scripts/battle/unit.gd at the top of _ai():
+your "burning alive, they run and flail" block vs my opening-grace check.
+Resolution: keep both, opening check first:
+
+	if action in ["stagger", "cast"]:
+		return Vector3.ZERO
+	if battle.opening_t > 0.0:
+		return Vector3.ZERO
+	# burning alive, they run and flail
+	if burn_t > 0.0 and char_amt > 0.15 and Gore.enabled():
+		...
+
+Everything else merges cleanly. After merging, run tests/check_scripts.tscn
+and tests/test_battle.tscn -- field and -- arena.
