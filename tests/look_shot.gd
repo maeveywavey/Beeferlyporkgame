@@ -34,7 +34,7 @@ func _ready() -> void:
 	await get_tree().create_timer(0.4).timeout
 	var b = get_tree().current_scene
 	b.cam_pitch = -0.18
-	b.cam_dist = 6.0
+	b.cam_dist = 1.5
 	b.cam_yaw = float(args[4]) if args.size() > 4 else 1.15
 	get_tree().paused = false
 	# "grove" / "cliff": stand a few paces from the nearest tree or cliff

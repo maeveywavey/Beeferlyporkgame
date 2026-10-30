@@ -138,7 +138,7 @@ This plan is drawn from the twenty answers of 30 October and the follow-up answe
   - vertices snap to a screen grid, so edges wobble as the camera moves;
   - textures are point-sampled at a low texel count;
   - texture mapping can drift towards affine.
-  - It is set in Settings → Retro look: Off, **Light** (grid 480, 128 texels) or **Heavy** (grid 200, 40 texels, 60% affine warp).
+  - It is set in Settings → Retro look: Off, Light (grid 480, 128 texels) or **Heavy** (grid 200, 40 texels, 60% affine warp; the default).
   - The comparison is in `docs/screenshots/retro_compare.jpg` and `.gif`.
 
 **Still to do for the look:**
@@ -174,4 +174,6 @@ This plan is drawn from the twenty answers of 30 October and the follow-up answe
 
 1. **Conquest:** anyone may attempt it, anywhere and at any time. The Avatar's response is the only check.
 2. **The last Avatar:** no story at all. The campaign and every trace of the lost-Avatar mystery go.
-3. **Look:** realistic and PS1 as in §5. The choice between **Light** and **Heavy** is open; both are in the build.
+3. **Look:** realistic and PS1 as in §5, at the **Heavy** strength, which is now the default. Light and Off remain in Settings.
+4. **Camera:** the battle camera sits at a quarter of the distance in the comparison shots (1.5 m, over the shoulder); the mouse wheel still zooms from 1 to 12 m.
+5. **Natural colour variation:** rocks show bedding strata, chunks of differently coloured stone and dark cracks, and each outcrop has its own cast. The ground has large lighter, darker, drier and lusher patches blending into one another, brown leaf litter and soil under trees, and stony soil at cliff feet. Foliage cards vary in shade.

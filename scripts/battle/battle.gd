@@ -57,7 +57,7 @@ var _autotest_t := 0.0
 var cam: Camera3D
 var cam_yaw := 0.0
 var cam_pitch := -0.25
-var cam_dist := 4.2
+var cam_dist := 1.5
 var cam_far := false
 var mouse_accum := Vector2.ZERO
 var spectate_target = null
@@ -98,6 +98,7 @@ func _ready() -> void:
 	if siege != "":
 		wall_z = 28.0 if b.player_attacking else -28.0
 	_build_heights()
+	_plan_landscape()
 	_build_environment()
 	_build_ground()
 	if arena >= 0 or duel != "":
@@ -217,6 +218,44 @@ func _biome_ground_color() -> Color:
 		"highland": return Color(0.45, 0.52, 0.32)
 	return Color(0.4, 0.55, 0.26)
 
+## Where groves, cliffs and scrub go (scripts/battle/landscape.gd), decided
+## before the ground is built so the ground can show what grows on it.
+var land_items: Array = []
+var _land_rng := RandomNumberGenerator.new()
+var _stain := {}
+
+func _plan_landscape() -> void:
+	if arena >= 0 or duel != "":
+		return
+	if GS.pending_battle.has("seed"):
+		_land_rng.seed = int(GS.pending_battle.seed)
+	else:
+		_land_rng.randomize()
+	land_items = Land.layout(biome, _land_rng, wall_z if siege != "" else 999.0)
+	# 8 m buckets of trees and cliffs, for staining the ground near them
+	for it in land_items:
+		if it.kind in ["tree", "cliff", "boulder"]:
+			var k := Vector2i(floori(it.pos.x / 8.0), floori(it.pos.y / 8.0))
+			if not _stain.has(k):
+				_stain[k] = []
+			_stain[k].append(it)
+
+## Ground colour multiplier at a point: brown leaf litter and bare soil under
+## trees, stony grey-brown at cliff feet, otherwise unchanged.
+func _ground_stain(x: float, z: float) -> Color:
+	var c := Color(1, 1, 1)
+	var k := Vector2i(floori(x / 8.0), floori(z / 8.0))
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for it in _stain.get(k + Vector2i(dx, dz), []):
+				var d: float = Vector2(x, z).distance_to(it.pos)
+				if it.kind == "tree":
+					c = c.lerp(Color(1.05, 0.66, 0.42), clampf(1.0 - d / 5.5, 0.0, 1.0) * 0.9)
+				else:
+					var reach: float = float(it.r) + 4.0
+					c = c.lerp(Color(1.12, 0.92, 0.8), clampf(1.0 - (d - float(it.r)) / 4.0, 0.0, 1.0) * 0.6 * float(d < reach + 1.0))
+	return c
+
 func _build_ground() -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -235,7 +274,7 @@ func _build_ground() -> void:
 			var h := heights[gz * GRID + gx]
 			verts.append(Vector3(gx - HALF, h, gz - HALF))
 			var v := cn.get_noise_2d(gx, gz) * 0.12
-			var c := Color(1.0 + v, 1.0 + v, 1.0 + v * 0.6)
+			var c := Color(1.0 + v, 1.0 + v, 1.0 + v * 0.6) * _ground_stain(gx - HALF, gz - HALF)
 			if siege != "" and absf(gz - HALF - wall_z) < 9.0:
 				c = c.lerp(Color(0.85, 0.78, 0.7), 0.5)
 			cols.append(c)
@@ -349,17 +388,12 @@ func _build_weather() -> void:
 	add_child(weather)
 
 func _build_props() -> void:
-	var rng := RandomNumberGenerator.new()
-	if GS.pending_battle.has("seed"):
-		rng.seed = int(GS.pending_battle.seed)
-	else:
-		rng.randomize()
+	var rng := _land_rng
 	var daylight := clampf(sin((hour - 6.0) / 13.0 * PI), 0.0, 1.0)
 	var light := Color(0.45, 0.5, 0.65).lerp(Color(1.0, 0.97, 0.9), daylight)
 	var pines := biome in ["snow", "mountain", "highland"] or (biome == "forest" and true)
 	var dead := biome in ["desert", "beach", "volcanic"]
-	var wz := wall_z if siege != "" else 999.0
-	for it in Land.layout(biome, rng, wz):
+	for it in land_items:
 		var p: Vector2 = it.pos
 		if absf(p.x) > 76.0 or absf(p.y) > 46.0:
 			continue
@@ -1420,7 +1454,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			else:
 				pu.stop_block()
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
-			cam_dist = maxf(2.0, cam_dist - 0.5)
+			cam_dist = maxf(1.0, cam_dist - 0.5)
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
 			cam_dist = minf(12.0, cam_dist + 0.5)
 	elif event is InputEventKey and event.pressed and not event.echo:

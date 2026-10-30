@@ -66,7 +66,7 @@ var settings := {
 	"invert_y": false, "volume": 0.7, "music": 0.5, "fullscreen": false,
 	"ui_scale": 1.0, "plain_speech": false, "reduce_flashing": false, "reduce_motion": false, "readable_font": false,
 	"dlc_fire": true, "dlc_water": true, "dlc_earth": true, "dlc_air": true,
-	"retro": "light",
+	"retro": "heavy",
 }
 
 ## The PS1 look (shaders/ps1.gdshaderinc): vertex grid across the screen,
@@ -134,7 +134,7 @@ func save_settings() -> void:
 	apply_settings()
 
 func apply_settings() -> void:
-	var r: Dictionary = RETRO.get(String(settings.get("retro", "light")), RETRO.light)
+	var r: Dictionary = RETRO.get(String(settings.get("retro", "heavy")), RETRO.heavy)
 	RenderingServer.global_shader_parameter_set("ps1_snap", r.snap)
 	RenderingServer.global_shader_parameter_set("ps1_tex", r.tex)
 	RenderingServer.global_shader_parameter_set("ps1_affine", r.affine)

@@ -33,42 +33,114 @@ static func _noise(seed: int, freq: float, octaves: int = 4) -> FastNoiseLite:
 	n.fractal_octaves = octaves
 	return n
 
-## A small seamless texture blending two colours by fractal noise, with fine
-## speckle: soil and grass, or stone.
-static func _blend_tex(key: String, a: Color, b: Color, size: int, seed: int, freq: float, speckle: float) -> ImageTexture:
+## Large-scale patches across the ground: lighter and darker swathes, drier
+## and lusher ones, blending into each other over tens of metres. Grey 0.5
+## means no change (the shader doubles it).
+static func _macro_tex(kind: String = "ground") -> ImageTexture:
+	var key := "macro_" + kind
 	if _cache.has(key):
 		return _cache[key]
-	var n := _noise(seed, freq)
-	var img: Image = n.get_seamless_image(size, size)
-	img.convert(Image.FORMAT_RGBA8)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
+	var size := 128
+	var light: Image = _noise(77, 0.035, 3).get_seamless_image(size, size)
+	var dry: Image = _noise(91, 0.04, 2).get_seamless_image(size, size)
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
 	for y in size:
 		for x in size:
-			var v := img.get_pixel(x, y).r
-			var c := a.lerp(b, smoothstep(0.35, 0.65, v))
-			c = c.lightened(rng.randf() * speckle) if rng.randf() < 0.5 else c.darkened(rng.randf() * speckle)
+			var l := light.get_pixel(x, y).r
+			var d := dry.get_pixel(x, y).r
+			# brightness swings +-30%; dry patches go yellow-brown, lush ones green
+			var v := lerpf(0.3, 0.7, smoothstep(0.2, 0.8, l))
+			var c := Color(v, v, v)
+			if kind == "ground":
+				var t := smoothstep(0.45, 0.75, d)
+				c = c.lerp(Color(v * 1.18, v * 1.04, v * 0.7), t)
+				c = c.lerp(Color(v * 0.88, v * 1.08, v * 0.86), smoothstep(0.45, 0.15, d))
 			img.set_pixel(x, y, c)
 	img.generate_mipmaps()
-	var t := ImageTexture.create_from_image(img)
-	_cache[key] = t
-	return t
+	var tex := ImageTexture.create_from_image(img)
+	_cache[key] = tex
+	return tex
 
-## Large-scale brightness variation, centred on mid-grey.
-static func _macro_tex() -> ImageTexture:
-	if _cache.has("macro"):
-		return _cache.macro
-	var img: Image = _noise(77, 0.02, 3).get_seamless_image(64, 64)
-	img.convert(Image.FORMAT_RGBA8)
+## The ground's close texture: grass, dry grass and bare soil in clumps, with
+## fine speckle.
+static func _ground_tex(biome: String) -> ImageTexture:
+	var key := "ground_" + biome
+	if _cache.has(key):
+		return _cache[key]
+	var c := colours(biome)
+	var size := 128
+	var clumps: Image = _noise(3, 0.07, 3).get_seamless_image(size, size)
+	var bare: Image = _noise(17, 0.11, 2).get_seamless_image(size, size)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var dry: Color = c.g1.lerp(Color(0.62, 0.56, 0.36), 0.45)
+	for y in size:
+		for x in size:
+			var v := clumps.get_pixel(x, y).r
+			var col: Color = c.g1.lerp(dry, smoothstep(0.4, 0.7, v))
+			col = col.lerp(c.g2, smoothstep(0.62, 0.8, bare.get_pixel(x, y).r))
+			var sp := rng.randf()
+			if sp < 0.3:
+				col = col.darkened(rng.randf() * 0.22)
+			elif sp < 0.55:
+				col = col.lightened(rng.randf() * 0.14)
+			img.set_pixel(x, y, col)
 	img.generate_mipmaps()
-	_cache.macro = ImageTexture.create_from_image(img)
-	return _cache.macro
+	var tex := ImageTexture.create_from_image(img)
+	_cache[key] = tex
+	return tex
+
+## Rock: bedding strata of different shades, chunks of differently coloured
+## stone (warm, cool, ochre-stained), dark cracks between chunks, and fine grain.
+static func _rock_tex(biome: String) -> ImageTexture:
+	var key := "rock_" + biome
+	if _cache.has(key):
+		return _cache[key]
+	var base: Color = colours(biome).rock
+	var size := 128
+	var cell := FastNoiseLite.new()
+	cell.seed = 23
+	cell.noise_type = FastNoiseLite.TYPE_CELLULAR
+	cell.frequency = 0.075
+	cell.cellular_return_type = FastNoiseLite.RETURN_CELL_VALUE
+	var edge := FastNoiseLite.new()
+	edge.seed = 23
+	edge.noise_type = FastNoiseLite.TYPE_CELLULAR
+	edge.frequency = 0.075
+	edge.cellular_return_type = FastNoiseLite.RETURN_DISTANCE2_SUB
+	var warp := _noise(31, 0.05, 2)
+	var grain := _noise(47, 0.35, 2)
+	var palette := [base, base.lerp(Color(0.62, 0.52, 0.4), 0.45), base.lerp(Color(0.4, 0.42, 0.46), 0.5),
+		base.lerp(Color(0.58, 0.44, 0.3), 0.35), base.darkened(0.25), base.lightened(0.15)]
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	for y in size:
+		for x in size:
+			# seamless sampling on a torus
+			var ax := TAU * x / size
+			var ay := TAU * y / size
+			var p := Vector3(cos(ax) * 20.0, sin(ax) * 20.0, 0.0)
+			var cv := cell.get_noise_3d(p.x + cos(ay) * 9.0, p.y, sin(ay) * 20.0)
+			var col: Color = palette[int((cv * 0.5 + 0.5) * palette.size()) % palette.size()]
+			# strata: horizontal bands, gently warped
+			var band := sin((y + warp.get_noise_3d(p.x, p.y, sin(ay) * 20.0) * 10.0) * TAU / 16.0)
+			col = col.lerp(col.darkened(0.32) if band > 0.0 else col.lightened(0.16), smoothstep(0.2, 0.9, absf(band)))
+			# cracks between chunks
+			var e := edge.get_noise_3d(p.x + cos(ay) * 9.0, p.y, sin(ay) * 20.0)
+			if e > -0.08:
+				col = col.darkened(0.45)
+			col = col.lightened(grain.get_noise_3d(p.x * 3.0, p.y * 3.0, sin(ay) * 60.0) * 0.12)
+			img.set_pixel(x, y, col)
+	img.generate_mipmaps()
+	var tex := ImageTexture.create_from_image(img)
+	_cache[key] = tex
+	return tex
 
 static func lit_material(tex: Texture2D, projection: int, scale: float, saturation: float = 0.75, vertex_color: bool = true) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = LIT
 	m.set_shader_parameter("detail_tex", tex)
-	m.set_shader_parameter("macro_tex", _macro_tex())
+	m.set_shader_parameter("macro_tex", _macro_tex("ground" if projection == 1 else "plain"))
 	m.set_shader_parameter("proj_mode", projection)
 	m.set_shader_parameter("detail_scale", scale)
 	m.set_shader_parameter("saturation", saturation)
@@ -76,14 +148,15 @@ static func lit_material(tex: Texture2D, projection: int, scale: float, saturati
 	return m
 
 static func ground_material(biome: String) -> ShaderMaterial:
-	var c := colours(biome)
-	var tex := _blend_tex("ground_" + biome, c.g1, c.g2, 128, 3, 0.06, 0.12)
-	return lit_material(tex, 1, 0.22, 0.85)
+	var m := lit_material(_ground_tex(biome), 1, 0.22, 0.85)
+	m.set_shader_parameter("macro_scale", 0.014)
+	m.set_shader_parameter("macro_strength", 1.0)
+	return m
 
 static func rock_material(biome: String) -> ShaderMaterial:
-	var c := colours(biome)
-	var tex := _blend_tex("rock_" + biome, c.rock.lightened(0.12), c.rock.darkened(0.3), 128, 9, 0.09, 0.18)
-	return lit_material(tex, 2, 0.3, 0.6)
+	var m := lit_material(_rock_tex(biome), 2, 0.22, 0.8)
+	m.set_shader_parameter("macro_strength", 0.25)
+	return m
 
 # ---------------------------------------------------------------------------
 # Painted cards
@@ -192,7 +265,9 @@ static func card(tex: Texture2D, size: Vector2, mode: int, light: Color) -> Mesh
 	m.shader = SPRITE
 	m.set_shader_parameter("image", tex)
 	m.set_shader_parameter("billboard", mode)
-	m.set_shader_parameter("light_tint", light)
+	# no two clumps quite the same shade
+	var v := randf_range(0.85, 1.12)
+	m.set_shader_parameter("light_tint", Color(light.r * v * randf_range(0.95, 1.05), light.g * v, light.b * v * randf_range(0.9, 1.0)))
 	mi.material_override = m
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mi
@@ -262,16 +337,23 @@ static func cliff(biome: String, radius: float, height: float, rng: RandomNumber
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var n := rng.randi_range(9, 13)
-	var rows := 4
+	var rows := 6
+	# each outcrop has its own cast, and each band and chunk its own shade
+	var cast := Color(1, 1, 1).lerp([Color(1.08, 1.0, 0.9), Color(0.92, 0.96, 1.05), Color(1.05, 0.98, 0.95)][rng.randi() % 3], 0.8)
+	var band_cols := []
+	for row in rows + 1:
+		band_cols.append(cast * rng.randf_range(0.82, 1.12))
 	var tilt := Vector2(rng.randf_range(-0.25, 0.25), rng.randf_range(-0.25, 0.25))
 	var shift := Vector2(rng.randf_range(-0.3, 0.3), rng.randf_range(-0.3, 0.3)) * radius
 	var base_r := []
 	for i in n:
 		base_r.append(radius * rng.randf_range(0.7, 1.2))
 	var grid := []
+	var vcols := []
 	for row in rows + 1:
 		var t := float(row) / rows
 		var ring := []
+		var cols_row := []
 		for i in n:
 			var a := TAU * i / n
 			# faces slope in, each row a little further, with breaks in the line
@@ -279,7 +361,9 @@ static func cliff(biome: String, radius: float, height: float, rng: RandomNumber
 			var c := Vector2(cos(a), sin(a)) * r + shift * t
 			var y := -1.5 + (height + 1.5) * t * rng.randf_range(0.85, 1.1) + (c.x * tilt.x + c.y * tilt.y) * t
 			ring.append(Vector3(c.x, y, c.y))
+			cols_row.append((band_cols[row] as Color) * rng.randf_range(0.88, 1.1))
 		grid.append(ring)
+		vcols.append(cols_row)
 	for row in rows:
 		for i in n:
 			var j := (i + 1) % n
@@ -287,15 +371,23 @@ static func cliff(biome: String, radius: float, height: float, rng: RandomNumber
 			var b0: Vector3 = grid[row][j]
 			var a1: Vector3 = grid[row + 1][i]
 			var b1: Vector3 = grid[row + 1][j]
-			for v in [a0, b0, b1, a0, b1, a1]:
-				st.set_color(Color.WHITE)
-				st.add_vertex(v)
+			var ca: Color = vcols[row][i]
+			var cb: Color = vcols[row][j]
+			var ca1: Color = vcols[row + 1][i]
+			var cb1: Color = vcols[row + 1][j]
+			var vs := [a0, b0, b1, a0, b1, a1]
+			var cs := [ca, cb, cb1, ca, cb1, ca1]
+			for k in 6:
+				st.set_color(cs[k])
+				st.add_vertex(vs[k])
 	var cap := Vector3(shift.x, height * rng.randf_range(0.95, 1.1), shift.y)
 	for i in n:
 		var j := (i + 1) % n
-		for v in [grid[rows][i], grid[rows][j], cap]:
-			st.set_color(Color.WHITE)
-			st.add_vertex(v)
+		var vs2 := [grid[rows][i], grid[rows][j], cap]
+		var cs2 := [vcols[rows][i], vcols[rows][j], band_cols[rows]]
+		for k in 3:
+			st.set_color(cs2[k])
+			st.add_vertex(vs2[k])
 	st.generate_normals()
 	var mi := MeshInstance3D.new()
 	mi.mesh = st.commit()
