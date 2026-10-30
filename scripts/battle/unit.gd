@@ -253,6 +253,8 @@ func setup_player(p_team: int) -> void:
 
 func _finish_setup(look: Dictionary) -> void:
 	hp = max_hp
+	# Nobody acts on the first frame: a moment to read the field.
+	think_t = randf_range(0.5, 1.5)
 	weapon = Data.item(weapon_id)
 	if ranged_id != "":
 		ranged = Data.item(ranged_id)
@@ -755,6 +757,8 @@ func _animate_death(delta: float) -> void:
 func _ai(delta: float) -> Vector3:
 	if action in ["stagger", "cast"]:
 		return Vector3.ZERO
+	if battle.opening_t > 0.0:
+		return Vector3.ZERO
 	retarget_t -= delta
 	think_t -= delta
 	if target == null or not is_instance_valid(target) or not target.alive or retarget_t <= 0.0:
@@ -820,7 +824,7 @@ func _ai_bend(dist: float) -> Vector3:
 			cast("r", position)
 			return Vector3.ZERO
 		if r.kind in ["volley", "line", "projectile"] and dist < r.get("range", 20.0):
-			cast("r", target.chest())
+			cast("r", target.chest() + _aim_error(dist))
 			return Vector3.ZERO
 		if r.kind == "buff" and (hp < max_hp * 0.6 or battle.enemies_near(self, 6.0) >= 2):
 			cast("r", position)
@@ -842,20 +846,21 @@ func _ai_bend(dist: float) -> Vector3:
 					return Vector3.ZERO
 			"line", "projectile":
 				if dist < float(e.get("range", 20.0)) * 0.9 and randf() < 0.25:
-					cast("e", target.chest())
+					cast("e", target.chest() + _aim_error(dist))
 					return Vector3.ZERO
 			"buff":
 				if hp < max_hp * 0.7 and randf() < 0.2:
 					cast("e", position)
 					return Vector3.ZERO
 	if can_bend("q") and dist < rng * 0.95 and dist > 2.0 and think_t <= 0.0:
-		think_t = randf_range(0.15, 0.6) * (1.3 - skill)
+		# A breath between throws: benders do not fire the instant chi allows.
+		think_t = randf_range(0.4, 1.0) * (1.4 - skill)
 		if q.kind in ["cone", "nova", "buff"]:
 			if dist < rng * 0.9:
 				cast("q", target.position)
 				return Vector3.ZERO
 		else:
-			cast("q", battle.lead_point(self, target, float(q.get("speed", 30.0))))
+			cast("q", battle.lead_point(self, target, float(q.get("speed", 30.0))) + _aim_error(dist))
 			return Vector3.ZERO
 	# Keep at casting distance while chi recovers
 	if chi >= q.get("cost", 10.0) and dist > 4.5:
@@ -863,6 +868,12 @@ func _ai_bend(dist: float) -> Vector3:
 			return _move_towards(target.position, 0.0)
 		return Vector3.ZERO
 	return Vector3.INF
+
+## Where an AI bender's shot drifts from a perfect lead: wider at range, and
+## for less skilled benders.
+func _aim_error(dist: float) -> Vector3:
+	var spread := dist * 0.07 * (1.25 - skill)
+	return Vector3(randf_range(-spread, spread), randf_range(-spread, spread) * 0.5, randf_range(-spread, spread))
 
 func _ai_melee(dist: float, _delta: float) -> Vector3:
 	var reach = melee_reach() + target.radius
