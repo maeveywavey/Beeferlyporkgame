@@ -201,6 +201,9 @@ static func build(unit, look: Dictionary) -> Dictionary:
 		actor.set_stance("bend")
 	elif unit.shield and unit.mount_id == "":
 		actor.set_stance("shield")
+	# weapons and shields attached here get the characters' finer pixels too
+	if p.has("root") and p.root is Node3D:
+		CB.set_texel_density(p.root, p.root)
 	return p
 
 # ---------------------------------------------------------------------------

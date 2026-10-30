@@ -15,6 +15,8 @@ uniform float emission_strength : hint_range(0.0, 4.0) = 0.0;
 uniform vec4 emission_color : source_color = vec4(0.0);
 // UV units per metre of this surface; 0 = unknown (no texel snapping)
 uniform float uv_per_m = 0.0;
+// texels per metre relative to the shared PS1 size (characters use 2: half-size pixels)
+uniform float texel_mult = 1.0;
 // painted grain for untextured, single-colour parts (hats, armour, weapons,
 // mounts): wear and shading worked out from the snapped model-space position
 uniform float grain = 0.0;
@@ -43,19 +45,20 @@ void vertex() {
 }
 
 void fragment() {
-	vec4 a = ps1_texture(albedo_tex, UV, uv_per_m);
-	vec4 b = ps1_texture(albedo_tex_b, UV, uv_per_m);
+	vec4 a = ps1_texture(albedo_tex, UV, uv_per_m / texel_mult);
+	vec4 b = ps1_texture(albedo_tex_b, UV, uv_per_m / texel_mult);
 	vec3 t = mix(a.rgb, b.rgb, tex_mix);
 	float tg = dot(t, vec3(0.299, 0.587, 0.114));
 	t = mix(t, vec3(tg), texture_desaturate);
 	vec3 c = t * tint.rgb;
 	if (grain > 0.0) {
-		vec3 p = ps1_snap_m3(obj_pos);
+		float tm = ps1_texel_m * texel_mult;
+		vec3 p = tm > 0.0 ? (floor(obj_pos * tm) + 0.5) / tm : obj_pos;
 		float folds = g_noise(p * vec3(6.0, 2.5, 6.0)) * 0.6 + g_noise(p * 14.0) * 0.4;
 		float wear = g_noise(p * 3.0 + 17.0);
 		c *= mix(1.0, 0.78 + folds * 0.34, grain);
 		c = mix(c, c * vec3(0.82, 0.76, 0.68), step(0.7, wear) * 0.5 * grain);
-		c *= mix(1.0, 0.9 + g_hash(floor(p * max(ps1_texel_m, 8.0))) * 0.2, grain);
+		c *= mix(1.0, 0.9 + g_hash(floor(p * max(tm, 8.0))) * 0.2, grain);
 	}
 	float grey = dot(c, vec3(0.299, 0.587, 0.114));
 	ALBEDO = mix(vec3(grey), c, saturation);
