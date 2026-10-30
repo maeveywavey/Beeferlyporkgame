@@ -166,7 +166,7 @@ static func smoulder(battle, u) -> void:
 	p.color_ramp = g
 	battle.add_child(p)
 	p.global_position = u.position + Vector3(0, 0.35, 0)
-	battle.get_tree().create_timer(7.0).timeout.connect(func(): p.emitting = false)
+	battle.get_tree().create_timer(7.0).timeout.connect(func(): if is_instance_valid(p): p.emitting = false)
 	battle.get_tree().create_timer(9.0).timeout.connect(p.queue_free)
 
 ## A spray of blood and a pool, for wounds without a cut-off limb.

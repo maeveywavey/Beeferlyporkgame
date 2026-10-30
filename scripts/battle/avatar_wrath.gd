@@ -195,7 +195,7 @@ func _air_begin() -> void:
 	p.color = Color(0.85, 0.82, 0.72, 0.55)
 	battle.add_child(p)
 	p.global_position = c
-	get_tree().create_timer(6.0).timeout.connect(func(): p.emitting = false)
+	get_tree().create_timer(6.0).timeout.connect(func(): if is_instance_valid(p): p.emitting = false)
 	get_tree().create_timer(9.0).timeout.connect(p.queue_free)
 	# every tree in reach is torn out, lifted and flung
 	for tr in battle.trees:
