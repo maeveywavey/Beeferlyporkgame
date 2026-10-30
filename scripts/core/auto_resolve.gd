@@ -33,6 +33,23 @@ static func _side_power(rosters: Array) -> float:
 		p += Roster.power(r)
 	return p
 
+## Share of a side's fit troops who bend earth.
+static func earth_share(rosters: Array) -> float:
+	var eb := 0
+	var n := 0
+	for r in rosters:
+		for st in r:
+			var fit: int = int(st.n) - int(st.w)
+			n += fit
+			if Data.troop(st.id).get("bend", "") == "earth":
+				eb += fit
+	return 0.0 if n == 0 else float(eb) / n
+
+## Walls against earthbenders: attackers who bend earth tear them open,
+## defenders who bend earth shore them up.
+static func wall_mult(walls: float, attacker_eb: float, defender_eb: float) -> float:
+	return maxf(1.0, 1.8 * walls * (1.0 - 0.6 * attacker_eb) * (1.0 + 0.4 * defender_eb))
+
 static func _side_healthy(rosters: Array) -> int:
 	var n := 0
 	for r in rosters:
@@ -79,8 +96,8 @@ static func resolve(side_a: Array, side_b: Array, garrison_a: String = "", garri
 		hero_a += _hero_power(pid)
 	for pid in side_b:
 		hero_b += _hero_power(pid)
-	var wall_a := 1.8 * Data.walls(garrison_a) if garrison_a != "" else 1.0
-	var wall_b := 1.8 * Data.walls(garrison_b) if garrison_b != "" else 1.0
+	var wall_a := wall_mult(Data.walls(garrison_a), earth_share(rb), earth_share(ra)) if garrison_a != "" else 1.0
+	var wall_b := wall_mult(Data.walls(garrison_b), earth_share(ra), earth_share(rb)) if garrison_b != "" else 1.0
 	var tac_a := 1.0 + tactics_a * 0.04
 	var lost_a := 0.0
 	var lost_b := 0.0

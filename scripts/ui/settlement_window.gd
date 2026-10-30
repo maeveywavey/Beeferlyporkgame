@@ -681,11 +681,43 @@ func _build_recruit(o: VBoxContainer) -> void:
 			o.add_child(UI.rich("[i](Your party is full. Raise Leadership or Charisma, or gain renown.)[/i]", 740))
 	o.add_child(UI.option("Back", func(): _go("main")))
 
+## Lords within two days' ride who are not at war with you.
+func _feast_guests() -> Array:
+	var out := []
+	var pos: Vector2 = Data.settlements[sid].pos
+	for lid in GS.lords:
+		var lr: Dictionary = GS.lords[lid]
+		if lr.party == "" or not GS.parties.has(lr.party) or GS.at_war(lr.faction, GS.player_faction()):
+			continue
+		if GS.parties[lr.party].pos.distance_to(pos) < 120.0:
+			out.append(lid)
+	return out
+
+func _feast(guests: Array) -> void:
+	GS.add_gold(-400)
+	GS.player.last_feast = GS.day()
+	var names := []
+	for lid in guests:
+		GS.change_lord_rel(lid, 4 if GS.lords[lid].faction == GS.player_faction() else 3)
+		names.append(Data.lords[lid].name)
+	GS.add_renown(2 + guests.size())
+	GS.sim.advance(48.0)
+	note = "For two days your hall is loud with %s. Toasts are made; old quarrels are aired and, mostly, set aside. (Relations improved with %d lord%s.)" % [", ".join(names), guests.size(), "" if guests.size() == 1 else "s"]
+	GS.log_msg("You held a feast at %s." % Data.settlements[sid].name, Color(1, 0.85, 0.5))
+	refresh()
+
 func _build_hall(o: VBoxContainer) -> void:
 	var s: Dictionary = GS.settlements[sid]
 	var owner: String = s.owner
 	if owner == "player":
 		o.add_child(UI.rich("Your own hall. Your servants bow as you enter.", 740))
+		# Warband's feast: the way a lord makes friends among other lords
+		var since: int = GS.day() - int(GS.player.get("last_feast", -999))
+		var guests := _feast_guests()
+		if since < 30:
+			o.add_child(UI.rich("[i]Your last feast is still being talked about. (Another in %d days.)[/i]" % (30 - since), 740))
+		else:
+			o.add_child(UI.option("Hold a feast (400 gold, two days; %d lord%s nearby would come)" % [guests.size(), "" if guests.size() == 1 else "s"], _feast.bind(guests), GS.player.gold >= 400 and not guests.is_empty()))
 		o.add_child(UI.option("Back", func(): _go("main")))
 		return
 	# Every lord resting here, the owner first, as in a Warband hall.

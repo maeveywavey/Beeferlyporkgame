@@ -113,6 +113,7 @@ func _ready() -> void:
 	duel = b.get("duel", "")
 	if siege != "":
 		wall_z = 28.0 if b.player_attacking else -28.0
+		_set_breach(b)
 	_build_heights()
 	_plan_landscape()
 	_build_environment()
@@ -570,6 +571,32 @@ func _spawn_duel() -> void:
 	_spawn_entry({"kind": "player", "id": "player", "key": "player"}, 0, Vector3(0, 0, -9), 0.0)
 	var u = _spawn_entry({"kind": "lord", "id": duel, "key": "duel"}, 1, Vector3(0, 0, 9), PI)
 	feed_msg("Agni Kai! %s bows, then drops into a fighting stance." % Data.lords[duel].name, Color(1, 0.7, 0.35))
+
+## Earthbenders decide how wide the breach is: attackers who bend earth
+## tear it open before the assault, defenders who bend earth wall it up.
+func _set_breach(b: Dictionary) -> void:
+	var AR = load("res://scripts/core/auto_resolve.gd")
+	var mine: Array = ["player"] + b.get("allies", [])
+	var theirs: Array = b.get("enemies", [])
+	var att_ids: Array = mine if b.player_attacking else theirs
+	var def_ids: Array = theirs if b.player_attacking else mine
+	var att := []
+	var dfn := []
+	for pid in att_ids:
+		if GS.parties.has(pid):
+			att.append(GS.parties[pid].roster)
+	for pid in def_ids:
+		if GS.parties.has(pid):
+			dfn.append(GS.parties[pid].roster)
+	if GS.settlements.has(siege):
+		dfn.append(GS.settlements[siege].garrison)
+	var a_eb: float = AR.earth_share(att)
+	var d_eb: float = AR.earth_share(dfn)
+	breach_half = clampf(6.0 + 10.0 * a_eb - 6.0 * d_eb, 3.0, 12.0)
+	if a_eb >= 0.15:
+		feed_msg.call_deferred("Your earthbenders have torn the breach wide." if b.player_attacking else "Their earthbenders have torn the breach wide.", Color(0.8, 0.9, 0.6))
+	elif d_eb >= 0.15:
+		feed_msg.call_deferred("Earthbenders have walled the breach half shut." if b.player_attacking else "Your earthbenders have walled the breach half shut.", Color(0.8, 0.9, 0.6))
 
 func _build_siege_walls() -> void:
 	var culture: String = Data.settlements[siege].culture

@@ -432,6 +432,7 @@ func _force_campaign(f: String, target: String, leaders: Array) -> void:
 ## rulers. The Air Nomads never take part, and nobody picks a fight with the
 ## Sun Warriors without a reckless ruler.
 func _daily_diplomacy() -> void:
+	_restrain_conquerors()
 	var ks: Array = Data.KINGDOMS
 	for i in ks.size():
 		for j in range(i + 1, ks.size()):
@@ -454,7 +455,7 @@ func _daily_diplomacy() -> void:
 				# Nobody opens a third front, nobody kicks a kingdom already on its
 				# knees, and the Sun Warriors are left alone by the sane
 				var sun_ok: bool = not (Data.factions[a].get("protected", false) or Data.factions[b].get("protected", false)) or _reckless(a if Data.factions[b].get("protected", false) else b, b if Data.factions[b].get("protected", false) else a)
-				if sun_ok and _wars_of(a) < 2 and _wars_of(b) < 2 and _land_loss(a) < 0.4 and _land_loss(b) < 0.4:
+				if sun_ok and _wars_of(a) < 2 and _wars_of(b) < 2 and _land_loss(a) < 0.4 and _land_loss(b) < 0.4 and not _restrained(a) and not _restrained(b):
 					GS.declare_war(a, b)
 					GS.flags[since_key] = GS.day()
 
@@ -483,6 +484,49 @@ func _wars_of(f: String) -> int:
 	return n
 
 ## Fraction of a kingdom's original towns and castles it has lost (0..1).
+## Strongholds held against strongholds started with: above 1 a power has
+## conquered, below 1 it has lost land.
+func _land_ratio(f: String) -> Array:
+	var orig := 0
+	var held := 0
+	for sid in Data.settlements:
+		var d: Dictionary = Data.settlements[sid]
+		if not d.type in ["town", "castle"]:
+			continue
+		if d.faction == f:
+			orig += 1
+		if GS.settlements[sid].faction == f:
+			held += 1
+	return [orig, held]
+
+func _restrained(f: String) -> bool:
+	return GS.day() < int(GS.flags.get("restrained_until_" + f, -1))
+
+## The balance Warband lacks: when one power swallows its neighbours (half
+## again its own strongholds, and at least two more), the Avatar comes to
+## the table -- or, while the Avatar is a child nobody has told, the abbots
+## of the Air Temples -- and the conqueror makes peace with everyone it has
+## been taking land from, then may start no war for sixty days.
+func _restrain_conquerors() -> void:
+	for f in Data.KINGDOMS:
+		if f == "player" or _restrained(f) or GS.day() - int(GS.flags.get("restrained_day_" + f, -999)) < 120:
+			continue
+		var r := _land_ratio(f)
+		if r[0] == 0 or r[1] < r[0] * 1.5 or r[1] - r[0] < 2:
+			continue
+		var made := []
+		for k in Data.KINGDOMS:
+			if k != f and GS.at_war(f, k) and _land_loss(k) > 0.0:
+				GS.make_peace(f, k)
+				made.append(Data.factions[k].name)
+		if made.is_empty():
+			continue
+		GS.flags["restrained_until_" + f] = GS.day() + 60
+		GS.flags["restrained_day_" + f] = GS.day()
+		var who: String = AvatarSys.display_name().capitalize() if AvatarSys.stage() != "child" else "The abbots of the four Air Temples"
+		GS.log_msg("%s will not watch the %s swallow its neighbours. Peace is made with the %s, and the %s will start no war for a season." % [
+			who, Data.factions[f].name, ", the ".join(made), Data.factions[f].get("short", Data.factions[f].name)], Color(0.85, 0.9, 1))
+
 func _land_loss(f: String) -> float:
 	var orig := 0
 	var held := 0
