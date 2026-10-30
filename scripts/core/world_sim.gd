@@ -1220,7 +1220,14 @@ func spawn_bandit(idx: int) -> void:
 	var sp: Dictionary = Data.bandit_spawns[idx]
 	if sp.name == "Sandbenders" and GS.flags.get("sand_clan_safe", false):
 		return   # Kesi's clan has water now
-	var p := GS.make_party("", sp.name, "bandit", sp.faction, Terrain.random_land_near(sp.pos, 40.0))
+	# Outlaws keep away from town walls, as in Warband: re-roll a camp
+	# that lands at a town's or castle's gate.
+	var at := Terrain.random_land_near(sp.pos, 40.0)
+	for tries in 6:
+		if not _near_walls(at, 20.0):
+			break
+		at = Terrain.random_land_near(sp.pos, 40.0)
+	var p := GS.make_party("", sp.name, "bandit", sp.faction, at)
 	p.spawn = idx
 	p.anchor = sp.pos
 	# Outlaw bands start small and grow bolder as the war drags on
@@ -1228,6 +1235,13 @@ func spawn_bandit(idx: int) -> void:
 	for i in n:
 		Roster.add(p.roster, sp.troops.pick_random(), 1)
 	p.gold = 50 + randi() % 150
+
+func _near_walls(pos: Vector2, radius: float) -> bool:
+	for sid in Data.settlements:
+		var d: Dictionary = Data.settlements[sid]
+		if d.type in ["town", "castle"] and d.pos.distance_to(pos) < radius:
+			return true
+	return false
 
 func spawn_quest_bandits(sid: String, qid: String) -> String:
 	var pos: Vector2 = Data.settlements[sid].pos

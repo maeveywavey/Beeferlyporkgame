@@ -67,7 +67,7 @@ const DIALOGUES := {
 	# Prologue: the courier
 	# -----------------------------------------------------------------------
 	"ms_prologue": {"title": "The Courier", "start": "a", "nodes": {
-		"a": {"who": "narrator", "text": "Dusk. A man in torn orange robes stumbles out of the brush and nearly falls into your cookfire. There is an arrow in his shoulder, and an oilcloth packet clutched to his chest as if it were the arrow that mattered.", "next": "b"},
+		"a": {"who": "narrator", "text": "A man in torn orange robes stumbles out of the brush and nearly falls into your cookfire. There is an arrow in his shoulder, and an oilcloth packet clutched to his chest as if it were the arrow that mattered.", "next": "b"},
 		"b": {"who": "norbu", "expr": "pain", "text": "Forgive me. I'm told it's rude to bleed on strangers. I'm Norbu, of the Eastern Air Temple. There are men behind me — daofei, but not the usual kind. Someone is paying them very well.", "next": "c"},
 		"c": {"who": "norbu", "expr": "afraid", "text": "Southern divers brought this up from the wreck of the Lantern. You know the ship. Everyone knows the ship. It's a page of the Avatar's logbook, and I was told to carry it to someone who wanted nothing from it.", "next": "d"},
 		"d": {"who": "norbu", "expr": "sad", "text": "I couldn't find anyone like that. So I'm giving it to you, and hoping. Please — take it to Abbess Tsering at the Eastern Air Temple. Torches, there, on the ridge. They're close.", "choices": [
@@ -82,7 +82,7 @@ const DIALOGUES := {
 		"fight": {"who": "norbu", "expr": "determined", "text": "I won't fight. But I'll keep breathing, which is going to annoy them. Thank you.",
 			"do": [["flag", "ms_packet", true], ["flag", "ms_norbu_fight", true], ["flag_day", "ms_norbu_fight_day"], ["page", 1],
 				["journal", "ms_main", "The Drowned Testament", "Brother Norbu, a wounded Air Nomad courier, gave you a page from the drowned Avatar's logbook. Daofei hunters are close. Defeat them, then take the packet to Abbess Tsering at the Eastern Air Temple."],
-				["spawn", "norbu_hunters"]]},
+				["fight", "norbu_hunters"]]},
 		"run": {"who": "narrator", "text": "You get his arm over your shoulder and go. He is lighter than he should be. The torches follow you for an hour, then lose you in a streambed, and by then he is very quiet.", "next": "run2"},
 		"run2": {"who": "norbu", "expr": "tender", "text": "That's far enough. No — sit with me. I don't mind dying, I think. I mind not knowing whether it worked. Tell the Abbess I'm sorry about the bison. She'll know.", "next": "run3"},
 		"run3": {"who": "narrator", "text": "He dies before moonrise. You bury him under a pine, because you don't know how the Nomads do it, and it seems better than nothing. The packet is dry. He made sure of that.",

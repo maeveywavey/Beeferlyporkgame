@@ -18,8 +18,8 @@ const TRIGGERS := [
 ]
 
 const OPTIONS := [
-	{"sid": "southern_tribe", "text": "Train with Master Yura on the canals", "dlg": "wx_yura", "if": {"bend": "water"}},
-	{"sid": "agna_qela", "text": "Train on the ice with Master Aklaq and Elder Pana", "dlg": "wx_north", "if": {"bend": "water"}},
+	{"sid": "southern_tribe", "text": "Train with Master Yura on the canals", "dlg": "wx_yura", "service": true, "if": {"bend": "water"}},
+	{"sid": "agna_qela", "text": "Train on the ice with Master Aklaq and Elder Pana", "dlg": "wx_north", "service": true, "if": {"bend": "water"}},
 	{"sid": "foggy_swamp", "text": "Go with Huan to the great banyan", "dlg": "wx_banyan", "if": {"companion": "huan", "flag": "huan_q", "not_flag": "huan_found"}},
 	{"sid": "agrarian_vale", "text": "Find out who dammed the river", "dlg": "wx_dam", "if": {"flag": "huan_found", "not_flag": "huan_done"}},
 	{"sid": "spirit_fishery", "text": "Walk the last of the Moon's Road", "dlg": "wx_moon_end", "if": {"flag": "wx_moon_road", "not_flag": "wx_master", "cosmic": "full_moon"}},

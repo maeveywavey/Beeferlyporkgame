@@ -21,10 +21,10 @@ const TRIGGERS := [
 ]
 
 const OPTIONS := [
-	{"sid": "southern_air_temple", "text": "Train with Abbot Dorje", "dlg": "ax_dorje", "if": {"bend": "air"}},
-	{"sid": "northern_air_temple", "text": "Train with Abbot Lhakpa", "dlg": "ax_lhakpa", "if": {"bend": "air"}},
-	{"sid": "eastern_air_temple", "text": "Sit with Abbess Tsering", "dlg": "ax_tsering", "if": {"bend": "air"}},
-	{"sid": "western_air_temple", "text": "Train with Abbess Yeshe", "dlg": "ax_yeshe", "if": {"bend": "air"}},
+	{"sid": "southern_air_temple", "text": "Train with Abbot Dorje", "dlg": "ax_dorje", "service": true, "if": {"bend": "air"}},
+	{"sid": "northern_air_temple", "text": "Train with Abbot Lhakpa", "dlg": "ax_lhakpa", "service": true, "if": {"bend": "air"}},
+	{"sid": "eastern_air_temple", "text": "Sit with Abbess Tsering", "dlg": "ax_tsering", "service": true, "if": {"bend": "air"}},
+	{"sid": "western_air_temple", "text": "Train with Abbess Yeshe", "dlg": "ax_yeshe", "service": true, "if": {"bend": "air"}},
 	{"sid": "full_moon_bay", "text": "Look for the stolen bison calves with Yangzom", "dlg": "ax_herd", "if": {"companion": "yangzom", "flag": "yangzom_q", "not_flag": "yangzom_done"}},
 	{"sid": "eastern_air_temple", "text": "Receive the arrows", "dlg": "ax_arrows", "if": {"flags": ["ax_t_dorje", "ax_t_lhakpa", "ax_t_tsering", "ax_t_yeshe"], "not_flag": "ax_master"}},
 ]

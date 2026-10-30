@@ -20,10 +20,10 @@ const TRIGGERS := [
 ]
 
 const OPTIONS := [
-	{"sid": "omashu", "text": "Train with the boulder masters", "dlg": "ex_boulder", "if": {"bend": "earth"}},
+	{"sid": "omashu", "text": "Train with the boulder masters", "dlg": "ex_boulder", "service": true, "if": {"bend": "earth"}},
 	{"sid": "ba_sing_se", "text": "Find Bo Lai, who sealed the tunnel", "dlg": "ex_bolai", "if": {"bend": "earth", "flag": "hana_spared"}},
-	{"sid": "ba_sing_se", "text": "Petition to study at the Censorate academy", "dlg": "ex_academy", "if": {"bend": "earth", "standing": 2, "call": "ex_academy_ok"}},
-	{"sid": "two_lovers", "text": "Find Old Shan in the tunnels", "dlg": "ex_shan", "if": {}},
+	{"sid": "ba_sing_se", "text": "Petition to study at the Censorate academy", "dlg": "ex_academy", "service": true, "if": {"bend": "earth", "standing": 2, "call": "ex_academy_ok"}},
+	{"sid": "two_lovers", "text": "Find Old Shan in the tunnels", "dlg": "ex_shan", "service": true, "if": {}},
 	{"sid": "gaoling", "text": "Go with Gao Ming to the Cheng family's jade seam", "dlg": "ex_seam", "if": {"companion": "gao_ming", "flag": "gao_q", "not_flag": "gao_done"}},
 ]
 

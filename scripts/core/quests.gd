@@ -85,6 +85,17 @@ static func generate_lord(lid: String) -> Dictionary:
 	for sid in GS.settlements:
 		if Data.settlements[sid].type == "village" and GS.at_war(f, GS.settlements[sid].faction) and GS.settlements[sid].looted_until < GS.hours:
 			villages.append(sid)
+	# As in Warband, a lord trusts a nobody with errands, not with his war:
+	# below 50 renown, clear the roads; raids from 50; armies from 100.
+	var renown: int = GS.player.renown
+	if renown < 50 or villages.is_empty() and (renown < 100 or enemies.is_empty()):
+		q.type = "bandits"
+		q.reward = 200 + randi() % 100
+		q.title = "Clear the roads for %s" % Data.lords[lid].name
+		q.desc = "%s says outlaws are preying on travellers near %s. Destroy them and you will be paid %d gold." % [Data.lords[lid].name, Data.settlements[home].name, q.reward]
+		return q
+	if renown < 100:
+		enemies = []
 	if not enemies.is_empty() and (villages.is_empty() or randf() < 0.6):
 		q.type = "defeat_lord"
 		q.target = enemies.pick_random()
@@ -97,8 +108,6 @@ static func generate_lord(lid: String) -> Dictionary:
 		q.reward = 450
 		q.title = "Raid %s" % Data.settlements[q.target].name
 		q.desc = "%s wants the enemy village of %s raided to weaken its lord. Reward: %d gold." % [Data.lords[lid].name, Data.settlements[q.target].name, q.reward]
-	else:
-		return {}
 	return q
 
 static func on_raid(sid: String) -> void:

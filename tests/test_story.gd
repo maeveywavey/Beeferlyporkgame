@@ -7,7 +7,7 @@ const Endings = preload("res://scripts/story/endings.gd")
 const Roster = preload("res://scripts/core/roster.gd")
 
 const OPS := ["approval", "flag", "flag_day", "gold", "renown", "honor", "xp", "rel", "lord_rel", "peace", "war", "journal",
-	"journal_done", "join", "leave", "away", "companion_mod", "spawn", "close_windows", "wait", "prosperity", "item", "troops",
+	"journal_done", "join", "leave", "away", "companion_mod", "spawn", "fight", "close_windows", "wait", "prosperity", "item", "troops",
 	"heal", "queue", "page", "log", "skill_points", "attr_points", "standing", "call", "infamy", "av_attitude", "learn", "master", "comp_tech", "good"]
 const CONDS := ["flag", "not_flag", "flags", "eq", "has_page", "companion", "no_companion", "gold", "standing", "approval", "rel",
 	"bend", "renown", "skill", "day", "days_since", "pages", "at", "owns", "peace_with", "pronouns", "call", "near_faction", "era", "tech", "no_tech", "bends", "master", "season", "cosmic", "forms_uses", "duel_wins", "techs"]
@@ -111,7 +111,7 @@ func _check_effects(where: String, effects: Array) -> void:
 			_err("%s: unknown faction %s" % [where, e[1]])
 		if e[0] == "prosperity" and not Data.settlements.has(e[1]):
 			_err("%s: unknown settlement %s" % [where, e[1]])
-		if e[0] == "spawn" and not Story._spawns.has(e[1]):
+		if e[0] in ["spawn", "fight"] and not Story._spawns.has(e[1]):
 			_err("%s: unknown spawn %s" % [where, e[1]])
 		if e[0] == "queue" and not Story.has_dialogue(e[1]):
 			_err("%s: queue missing %s" % [where, e[1]])

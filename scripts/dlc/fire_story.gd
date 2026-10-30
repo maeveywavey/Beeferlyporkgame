@@ -20,8 +20,8 @@ const TRIGGERS := [
 ]
 
 const OPTIONS := [
-	{"sid": "fire_fountain", "text": "Visit Mistress Ikari's duelling hall", "dlg": "fx_hall", "if": {"bend": "fire"}},
-	{"sid": "cinder_monastery", "text": "Climb to the Cinder Monastery", "dlg": "fx_monastery", "if": {}},
+	{"sid": "fire_fountain", "text": "Visit Mistress Ikari's duelling hall", "dlg": "fx_hall", "service": true, "if": {"bend": "fire"}},
+	{"sid": "cinder_monastery", "text": "Climb to the Cinder Monastery", "dlg": "fx_monastery", "service": true, "if": {}},
 	{"sid": "crescent_island", "text": "Bring the First Flame's ember to the Fire Sages", "dlg": "fx_ember_arrive", "if": {"flag": "fx_ember", "not_flag": "fx_ember_delivered"}},
 	{"sid": "cinder_monastery", "text": "Return to Kazan for the last part of the trial", "dlg": "fx_trial_final", "if": {"flag": "fx_ember_delivered", "not_flag": "fx_master"}},
 	{"sid": "ember_island", "text": "Find Daisuke Ren, with Sayuri", "dlg": "fx_sayuri_daisuke", "if": {"companion": "sayuri", "flag": "sayuri_q", "not_flag": "sayuri_challenge"}},

@@ -83,7 +83,7 @@ func _build_main(o: VBoxContainer) -> void:
 	# Story beats available here (quests, companions, the logbook)
 	if not hostile or d.type in ["ruin", "temple"]:
 		for so in Story.settlement_options(sid):
-			o.add_child(UI.option("★ " + so.text, _story_option.bind(so)))
+			o.add_child(UI.option(("" if so.get("service", false) else "★ ") + so.text, _story_option.bind(so)))
 	# The Avatar: rarely here, hard to reach even then
 	if AvatarSys.present_at(sid) and not AvatarSys.hostile():
 		var tried: bool = int(AvatarSys.state().get("audience_day", -99)) == GS.day()
@@ -558,8 +558,9 @@ func _explore() -> void:
 			GS.player.attrs.int += 1
 			GS.give_player_xp(400)
 		"two_lovers":
-			txt = "You give up your torch, as the old song says to, and the crystals in the ceiling light the way. At the centre of the maze, between two stone tombs, pilgrims have left offerings for a thousand years: you leave one too, and take the old coins a badgermole has dug up and left in a heap like a joke. (+600 gold)"
-			GS.add_gold(600)
+			txt = "You give up your torch, as the old song says to, and the crystals in the ceiling light the way. At the centre of the maze, between two stone tombs, pilgrims have left offerings for a thousand years: you leave one too, and take the few old coins a badgermole has dug up and left in a heap like a joke. Finding the way out takes the rest of the day. (+120 gold, a day lost in the tunnels)"
+			GS.add_gold(120)
+			GS.sim.advance(20.0)
 		_:
 			txt = "You find nothing of interest."
 	GS.add_renown(5)

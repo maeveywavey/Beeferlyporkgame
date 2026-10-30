@@ -313,6 +313,11 @@ func close_all_windows() -> void:
 
 func _on_window_closed() -> void:
 	_refresh_banners()
+	var fid: String = GS.flags.get("story_fight", "")
+	if fid != "" and not is_modal_open():
+		GS.flags.erase("story_fight")
+		if GS.parties.has(fid):
+			GS.start_battle.call_deferred([fid])
 
 func _open_camp() -> void:
 	if not is_modal_open():
@@ -547,12 +552,15 @@ func _update_parties(delta: float) -> void:
 var _story_marks := {}
 var _story_marks_t := 0.0
 
-## Settlements where a story beat is waiting get a gold star on the map.
+## Settlements where a story beat is waiting get a gold star on the map;
+## teachers and other standing services do not.
 func _refresh_story_marks() -> void:
 	_story_marks = {}
 	for sid in Data.settlements:
-		if not Story.settlement_options(sid).is_empty():
-			_story_marks[sid] = true
+		for o in Story.settlement_options(sid):
+			if not o.get("service", false):
+				_story_marks[sid] = true
+				break
 
 func _update_labels() -> void:
 	_story_marks_t -= get_process_delta_time()

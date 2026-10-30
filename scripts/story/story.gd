@@ -314,6 +314,12 @@ static func apply(effects: Array, map = null) -> void:
 				GS.companion_state(e[1]).away_until = GS.hours + 24.0 * float(e[2])
 			"companion_mod": GS.companion_state(e[1])[e[2]] = e[3]
 			"spawn": spawn(e[1])
+			# Spawn an ambush and fight it as soon as the conversation closes,
+			# alone: nobody else on the road joins a story fight.
+			"fight":
+				var fid := spawn(e[1])
+				if fid != "":
+					GS.flags.story_fight = fid
 			"close_windows":
 				if map != null:
 					map.close_all_windows()
