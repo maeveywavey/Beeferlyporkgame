@@ -107,7 +107,7 @@ func build() -> void:
 	var rl := OptionButton.new()
 	for k in ["off", "light", "heavy"]:
 		rl.add_item(k.capitalize())
-	rl.selected = ["off", "light", "heavy"].find(String(GS.settings.get("retro", "heavy")))
+	rl.selected = ["off", "light", "heavy"].find(String(GS.settings.get("retro", "light")))
 	rl.item_selected.connect(func(i):
 		GS.settings.retro = ["off", "light", "heavy"][i]
 		GS.apply_settings())
