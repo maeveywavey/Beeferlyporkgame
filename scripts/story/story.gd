@@ -327,7 +327,7 @@ static func apply(effects: Array, map = null) -> void:
 			"queue": queue(e[1])
 			"page": give_page(int(e[1]))
 			"log": GS.log_msg(fmt(e[1]), Color(1, 0.85, 0.55))
-			"skill_points": GS.player.skill_points += int(e[1])
+			"skill_points", "attr_points": GS.player.attr_points += int(e[1])
 			"standing": GS.raise_standing(e[1])
 			"infamy": AvatarSys.add_infamy(int(e[1]), GS.player_party().pos, e[2] if e.size() > 2 else "")
 			"learn": Tech.learn(e[1])

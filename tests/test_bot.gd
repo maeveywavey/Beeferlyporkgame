@@ -129,16 +129,9 @@ func _visit(sid: String) -> void:
 func _spend_points() -> void:
 	var pl: Dictionary = GS.player
 	while pl.attr_points > 0:
-		pl.attrs[["str", "cha", "int", "agi"][randi() % 4]] += 1
+		var a: String = GS.ATTRS[randi() % GS.ATTRS.size()]
+		pl.attrs[a] = GS.attr(a) + 1
 		pl.attr_points -= 1
-	var order := ["leadership", "trainer", "ironflesh", "power_strike", "tactics", "healing", "pathfinding", "weapon_mastery"]
-	var guard := 0
-	while pl.skill_points > 0 and guard < 50:
-		guard += 1
-		var sk: String = order[randi() % order.size()]
-		if pl.skills[sk] < GS.skill_cap(sk):
-			pl.skills[sk] += 1
-			pl.skill_points -= 1
 
 func _upgrade() -> void:
 	var roster: Array = GS.player_party().roster

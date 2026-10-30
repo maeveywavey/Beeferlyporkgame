@@ -278,7 +278,7 @@ static func mastery_score() -> float:
 	var pl: Dictionary = GS.player
 	if pl.get("bend", "") == "":
 		return 0.0
-	var s := float(pl.skills.get("bending", 0)) * 6.0 + minf(float(pl.level), 40.0)
+	var s := float(GS.skill("bending")) * 6.0 + minf(float(pl.level), 40.0)
 	var uses := 0
 	for f in pl.get("forms", []):
 		uses += int(f.get("uses", 0))

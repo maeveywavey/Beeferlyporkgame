@@ -20,7 +20,7 @@ func _ready() -> void:
 	var bend_arg := "earth" if mode == "avatar" else elem
 	var p := GS.create_player("Tester", bg.get(bend_arg, "ek_refugee"), bend_arg, Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 	GS.new_game(p)
-	GS.player.skills.bending = 6
+	GS.player.skill_bonus.bending = 6
 	GS.player.equip.ranged = "short_bow"
 	Roster.add(GS.player_party().roster, "ek_soldier", 15)
 	Roster.add(GS.player_party().roster, "ek_archer", 8)

@@ -445,7 +445,7 @@ func _build_council(o: VBoxContainer) -> void:
 func _council_motion(k: String, motion: String) -> void:
 	GS.flags.council_day = GS.day()
 	var rel := float(GS.player.get("faction_rel", {}).get("southern_water", 0))
-	var chance := clampf(0.2 + GS.player.attrs.cha * 0.03 + GS.skill("leadership") * 0.03 + rel / 250.0 + GS.player.renown / 2500.0, 0.05, 0.85)
+	var chance := clampf(0.2 + GS.attr("vit") * 0.015 + GS.skill("leadership") * 0.03 + rel / 250.0 + GS.player.renown / 2500.0, 0.05, 0.85)
 	if randf() < chance:
 		if motion == "peace":
 			GS.make_peace("southern_water", k)
@@ -502,8 +502,8 @@ func _explore() -> void:
 	var txt := ""
 	match sid:
 		"wan_shi_tong":
-			txt = "A great owl watches you from the shadows while you read. You find a Fire Sage's reckoning of the Great Comet's returns, century by century, and a treatise on command annotated in four hands. The owl watches what you copy. (+1 Tactics, +400 xp)"
-			GS.player.skills.tactics += 1
+			txt = "A great owl watches you from the shadows while you read. You find a Fire Sage's reckoning of the Great Comet's returns, century by century, and a treatise on command annotated in four hands. The owl watches what you copy. (+1 Intelligence, +400 xp)"
+			GS.player.attrs.int += 1
 			GS.give_player_xp(400)
 		"two_lovers":
 			txt = "You give up your torch, as the old song says to, and the crystals in the ceiling light the way. At the centre of the maze, between two stone tombs, pilgrims have left offerings for a thousand years: you leave one too, and take the old coins a badgermole has dug up and left in a heap like a joke. (+600 gold)"
@@ -596,7 +596,7 @@ func _build_arena(o: VBoxContainer) -> void:
 	o.add_child(UI.option("Back", func(): _go("main")))
 
 func _pai_sho() -> void:
-	var chance = 0.4 + GS.player.attrs.int * 0.012 + GS.skill("tactics") * 0.02
+	var chance = 0.4 + GS.attr("int") * 0.008 + GS.attr("lck") * 0.006 + GS.skill("tactics") * 0.02
 	if randf() < chance:
 		GS.add_gold(50)
 		note = ["You hold your lotus tile back until the last move, and it wins the game. Your opponent bows. (+50 gold)", "A clever arrangement of tiles wins the game. (+50 gold)"].pick_random()

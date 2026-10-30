@@ -94,7 +94,7 @@ static func doer_name(who: String) -> String:
 ## Skill of whoever does the work, on the player's 0-10 bending scale.
 static func strength(who: String) -> int:
 	if who == "player":
-		return int(GS.player.skills.get("bending", 0))
+		return GS.skill("bending")
 	var cs: Dictionary = GS.companion_state(who)
 	return int(round(float(cs.get("power", Data.companions.get(who, {}).get("power", 1.0))) * 4.0))
 

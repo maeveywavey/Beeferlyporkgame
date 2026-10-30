@@ -1,5 +1,5 @@
 extends "res://scripts/ui/window_base.gd"
-## Character sheet: attributes, skills and stats.
+## Character sheet: the nine attributes and what they make of you.
 
 var map
 
@@ -20,42 +20,42 @@ func build() -> void:
 	var cols := UI.hbox(30)
 	content.add_child(cols)
 	# Attributes
-	var left := UI.vbox(6)
+	var left := UI.vbox(4)
 	cols.add_child(left)
-	left.add_child(UI.label("Attributes (%d points)" % pl.attr_points, 19, UI.BROWN))
-	var ad := {"str": "Strength — hit points, damage", "agi": "Agility — speed, weapon skills", "int": "Intelligence — bending, tactics, skill points", "cha": "Charisma — party size, leadership"}
-	for a in ["str", "agi", "int", "cha"]:
-		var row := UI.hbox()
-		var l := UI.label("%s: %d" % [a.to_upper(), pl.attrs[a]], 17)
-		l.custom_minimum_size.x = 90
+	left.add_child(UI.label("Attributes  (%d to spend)" % pl.attr_points, 19, UI.BROWN))
+	var feeds := _feeds()
+	for a in GS.ATTRS:
+		var row := UI.hbox(8)
+		var l := UI.label("%s" % GS.ATTR_NAME[a], 17)
+		l.custom_minimum_size.x = UI.px(118)
 		row.add_child(l)
+		var v := UI.label(str(GS.attr(a)), 17)
+		v.custom_minimum_size.x = UI.px(30)
+		row.add_child(v)
 		row.add_child(UI.button("+", _add_attr.bind(a), 34, pl.attr_points > 0))
-		row.add_child(UI.label(ad[a], 14, UI.BROWN))
+		var d := UI.label(feeds.get(a, ""), 13, UI.BROWN)
+		d.tooltip_text = GS.ATTR_DESC[a]
+		d.mouse_filter = Control.MOUSE_FILTER_PASS
+		row.add_child(d)
+		l.tooltip_text = GS.ATTR_DESC[a]
+		l.mouse_filter = Control.MOUSE_FILTER_PASS
 		left.add_child(row)
-	left.add_child(UI.spacer(10))
-	left.add_child(UI.label("Faction standing", 19, UI.BROWN))
+	# What the attributes add up to
+	var right := UI.vbox(3)
+	cols.add_child(right)
+	right.add_child(UI.label("What they make of you", 19, UI.BROWN))
+	if pl.bend != "":
+		var ea: Array = GS.ELEMENT_ATTRS[pl.bend]
+		right.add_child(UI.rich("[b]%s: %d[/b]  [i](Attunement, with %s and %s)[/i]" % [Data.element_name(pl.bend), GS.skill("bending"), GS.ATTR_NAME[ea[0]], GS.ATTR_NAME[ea[1]]], 520))
+	else:
+		right.add_child(UI.rich("[i]You do not bend. Attunement still deepens your chi.[/i]", 520))
+	right.add_child(UI.rich("Health [b]%d[/b]   Chi [b]%d[/b]   Melee [b]+%d%%[/b]   Party up to [b]%d[/b]" % [GS.max_hp(), int(GS.max_chi()), int(GS.skill("power_strike") * 8 + GS.attr("str")), GS.party_limit()], 520))
+	right.add_child(UI.spacer(8))
+	right.add_child(UI.label("Faction standing", 19, UI.BROWN))
 	for f in Data.KINGDOMS:
 		var rel: int = pl.faction_rel.get(f, 0)
 		var war := GS.at_war(GS.player_faction(), f)
-		left.add_child(UI.label("%s: %d%s" % [Data.factions[f].name, rel, "  (at war)" if war else ""], 15, UI.RED if war else UI.INK))
-	# Skills
-	var right := UI.vbox(3)
-	cols.add_child(right)
-	right.add_child(UI.label("Skills (%d points) — max = governing attribute / 2" % pl.skill_points, 19, UI.BROWN))
-	for s in GS.SKILLS:
-		var row2 := UI.hbox()
-		var cap := GS.skill_cap(s)
-		var val: int = pl.skills[s]
-		var bonus := GS.skill(s) - val
-		var l2 := UI.label("%s: %d%s" % [s.replace("_", " ").capitalize(), val, (" (+%d)" % bonus) if bonus > 0 else ""], 16)
-		l2.custom_minimum_size.x = 190
-		l2.tooltip_text = GS.SKILL_DESC[s]
-		l2.mouse_filter = Control.MOUSE_FILTER_PASS
-		row2.add_child(l2)
-		var can: bool = pl.skill_points > 0 and val < cap and not (s == "bending" and pl.bend == "")
-		row2.add_child(UI.button("+", _add_skill.bind(s), 34, can))
-		row2.add_child(UI.label("[%s, cap %d] %s" % [GS.SKILL_ATTR[s].to_upper(), cap, GS.SKILL_DESC[s]], 13, UI.BROWN))
-		right.add_child(row2)
+		right.add_child(UI.label("%s: %d%s" % [Data.factions[f].name, rel, "  (at war)" if war else ""], 15, UI.RED if war else UI.INK))
 	var b := UI.hbox()
 	content.add_child(b)
 	if GS.player.bend != "":
@@ -67,20 +67,21 @@ func build() -> void:
 	b.add_child(UI.expand())
 	b.add_child(UI.button("Done", close, 120))
 
+## A short line on what each attribute feeds, for this character.
+func _feeds() -> Dictionary:
+	var out := {"vig": "health", "att": "bending, chi" if GS.player.bend != "" else "chi (no bending)", "end": "running, travel",
+		"vit": "toughness, command", "str": "melee, drilling", "dex": "weapons, archery, riding", "int": "tactics, trade, medicine",
+		"spi": "the spiritual", "lck": "bargains, finds"}
+	if GS.player.bend != "":
+		for a in GS.ELEMENT_ATTRS[GS.player.bend]:
+			out[a] += ", %s" % Data.element_name(GS.player.bend).to_lower()
+	return out
+
 func _add_attr(a: String) -> void:
 	if GS.player.attr_points <= 0:
 		return
 	GS.player.attr_points -= 1
-	GS.player.attrs[a] += 1
-	if a == "str":
-		GS.player.hp += 2
-	refresh()
-
-func _add_skill(s: String) -> void:
-	if GS.player.skill_points <= 0 or GS.player.skills[s] >= GS.skill_cap(s):
-		return
-	GS.player.skill_points -= 1
-	GS.player.skills[s] += 1
-	if s == "ironflesh":
+	GS.player.attrs[a] = GS.attr(a) + 1
+	if a == "vig":
 		GS.player.hp += 4
 	refresh()

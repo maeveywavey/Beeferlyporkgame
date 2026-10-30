@@ -22,17 +22,38 @@ const SETTINGS_PATH := "user://settings.cfg"
 const SEASONS := ["Winter", "Spring", "Summer", "Autumn"]
 const DAYS_PER_SEASON := 90
 
+## Attributes, after Dark Souls 3's, with Spirit in place of Faith. Points
+## come from levels (two per level) and a few deeds. Everything the game used
+## to call a skill is now worked out from these (skill()).
+const ATTRS := ["vig", "att", "end", "vit", "str", "dex", "int", "spi", "lck"]
+const ATTR_NAME := {"vig": "Vigor", "att": "Attunement", "end": "Endurance", "vit": "Vitality", "str": "Strength",
+	"dex": "Dexterity", "int": "Intelligence", "spi": "Spirit", "lck": "Luck"}
+const ATTR_DESC := {
+	"vig": "Health and the will to keep standing.",
+	"att": "Bending and chi: the main root of every art. Means nothing to a non-bender's fists.",
+	"end": "Running, marching and enduring. Earth's patience lives here.",
+	"vit": "Toughness and presence; the confidence others follow. Fire draws on it.",
+	"str": "Melee damage and drilling troops. Fire draws on it.",
+	"dex": "Weapon skill, archery and riding. Air draws on it, and water's flow.",
+	"int": "Tactics, command, trade and medicine. Water's adaptability lives here.",
+	"spi": "How spiritual you are: attention to spirits, sacred places and stillness. Even a great deal of it does not make an ordinary person a bridge to the spirits; that is the Avatar's, and only the rarest old masters come near it. Air draws on its detachment.",
+	"lck": "Bargains, finds and the odd escape.",
+}
+const BASE_ATTR := 8
+## Each element's bending draws on Attunement (60%) and two other attributes.
+const ELEMENT_ATTRS := {"earth": ["end", "vig"], "water": ["int", "dex"], "air": ["dex", "spi"], "fire": ["str", "vit"]}
+## Old skills, now derived: the attributes they average.
+const DERIVED := {
+	"ironflesh": ["vig"], "power_strike": ["str"], "trainer": ["str", "int"],
+	"weapon_mastery": ["dex"], "archery": ["dex"], "athletics": ["end"], "riding": ["dex", "end"],
+	"leadership": ["vit", "int"], "trade": ["int", "lck"], "tactics": ["int"], "healing": ["int"],
+	"pathfinding": ["end", "int"],
+}
 const SKILLS := ["ironflesh", "power_strike", "weapon_mastery", "archery", "athletics", "riding",
 	"bending", "leadership", "trade", "tactics", "healing", "pathfinding", "trainer"]
-const SKILL_ATTR := {
-	"ironflesh": "str", "power_strike": "str", "trainer": "str",
-	"weapon_mastery": "agi", "archery": "agi", "athletics": "agi", "riding": "agi",
-	"bending": "int", "tactics": "int", "healing": "int", "pathfinding": "int",
-	"leadership": "cha", "trade": "cha",
-}
 const SKILL_DESC := {
-	"ironflesh": "Each point adds 4 hit points.",
-	"power_strike": "Each point adds 8% melee damage.",
+	"ironflesh": "Extra hit points.",
+	"power_strike": "Melee damage.",
 	"weapon_mastery": "Faster attacks and better blocking.",
 	"archery": "Ranged damage and accuracy.",
 	"athletics": "Running speed on foot.",
@@ -167,52 +188,52 @@ func _notification(what: int) -> void:
 # ---------------------------------------------------------------------------
 const BACKGROUNDS := {
 	"ek_refugee": {"name": "Strait Isles Refugee", "start": "omashu", "bends": ["earth", ""], "standing": "commoner",
-		"attrs": {"str": 1, "cha": 1}, "skills": {"athletics": 1, "trade": 1}, "gold": 350,
+		"attrs": {"end": 1, "vit": 2, "str": 2, "lck": 1}, "gold": 350,
 		"equip": {"weapon": "staff", "armor": "peasant_clothes", "helmet": "straw_hat"},
 		"troops": [["ek_peasant", 4]], "goods": {"rice": 6, "cabbages": 4}, "rel": {"fire_nation": -5},
 		"desc": "The Admiralty came to 'protect' your village in the Strait Isles and stayed until there was nothing left to protect. You crossed the strait in a borrowed boat with a staff, four neighbours and a grudge, and Omashu let you in when Ba Sing Se would not."},
 	"lower_ring": {"name": "Lower Ring Labourer", "start": "ba_sing_se", "bends": ["earth", ""], "standing": "commoner",
-		"attrs": {"str": 2}, "skills": {"ironflesh": 1, "trainer": 1}, "gold": 200,
+		"attrs": {"vig": 1, "str": 5}, "gold": 200,
 		"equip": {"weapon": "axe", "armor": "peasant_clothes"},
 		"troops": [["ek_peasant", 5]], "goods": {"rice": 8},
 		"desc": "You hauled stone in Ba Sing Se's Lower Ring for eleven years and never once saw the Upper Ring's gates open for someone like you. You are done waiting for them to."},
 	"fn_deserter": {"name": "Fire Nation Deserter", "start": "fire_fountain", "bends": ["fire", ""], "standing": "commoner",
-		"attrs": {"str": 1, "agi": 1}, "skills": {"weapon_mastery": 1, "tactics": 1}, "gold": 300,
+		"attrs": {"str": 2, "dex": 3, "int": 1}, "gold": 300,
 		"equip": {"weapon": "dao", "armor": "peasant_clothes"}, "rel": {"fire_nation": -5},
 		"troops": [["fn_conscript", 2]], "goods": {"fire_flakes": 6, "rice": 4},
 		"desc": "You were conscripted for the Strait Isles and served until the day you were ordered to burn a granary with a family still inside. You walked away that night, and two others walked with you."},
 	"fn_noble": {"name": "Fire Nation Minor Noble", "start": "caldera", "bends": ["fire", ""], "standing": "gentry",
-		"attrs": {"int": 1, "cha": 1}, "skills": {"leadership": 1, "weapon_mastery": 1}, "gold": 900,
+		"attrs": {"vit": 3, "dex": 1, "int": 2}, "gold": 900,
 		"equip": {"weapon": "jian", "armor": "peasant_clothes"}, "rel": {"fire_nation": 5},
 		"troops": [["fn_soldier", 3]], "goods": {"fire_flakes": 4, "rice": 4},
 		"desc": "Your house is old, small and deeply in debt. Your mother wants you to marry well; your creditors want their money; you want to be more than a name on a terraced wall in Caldera."},
 	"swt_warrior": {"name": "Southern Raider", "start": "southern_tribe", "bends": ["water", ""], "standing": "commoner",
-		"attrs": {"str": 1, "agi": 1}, "skills": {"archery": 1, "pathfinding": 1}, "gold": 450,
+		"attrs": {"end": 1, "str": 2, "dex": 3}, "gold": 450,
 		"equip": {"weapon": "war_club", "ranged": "boomerang", "armor": "water_parka", "helmet": "parka_hood"},
 		"troops": [["swt_villager", 5], ["swt_warrior", 2]], "goods": {"seal_jerky": 6, "sea_prunes": 4}, "rel": {"fire_nation": -5},
 		"desc": "You crewed a raider canoe under Qannik for three winters. Then one night the ship you boarded was full of fishermen, not soldiers. You came home, and you have not gone back out."},
 	"nwt_noble": {"name": "Northern Water Tribe Noble", "start": "agna_qela", "bends": ["water", ""], "standing": "gentry",
-		"attrs": {"int": 1, "cha": 1}, "skills": {"leadership": 1, "healing": 1}, "gold": 700,
+		"attrs": {"vit": 3, "int": 3}, "gold": 700,
 		"equip": {"weapon": "spear", "armor": "water_parka"},
 		"troops": [["nwt_hunter", 3]], "goods": {"seal_jerky": 5, "fish": 5},
 		"desc": "Born behind the ice walls of Agna Qel'a to a family with a seat on the council, you leave the North to see for yourself the wars it pretends are not its business."},
 	"merchant": {"name": "Wandering Merchant", "start": "gaoling", "bends": ["earth", ""], "standing": "citizen",
-		"attrs": {"cha": 2}, "skills": {"trade": 2, "pathfinding": 1}, "gold": 1300,
+		"attrs": {"end": 1, "vit": 4, "lck": 2}, "gold": 1300,
 		"equip": {"weapon": "jian", "armor": "peasant_clothes", "helmet": "straw_hat"},
 		"troops": [["merc_archer", 2]], "goods": {"tea": 4, "rice": 6},
 		"desc": "You have hauled goods from one end of the world to the other on credit from the Cheng family. Three wars are bad for most people. You are trying not to be the kind of person they are good for."},
 	"air_nomad": {"name": "Air Nomad Wanderer", "start": "southern_air_temple", "bends": ["air", ""], "standing": "commoner",
-		"attrs": {"agi": 1, "int": 1}, "skills": {"athletics": 1, "healing": 1}, "gold": 250,
+		"attrs": {"end": 1, "dex": 2, "int": 3}, "gold": 250,
 		"equip": {"weapon": "staff", "armor": "nomad_robes"}, "rel": {"air_nomads": 10},
 		"troops": [["an_novice", 2]], "goods": {"rice": 4, "cabbages": 4},
 		"desc": "The Southern Air Temple raised you to believe all people are one people. At sixteen you took a glider and went to find out whether the world agreed. It mostly does not. You have kept the vows so far. The temple will hear if you stop."},
 	"temple_courier": {"name": "Temple Courier", "start": "eastern_air_temple", "bends": ["air", ""], "standing": "citizen",
-		"attrs": {"agi": 1, "cha": 1}, "skills": {"pathfinding": 2, "riding": 1}, "gold": 400,
+		"attrs": {"end": 2, "vit": 2, "dex": 3}, "gold": 400,
 		"equip": {"weapon": "staff", "armor": "nomad_robes"}, "rel": {"air_nomads": 5},
 		"troops": [["an_novice", 1]], "goods": {"tea": 2, "rice": 6},
 		"desc": "For six years you carried letters between the four temples and every court that would receive a monk: by bison, on foot, once on a very confused ostrich horse. Every gate opens for a temple courier. You have started to wonder what is in the letters."},
 	"hamakaze": {"name": "Tide Warden Trainee", "start": "hamakaze", "bends": [""], "standing": "commoner",
-		"attrs": {"agi": 2}, "skills": {"weapon_mastery": 2, "athletics": 1}, "gold": 250,
+		"attrs": {"end": 1, "dex": 6}, "gold": 250,
 		"equip": {"weapon": "warden_glaive", "armor": "tide_armor"},
 		"troops": [["tw_initiate", 3]], "goods": {"fish": 6, "rice": 4},
 		"desc": "Trained on the beaches of Hamakaze, you leave with a glaive, a white headband and a fisherwoman's opinion of weather. Captain Oyama gave you one instruction: defend those who cannot defend themselves, and never confuse that with conquest."},
@@ -225,8 +246,7 @@ func create_player(pname: String, background: String, bend: String, skin: Color,
 	assert(bend in ["", "fire", "water", "earth", "air"], "the player is never the Avatar")
 	var p := {
 		"name": pname, "background": background, "bend": bend, "era": era, "infamy": 0, "techniques": [],
-		"attrs": {"str": 5, "agi": 5, "int": 5, "cha": 5},
-		"skills": {}, "level": 1, "xp": 0, "attr_points": 2, "skill_points": 4,
+		"attrs": {}, "skill_bonus": {}, "level": 1, "xp": 0, "attr_points": 2,
 		"hp": 1, "gold": bg.gold, "renown": 0, "honor": 0, "morale": 70.0, "victory_morale": 0.0,
 		"equip": {"weapon": "fists", "ranged": "", "armor": "", "helmet": "", "mount": ""},
 		"items": [], "goods": bg.goods.duplicate(), "faction": "", "status": "",
@@ -234,14 +254,16 @@ func create_player(pname: String, background: String, bend: String, skin: Color,
 		"start": bg.start, "captive_until": -1.0, "look": {"skin": skin, "hair": hair},
 		"standing": bg.get("standing", "commoner"),
 	}
-	for s in SKILLS:
-		p.skills[s] = 0
-	for a in bg.attrs:
-		p.attrs[a] += bg.attrs[a]
-	for s in bg.skills:
-		p.skills[s] += bg.skills[s]
+	for a in ATTRS:
+		p.attrs[a] = BASE_ATTR + int(bg.attrs.get(a, 0))
 	if bend != "":
-		p.skills.bending = 2
+		# a bender has trained their art since childhood
+		p.attrs.att += 6
+		for a in ELEMENT_ATTRS[bend]:
+			p.attrs[a] += 1
+	if background in ["air_nomad", "temple_courier"]:
+		p.attrs.spi += 3
+	if bend != "":
 		# every bender starts with one form of their art's martial basis
 		var Forms = load("res://scripts/battle/forms.gd")
 		var f: Dictionary = Forms.starter(Forms.art_of(bend))
@@ -692,29 +714,41 @@ func faction_lords(faction: String) -> Array:
 func player_party() -> Dictionary:
 	return parties.get("player", {})
 
+func attr(a: String) -> int:
+	return int(player.get("attrs", {}).get(a, BASE_ATTR))
+
+## Level of a derived skill (0 at base attributes, +1 per two points above).
 func skill(name: String) -> int:
-	var v: int = player.skills.get(name, 0)
+	var avg := 0.0
+	if name == "bending":
+		var bend: String = player.get("bend", "")
+		if bend == "" or not ELEMENT_ATTRS.has(bend):
+			return int(player.get("skill_bonus", {}).get("bending", 0))
+		avg = attr("att") * 0.6 + attr(ELEMENT_ATTRS[bend][0]) * 0.2 + attr(ELEMENT_ATTRS[bend][1]) * 0.2
+	else:
+		var src: Array = DERIVED.get(name, [])
+		for a in src:
+			avg += attr(a)
+		avg = avg / maxf(1.0, src.size()) if not src.is_empty() else float(BASE_ATTR)
+	var v: int = clampi(int((avg - BASE_ATTR) / 2.0), 0, 20) + int(player.get("skill_bonus", {}).get(name, 0))
 	# Companion bonuses
 	for c in player.companions:
 		var cd: Dictionary = Data.companions.get(c, {})
 		v += int(cd.get("bonus", {}).get(name, 0)) if name in ["healing", "pathfinding", "trainer", "tactics", "leadership", "trade"] else 0
 	return v
 
-func skill_cap(name: String) -> int:
-	return int(player.attrs[SKILL_ATTR[name]] / 2)
-
 func max_hp() -> int:
-	return 50 + player.attrs.str * 2 + player.skills.ironflesh * 4 + player.level * 2
+	return 20 + attr("vig") * 4 + attr("vit") + player.level * 2
 
 func max_chi() -> float:
-	var c: float = 60.0 + player.attrs.int * 3.0 + player.skills.bending * 8.0
+	var c: float = 30.0 + attr("att") * 4.0 + skill("bending") * 6.0
 	var b: Dictionary = player.get("buffs", {}).get("chi", {})
 	if not b.is_empty() and float(b.until) > hours:
 		c *= float(b.mult)
 	return c
 
 func party_limit() -> int:
-	var l: int = 12 + skill("leadership") * 5 + player.attrs.cha + int(player.renown / 25)
+	var l: int = 18 + skill("leadership") * 5 + int(player.renown / 25)
 	if player.get("status", "") == "vassal":
 		l += 10
 	return l
@@ -733,8 +767,7 @@ func give_player_xp(amount: int) -> void:
 	while player.xp >= xp_for_level(player.level):
 		player.xp -= xp_for_level(player.level)
 		player.level += 1
-		player.attr_points += 1
-		player.skill_points += 1 + int(player.attrs.int / 6)
+		player.attr_points += 2
 		log_msg("You have reached level %d! (C to spend points)" % player.level, Color(1, 0.9, 0.4))
 
 func add_gold(amount: int) -> void:
@@ -1071,6 +1104,29 @@ func save_game(path: String = SAVE_PATH) -> bool:
 func has_save(path: String = SAVE_PATH) -> bool:
 	return FileAccess.file_exists(path)
 
+## Saves from before the nine attributes: map the old four attributes and
+## the skill points onto the new ones.
+func _migrate_attributes() -> void:
+	var old: Dictionary = player.get("attrs", {})
+	if not old.has("agi"):
+		return
+	var na := {}
+	for a in ATTRS:
+		na[a] = BASE_ATTR
+	na.str += (int(old.get("str", 5)) - 5) * 2
+	na.dex += (int(old.get("agi", 5)) - 5) * 2
+	na.int += (int(old.get("int", 5)) - 5) * 2
+	na.vit += (int(old.get("cha", 5)) - 5) * 2
+	var sk: Dictionary = player.get("skills", {})
+	na.att += int(sk.get("bending", 0)) * 2
+	for s in DERIVED:
+		na[DERIVED[s][0]] += int(sk.get(s, 0))
+	player.attrs = na
+	player.attr_points = int(player.get("attr_points", 0)) + int(player.get("skill_points", 0))
+	player.erase("skills")
+	player.erase("skill_points")
+	player.skill_bonus = {}
+
 func load_game(path: String = SAVE_PATH) -> bool:
 	if not FileAccess.file_exists(path):
 		return false
@@ -1091,6 +1147,7 @@ func load_game(path: String = SAVE_PATH) -> bool:
 	flags = data.flags
 	next_id = data.next_id
 	pending_battle = {}
+	_migrate_attributes()
 	AvatarSys.ensure()
 	if player.get("companions", []).has("avatar"):
 		AvatarSys.register_companion()

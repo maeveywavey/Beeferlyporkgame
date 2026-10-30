@@ -144,7 +144,7 @@ func _sacrifice(p: Dictionary) -> void:
 	_leave(p)
 
 func _try_escape(p: Dictionary) -> void:
-	if randf() < 0.3 + GS.player.attrs.agi * 0.02:
+	if randf() < 0.3 + GS.attr("dex") * 0.01 + GS.attr("lck") * 0.01:
 		GS.log_msg("You slipped away into the wilds.", Color(0.7, 1, 0.7))
 		_leave(p)
 	else:

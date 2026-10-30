@@ -134,6 +134,6 @@ const DIALOGUES := {
 		"a": {"who": "narrator", "text": "The full moon turns the colour of rust. The swell of strength every waterbender feels on a full-moon night drains away at the same moment, as if a door had closed somewhere. Around your camp, people who have bent water since childhood sit very still and look up.", "next": "b"},
 		"b": {"who": "narrator", "text": "You sit with it. The moon's gift is gone for an hour; the bending is not. The water is where it always was, in the cup by your knee, in the dew on the grass. It answers you as it always has, a little more quietly. You were never commanding it. You were only ever in conversation.", "next": "c"},
 		"c": {"who": "narrator", "text": "When the moon comes back, the tide in you comes back slightly differently, as if it has heard something you said.",
-			"do": [["skill_points", 1], ["log", "The Red Moon taught you something about water. (+1 skill point)"]]},
+			"do": [["attr_points", 1], ["log", "The Red Moon taught you something about water. (+1 attribute point)"]]},
 	}},
 }

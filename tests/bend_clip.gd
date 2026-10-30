@@ -13,7 +13,7 @@ func _ready() -> void:
 	var p := GS.create_player("Hotaru", "fn_deserter", "fire", Color(0.82, 0.62, 0.5), Color(0.08, 0.06, 0.05))
 	GS.new_game(p)
 	GS.flags.seen_help = true
-	GS.player.skills.bending = 7
+	GS.player.skill_bonus.bending = 7
 	GS.player.forms = [Forms.starter("fire")]
 	var e := GS.make_party("", "Test", "bandit", "fire_nation", Vector2.ZERO)
 	Roster.add(e.roster, "fn_soldier", 8)

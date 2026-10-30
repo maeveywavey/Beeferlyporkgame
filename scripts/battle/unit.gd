@@ -229,8 +229,8 @@ func setup_player(p_team: int) -> void:
 	is_hero = true
 	max_hp = GS.max_hp()
 	armor = GS.player_armor()
-	skill = clampf((pl.skills.weapon_mastery * 8 + pl.attrs.agi * 2) / 100.0 + 0.3, 0.3, 0.98)
-	dmg_mult = 1.0 + pl.skills.power_strike * 0.08 + pl.attrs.str * 0.01
+	skill = clampf((GS.skill("weapon_mastery") * 8 + GS.attr("dex") * 2) / 100.0 + 0.3, 0.3, 0.98)
+	dmg_mult = 1.0 + GS.skill("power_strike") * 0.08 + GS.attr("str") * 0.01
 	weapon_id = pl.equip.get("weapon", "fists")
 	if weapon_id == "":
 		weapon_id = "fists"
@@ -239,10 +239,10 @@ func setup_player(p_team: int) -> void:
 	ranged_id = pl.equip.get("ranged", "")
 	bend = pl.bend
 	loadout = pl.get("loadout", {}).duplicate()
-	bend_skill = pl.skills.bending
-	bend_power = 1.0 + bend_skill * 0.08 + pl.attrs.int * 0.01
+	bend_skill = GS.skill("bending")
+	bend_power = 1.0 + bend_skill * 0.08 + GS.attr("att") * 0.01
 	mount_id = pl.equip.get("mount", "")
-	foot_speed = 5.0 * (1.0 + pl.skills.athletics * 0.03)
+	foot_speed = 5.0 * (1.0 + GS.skill("athletics") * 0.03)
 	_finish_setup(Looks.player_look())
 	hp = clampf(float(pl.hp), max_hp * 0.25, max_hp)
 	max_chi = GS.max_chi()
@@ -262,7 +262,7 @@ func _finish_setup(look: Dictionary) -> void:
 		mount_armor = m.armor
 		mount_speed = m.speed
 		if is_player:
-			mount_speed *= 1.0 + GS.player.skills.riding * 0.03
+			mount_speed *= 1.0 + GS.skill("riding") * 0.03
 		radius = 0.9
 	use_ranged = ranged_id != "" and not is_player
 	parts = UnitVisual.build(self, look)
@@ -505,7 +505,7 @@ func release_aim(point: Vector3) -> bool:
 	if blind_t > 0.0:
 		acc *= 0.4
 	if is_player:
-		acc = clampf(0.85 + GS.player.skills.archery * 0.03, 0.85, 1.0)
+		acc = clampf(0.85 + GS.skill("archery") * 0.03, 0.85, 1.0)
 	var from := chest() + forward() * 0.5
 	var dist := from.distance_to(point)
 	var spread := (1.0 - acc) * 0.35 * clampf(dist / 20.0, 0.4, 2.5)
@@ -517,7 +517,7 @@ func release_aim(point: Vector3) -> bool:
 	var t := dist / spd
 	dir.y += grav * t * 0.5 / spd
 	dir = dir.normalized()
-	var d: float = ranged.dmg * (1.0 + (GS.player.skills.archery * 0.08 if is_player else skill * 0.25))
+	var d: float = ranged.dmg * (1.0 + (GS.skill("archery") * 0.08 if is_player else skill * 0.25))
 	battle.spawn_projectile({
 		"owner_unit": self, "team": team, "vel": dir * spd, "gravity": grav, "dmg": d,
 		"dtype": "pierce" if ranged.model != "boomerang" else "blunt", "radius": 0.15,

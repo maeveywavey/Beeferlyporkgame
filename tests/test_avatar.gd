@@ -293,7 +293,7 @@ func _teacher() -> void:
 	var A: Dictionary = AvatarSys.state()
 	if A.order[0] != "earth":
 		_err("young water Avatar should learn earth first, not %s" % A.order[0])
-	GS.player.skills.bending = 10
+	GS.player.skill_bonus.bending = 10
 	GS.player.level = 40
 	GS.player.forms[0].uses = 400
 	GS.flags.duel_wins = 6

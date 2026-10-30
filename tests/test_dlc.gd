@@ -37,9 +37,9 @@ func _new(bg: String, bend: String) -> void:
 	GS.flags.seen_help = true
 	GS.flags.dlg_queue = []
 	GS.player.gold = 30000
-	GS.player.skills.bending = 10
-	GS.player.skills.healing = 4
-	GS.player.skills.trade = 4
+	GS.player.skill_bonus.bending = 10
+	GS.player.skill_bonus.healing = 4
+	GS.player.skill_bonus.trade = 4
 	GS.player.level = 30
 	GS.player.renown = 400
 	GS.player.standing = "gentry"
@@ -183,11 +183,11 @@ func _water() -> void:
 	# The Red Moon
 	GS.flags.cosmic = [{"kind": "lunar", "day": GS.day(), "from": 0.0, "to": 24.0}]
 	GS.hours = float(GS.day()) * 24.0 + 22.0
-	var sp: int = GS.player.skill_points
+	var sp: int = GS.player.attr_points
 	Story.fire("daily")
 	if _drain().has("wx_red_moon"):
 		_run("wx_red_moon")
-		if GS.player.skill_points != sp + 1:
+		if GS.player.attr_points != sp + 1:
 			_err("Red Moon gave no skill point")
 	else:
 		_err("Red Moon did not trigger during a lunar eclipse")
