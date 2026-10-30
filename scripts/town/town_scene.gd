@@ -26,7 +26,7 @@ const DYES := {
 	"fire": [Color(1, 1, 1), Color(1.05, 0.85, 0.8), Color(0.75, 0.7, 0.7), Color(1.0, 0.95, 0.8)],
 	"water": [Color(1, 1, 1), Color(0.85, 0.9, 1.05), Color(1.0, 0.95, 0.9)],
 	"south": [Color(1, 1, 1), Color(0.85, 0.9, 1.05), Color(0.95, 0.88, 0.8)],
-	"kyoshi": [Color(1, 1, 1), Color(0.9, 1.0, 0.95), Color(1.0, 0.92, 0.85)],
+	"hamakaze": [Color(1, 1, 1), Color(0.9, 1.0, 0.95), Color(1.0, 0.92, 0.85)],
 	"air": [Color(1, 1, 1), Color(1.05, 0.95, 0.85)],
 	"swamp": [Color(1, 1, 1), Color(0.85, 0.9, 0.75)],
 }
@@ -34,10 +34,10 @@ const ROBES := {
 	"earth": [Color(0.3, 0.46, 0.25), Color(0.62, 0.55, 0.36), Color(0.45, 0.32, 0.2), Color(0.75, 0.7, 0.55), Color(0.25, 0.38, 0.32)],
 	"omashu": [Color(0.38, 0.48, 0.22), Color(0.45, 0.3, 0.52), Color(0.66, 0.58, 0.4)],
 	"fire": [Color(0.6, 0.12, 0.08), Color(0.25, 0.12, 0.1), Color(0.75, 0.55, 0.25), Color(0.45, 0.08, 0.08)],
-	"kyoshi": [Color(0.2, 0.45, 0.35), Color(0.7, 0.6, 0.35)],
+	"hamakaze": [Color(0.2, 0.25, 0.42), Color(0.62, 0.3, 0.18)],
 	"swamp": [Color(0.4, 0.42, 0.25), Color(0.45, 0.35, 0.2)],
 }
-const HATS := {"earth": ["straw_hat", "straw_hat", "bandana"], "omashu": ["straw_hat", "bandana"], "fire": ["topknot", "fn_cap"], "kyoshi": ["straw_hat"],
+const HATS := {"earth": ["straw_hat", "straw_hat", "bandana"], "omashu": ["straw_hat", "bandana"], "fire": ["topknot", "fn_cap"], "hamakaze": ["straw_hat"],
 	"water": ["parka"], "south": ["parka", "warpaint"]}
 
 var sid := ""

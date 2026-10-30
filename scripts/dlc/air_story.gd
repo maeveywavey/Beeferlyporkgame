@@ -124,11 +124,11 @@ const DIALOGUES := {
 	}},
 	"ax_tsering": {"title": "The Eastern Air Temple", "start": "hub", "nodes": {
 		"hub": {"who": "tsering", "expr": "tender", "text": "Here we breathe. It sounds easy. Most people have been doing it wrong their whole lives. Sit.", "choices": [
-			{"text": "Learn Healing Breath (three days; Healing 2)", "next": "breath", "if": {"no_tech": "a_breath", "skill": ["healing", 2]}, "hint": "needs Healing 2"},
+			{"text": "Learn Clearing Wind (three days; Bending 3)", "next": "breath", "if": {"bends": "air", "no_tech": "a_breath", "skill": ["bending", 3]}, "hint": "airbenders with Bending 3"},
 			{"text": "Ask for the Eastern test of the Thirty-Six Winds", "next": "test", "if": {"not_flag": "ax_t_tsering", "skill": ["bending", 7]}, "hint": "needs Bending 7"},
 			{"text": "\"Another time.\"", "next": ""},
 		]},
-		"breath": {"who": "tsering", "expr": "thoughtful", "text": "You breathe for them, a little, until they remember how. Gently. A wound is a frightened place.", "do": [["wait", 72.0], ["learn", "a_breath"]], "next": "hub"},
+		"breath": {"who": "tsering", "expr": "thoughtful", "text": "We cannot mend a body. Only water does that, and we send for the healers when we need them. What we can do is clear the air around the hurt: the smoke, the dust, the fear. A slow wind. Slower. Slower than that.", "do": [["wait", 72.0], ["learn", "a_breath"]], "next": "hub"},
 		"test": {"who": "tsering", "expr": "neutral", "text": "The Eastern test is stillness. Two days on the meditation terrace. Not a word, not a gust. The novices will try to make you laugh. They are very good at it.", "next": "test2"},
 		"test2": {"who": "narrator", "text": "Two days. On the second afternoon a novice balances a bowl of soup on your head and you do not move, and it is the proudest moment of your life.",
 			"do": [["wait", 48.0], ["flag", "ax_t_tsering", true]], "next": "hub"},

@@ -4,7 +4,7 @@ extends RefCounted
 ## shaders/toon_paint.gdshader, inked by the shared outline pass), in the
 ## styles the original series drew: Earth Kingdom halls with green tile roofs
 ## and swept eaves, Fire Nation red-and-gold pagodas on black stone, Omashu's
-## heavy mountain stone, Kyoshi timber, Water Tribe ice domes and Air Nomad
+## heavy mountain stone, Hamakaze timber, Water Tribe ice domes and Air Nomad
 ## towers with blue conical roofs.
 
 const PAINT = preload("res://shaders/toon_paint.gdshader")
@@ -39,7 +39,7 @@ const STYLES := {
 		"plinth": Color(0.56, 0.53, 0.49), "door": Color(0.38, 0.27, 0.42), "lattice": Color(0.3, 0.24, 0.2), "accent": Color(0.6, 0.45, 0.68)},
 	"fire": {"roof": Color(0.56, 0.1, 0.07), "ridge": Color(0.86, 0.66, 0.2), "wall": Color(0.88, 0.81, 0.7), "timber": Color(0.62, 0.12, 0.08),
 		"plinth": Color(0.24, 0.21, 0.21), "door": Color(0.2, 0.1, 0.08), "lattice": Color(0.18, 0.09, 0.07), "accent": Color(0.92, 0.72, 0.25)},
-	"kyoshi": {"roof": Color(0.2, 0.42, 0.39), "ridge": Color(0.8, 0.64, 0.2), "wall": Color(0.74, 0.6, 0.44), "timber": Color(0.4, 0.26, 0.15),
+	"hamakaze": {"roof": Color(0.22, 0.28, 0.4), "ridge": Color(0.62, 0.3, 0.18), "wall": Color(0.74, 0.6, 0.44), "timber": Color(0.4, 0.26, 0.15),
 		"plinth": Color(0.5, 0.48, 0.42), "door": Color(0.35, 0.22, 0.12), "lattice": Color(0.28, 0.18, 0.1), "accent": Color(0.85, 0.7, 0.25)},
 	"air": {"roof": Color(0.24, 0.45, 0.74), "ridge": Color(0.95, 0.64, 0.2), "wall": Color(0.93, 0.9, 0.84), "timber": Color(0.82, 0.55, 0.22),
 		"plinth": Color(0.8, 0.78, 0.72), "door": Color(0.55, 0.3, 0.12), "lattice": Color(0.5, 0.35, 0.18), "accent": Color(0.95, 0.62, 0.15)},

@@ -1,5 +1,5 @@
 extends RefCounted
-## The interface's material language (game-3 UI overhaul, docs/09_third_game.md):
+## The interface's material language (docs/design.md §8):
 ## paper you could tear, lacquer you could chip, ink that pooled where the
 ## brush stopped, gold leaf that is slightly uneven. Every texture is
 ## generated here once and cached, so nothing is a flat colour block and the

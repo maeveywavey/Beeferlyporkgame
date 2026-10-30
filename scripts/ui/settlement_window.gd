@@ -279,7 +279,7 @@ func _raid() -> void:
 	GS.change_faction_rel(s.faction, -10)
 	AvatarSys.add_infamy(25, d.pos, "raiding " + d.name)
 	Story.react("raid")
-	# Mixed Ember Coast villages: burning them angers both nations
+	# Mixed Strait Isles villages: burning them angers both nations
 	var kin: String = {"earth": "earth_kingdom", "fire": "fire_nation", "north": "northern_water", "south": "southern_water", "omashu": "omashu"}.get(d.culture, "")
 	if kin != "" and kin != s.faction:
 		GS.change_faction_rel(kin, -6)
@@ -350,13 +350,13 @@ func _build_ruin(o: VBoxContainer) -> void:
 	o.add_child(UI.option("Leave", close))
 
 # ---------------------------------------------------------------------------
-# Ba Sing Se: three rings, three sets of gates, one Dai Li
+# Ba Sing Se: three rings, three sets of gates, one Censorate
 # ---------------------------------------------------------------------------
 func _ring_access(ring: String) -> bool:
 	match ring:
 		"middle":
-			# The Dai Li remember a vault thief; papers and bribes stop working
-			if GS.flags.get("dai_li_enemy", false) and not GS.flags.get("wu_defeated", false) and GS.settlements[sid].owner != "player":
+			# The Censorate remembers a vault thief; papers and bribes stop working
+			if GS.flags.get("censor_enemy", false) and not GS.flags.get("wu_defeated", false) and GS.settlements[sid].owner != "player":
 				return GS.standing_rank() >= 2
 			return GS.standing_rank() >= 1 or GS.player.get("permits", {}).has("middle_ring")
 		"upper": return GS.standing_rank() >= 2 or GS.flags.get("upper_invite", false) or GS.lords.get("hualing", {}).get("relation", 0) >= 10
@@ -389,9 +389,9 @@ func _build_rings(o: VBoxContainer) -> void:
 				GS.player.permits = {}
 			GS.player.permits["middle_ring"] = true
 			note = "The clerk stamps your papers with the patience of a man who has stamped a hundred thousand of them. You may pass the Middle Ring gate."
-			refresh(), GS.player.gold >= 300 and not GS.flags.get("dai_li_enemy", false)))
-		o.add_child(UI.option("Bribe the gate guard (60 gold — the Dai Li may notice)", _bribe_gate))
-		if GS.flags.get("dai_li_enemy", false):
+			refresh(), GS.player.gold >= 300 and not GS.flags.get("censor_enemy", false)))
+		o.add_child(UI.option("Bribe the gate guard (60 gold — the Censorate may notice)", _bribe_gate))
+		if GS.flags.get("censor_enemy", false):
 			o.add_child(UI.rich("[i]The clerk's ledger has your description in it, underlined twice. Until the Grand Secretary falls, only Gentry standing will get you through.[/i]", 740))
 	o.add_child(UI.spacer(4))
 	if _ring_access("upper"):
@@ -407,11 +407,11 @@ func _build_rings(o: VBoxContainer) -> void:
 func _bribe_gate() -> void:
 	if GS.player.gold < 60:
 		note = UI.color_text("You can't afford it.", UI.RED)
-	elif randf() < 0.25 or GS.flags.get("dai_li_enemy", false):
+	elif randf() < 0.25 or GS.flags.get("censor_enemy", false):
 		GS.add_gold(-60)
 		GS.change_faction_rel("earth_kingdom", -5)
 		GS.change_lord_rel("shu_fan", -5)
-		note = "The guard takes your coin, and a man in a long green robe takes your name. You are escorted back to the Lower Ring without a word. (Dai Li: -5)"
+		note = "The guard takes your coin, and a man in a long slate-grey robe takes your name. You are escorted back to the Lower Ring without a word. (Censorate: -5)"
 	else:
 		GS.add_gold(-60)
 		GS.flags["bsse_pass_day"] = GS.day()
@@ -485,14 +485,14 @@ func _build_temple(o: VBoxContainer) -> void:
 		if AvatarSys.era() != "quiet" or AvatarSys.known():
 			note = "[b]%s:[/b] \"%s\"" % [d.get("abbot", "The abbot"), [
 				"%s stayed with us for three days last year and spent two of them asleep. The Avatar's body is still a body. People forget." % AvatarSys.display_name().capitalize(),
-				"You want to find the Avatar? Everyone does. The Avatar is in the Spirit World, or in a council hall, or in a ditch helping someone's ox out of it. Pray you never need them badly enough to be found.",
+				"You want to find the Avatar? Everyone does. The Avatar is on a mountain with a teacher, or in a council hall, or in a ditch helping someone's ox out of it. Pray you never need them badly enough to be found.",
 				"The Avatar does not belong to us, though people think so. The Avatar belongs to the balance. Sometimes the balance is a treaty. Sometimes it is a warlord who needs to be stopped."].pick_random()]
 			refresh()
 			return
 		note = "[b]%s:[/b] \"%s\"" % [d.get("abbot", "The abbot"), [
-			"The Avatar who drowned stayed here once, the winter before the talks. They laughed at our novices' jokes even when the jokes were bad. That is what I remember. Not the Avatar. The laugh.",
-			"Somewhere a child is the next Avatar. The sages of that child's nation will find them, and in five years they will be told. Until then, this world belongs to the rest of us. I find that frightening and also rather hopeful.",
-			"People ask us who killed the Avatar as if we must know. We know the sea was rough and men were afraid. Usually that is enough to explain anything."].pick_random()]
+			"The Avatar we lost at sea stayed here once, the winter before the talks. They laughed at our novices' jokes even when the jokes were bad. That is what I remember. Not the Avatar. The laugh.",
+			"Somewhere a child is the next Avatar. The sages of that child's nation will find them, and when they are sixteen they will be told. Until then, this world belongs to the rest of us. I find that frightening and also rather hopeful.",
+			"People ask us who killed the Avatar as if we must know. We know the sea was rough, the Avatar was tired, and men were afraid. Usually that is enough to explain anything. Usually."].pick_random()]
 		refresh()))
 	o.add_child(UI.option("Leave", close))
 
@@ -502,11 +502,11 @@ func _explore() -> void:
 	var txt := ""
 	match sid:
 		"wan_shi_tong":
-			txt = "A great owl watches you from the shadows while you read. You find a star chart of every eclipse for a hundred years, and a treatise on the art of war annotated in four hands. (+1 Tactics, +400 xp)"
+			txt = "A great owl watches you from the shadows while you read. You find a Fire Sage's reckoning of the Great Comet's returns, century by century, and a treatise on command annotated in four hands. The owl watches what you copy. (+1 Tactics, +400 xp)"
 			GS.player.skills.tactics += 1
 			GS.give_player_xp(400)
-		"taku":
-			txt = "Under a collapsed bathhouse you find a merchant's strongbox, two centuries old and still locked. The lock is not as strong as it used to be. (+600 gold)"
+		"two_lovers":
+			txt = "You give up your torch, as the old song says to, and the crystals in the ceiling light the way. At the centre of the maze, between two stone tombs, pilgrims have left offerings for a thousand years: you leave one too, and take the old coins a badgermole has dug up and left in a heap like a joke. (+600 gold)"
 			GS.add_gold(600)
 		_:
 			txt = "You find nothing of interest."
@@ -599,10 +599,10 @@ func _pai_sho() -> void:
 	var chance = 0.4 + GS.player.attrs.int * 0.012 + GS.skill("tactics") * 0.02
 	if randf() < chance:
 		GS.add_gold(50)
-		note = ["You play the White Lotus gambit. Your opponent bows in defeat. (+50 gold)", "A clever arrangement of tiles wins the game. (+50 gold)"].pick_random()
+		note = ["You hold your lotus tile back until the last move, and it wins the game. Your opponent bows. (+50 gold)", "A clever arrangement of tiles wins the game. (+50 gold)"].pick_random()
 	else:
 		GS.add_gold(-50)
-		note = ["An old man in green robes smiles and takes your money. \"The White Lotus... never mind.\" (-50 gold)", "You lose badly. (-50 gold)"].pick_random()
+		note = ["A grandmother with ink-stained fingers takes your money, and then, kindly, your next move apart. (-50 gold)", "You lose badly. (-50 gold)"].pick_random()
 	refresh()
 
 func _build_recruit(o: VBoxContainer) -> void:

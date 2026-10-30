@@ -39,7 +39,7 @@ const PALETTES := {
 	"water": {"primary": Color(0.16, 0.33, 0.62), "secondary": Color(0.9, 0.92, 0.95), "accent": Color(0.7, 0.8, 0.95)},
 	"south": {"primary": Color(0.2, 0.36, 0.6), "secondary": Color(0.5, 0.4, 0.3), "accent": Color(0.9, 0.9, 0.88)},
 	"air": {"primary": Color(0.94, 0.55, 0.12), "secondary": Color(0.98, 0.8, 0.28), "accent": Color(0.3, 0.55, 0.85)},
-	"kyoshi": {"primary": Color(0.15, 0.45, 0.25), "secondary": Color(0.85, 0.68, 0.2), "accent": Color(0.95, 0.8, 0.3)},
+	"hamakaze": {"primary": Color(0.16, 0.2, 0.36), "secondary": Color(0.9, 0.88, 0.82), "accent": Color(0.62, 0.3, 0.18)},
 	"sand": {"primary": Color(0.75, 0.62, 0.4), "secondary": Color(0.45, 0.22, 0.14), "accent": Color(0.3, 0.3, 0.55)},
 	"outlaw": {"primary": Color(0.33, 0.22, 0.3), "secondary": Color(0.25, 0.2, 0.16), "accent": Color(0.6, 0.15, 0.12)},
 	"swamp": {"primary": Color(0.32, 0.38, 0.2), "secondary": Color(0.35, 0.26, 0.16), "accent": Color(0.7, 0.7, 0.3)},
@@ -271,7 +271,7 @@ static func random_look(culture: String, rng: RandomNumberGenerator = null, forc
 		"fire":
 			skin = rng.randi_range(0, 2)
 			eye = Color(0.85, 0.6, 0.15)
-		"earth", "kyoshi", "omashu":
+		"earth", "hamakaze", "omashu":
 			skin = rng.randi_range(1, 4)
 			eye = [Color(0.3, 0.45, 0.2), Color(0.4, 0.28, 0.16)][rng.randi() % 2]
 		"water", "south":

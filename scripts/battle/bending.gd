@@ -35,7 +35,7 @@ const ABILITIES := {
 	"air": {
 		"q": {"name": "Air Blast", "kind": "projectile", "cost": 10.0, "cd": 0.55, "dmg": 9.0, "speed": 32.0, "radius": 1.0, "knock": 13.0, "gravity": 0.0, "range": 24.0, "effect": "", "pierce": true, "fx": "air", "sfx": "air"},
 		"e": {"name": "Air Sweep", "kind": "cone", "cost": 25.0, "cd": 2.5, "dmg": 8.0, "range": 7.0, "angle": 80.0, "knock": 16.0, "effect": "", "fx": "air", "sfx": "air"},
-		"r": {"name": "Air Scooter Slam", "kind": "quake", "cost": 40.0, "cd": 8.0, "dmg": 14.0, "range": 8.0, "stun": 1.2, "knock": 14.0, "fx": "air", "sfx": "air"},
+		"r": {"name": "Falling Wind", "kind": "quake", "cost": 40.0, "cd": 8.0, "dmg": 14.0, "range": 8.0, "stun": 1.2, "knock": 14.0, "fx": "air", "sfx": "air"},
 	},
 	"sand": {
 		"q": {"name": "Sand Blast", "kind": "projectile", "cost": 14.0, "cd": 0.9, "dmg": 15.0, "speed": 26.0, "radius": 0.8, "knock": 4.0, "gravity": 1.0, "range": 24.0, "effect": "blind", "fx": "sand", "sfx": "air"},

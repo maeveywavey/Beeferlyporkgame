@@ -12,7 +12,7 @@ func _ready() -> void:
 	GS.flags.seen_help = true
 	GS.player.companions = ["hana", "juro"]
 	load("res://scripts/town/town_scene.gd").autotest = true
-	for sid in ["ba_sing_se", "caldera", "agna_qela", "eastern_air_temple", "senlin", "pohuai", "foggy_swamp", "kyoshi_island", "omashu", "southern_tribe"]:
+	for sid in ["ba_sing_se", "caldera", "agna_qela", "eastern_air_temple", "senlin", "kettle_rock", "foggy_swamp", "hamakaze", "omashu", "southern_tribe"]:
 		GS.flags.town_sid = sid
 		var t0 := Time.get_ticks_msec()
 		get_tree().change_scene_to_file("res://scenes/town.tscn")

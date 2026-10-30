@@ -30,8 +30,8 @@ func _ready() -> void:
 		["earth", "ranger", "f", "ek_hat", "ek_armor", "ual2/Sword_Regular_A"],
 		["air", "peasant", "f", "air_arrow", "air_robes", "ual1/Spell_Simple_Shoot"],
 		["water", "ranger", "m", "parka", "water_fur", "ual1/Idle"],
-		["kyoshi", "ranger", "f", "kyoshi", "kyoshi_armor", "ual2/Sword_Block"],
-		["earth", "ranger", "m", "dai_li", "dai_li_robe", "ual1/Spell_Simple_Idle"],
+		["hamakaze", "ranger", "f", "hamakaze", "tide_armor", "ual2/Sword_Block"],
+		["earth", "ranger", "m", "censor", "censor_robe", "ual1/Spell_Simple_Idle"],
 		["south", "ranger", "m", "wolf", "water_fur", "ual2/OverhandThrow"],
 		["sand", "peasant", "f", "sand_wrap", "sash", "ual1/Walk"],
 	]

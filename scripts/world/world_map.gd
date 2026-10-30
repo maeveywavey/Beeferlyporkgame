@@ -594,9 +594,7 @@ func _update_hud(captive: bool) -> void:
 	date_label.text = GS.date_string()
 	var t := "[i]%s[/i]" % GS.moon_string()
 	if GS.is_comet():
-		t += "  ·  [color=#ff8a55]Comet[/color]"
-	if GS.is_eclipse():
-		t += "  ·  [color=#c6a8ff]Solar eclipse[/color]"
+		t += "  ·  [color=#ff8a55]Great Comet[/color]"
 	if GS.is_lunar_eclipse():
 		t += "  ·  [color=#ff9090]Lunar eclipse[/color]"
 	top_label.text = t

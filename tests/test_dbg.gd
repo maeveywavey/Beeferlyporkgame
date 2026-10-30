@@ -10,7 +10,7 @@ func _ready() -> void:
 	Roster.add(GS.player_party().roster, "ek_soldier", 12)
 	var e := GS.make_party("", "Test", "bandit", "fire_nation", Vector2.ZERO)
 	Roster.add(e.roster, "fn_soldier", 12)
-	GS.pending_battle = {"enemies": [e.id], "allies": [], "siege": "pohuai", "player_attacking": true, "biome": "grass",
+	GS.pending_battle = {"enemies": [e.id], "allies": [], "siege": "kettle_rock", "player_attacking": true, "biome": "grass",
 		"hour": 15.0, "fire_mult": 1.15, "water_mult": 0.95, "enemy_garrison": true, "ally_garrison": false}
 	get_tree().change_scene_to_file("res://scenes/battle.tscn")
 	await get_tree().create_timer(0.5).timeout

@@ -3,7 +3,7 @@ extends RefCounted
 
 const CB = preload("res://scripts/actors/character_builder.gd")
 
-const CULTURE_MAP := {"fire": "fire", "earth": "earth", "kyoshi": "kyoshi", "north": "water", "south": "south",
+const CULTURE_MAP := {"fire": "fire", "earth": "earth", "hamakaze": "hamakaze", "north": "water", "south": "south",
 	"swamp": "swamp", "sand": "sand", "air": "air", "omashu": "omashu"}
 const OUTLAW_TROOPS := ["mountain_bandit", "pirate", "pirate_captain", "fn_deserter", "red_lantern", "red_lantern_elder", "merc_swordsman", "merc_archer"]
 const HELMET_MAP := {"arrow": "air_arrow", "none": "", "ek_helm": "ek_helm"}
@@ -15,9 +15,7 @@ static func troop_look(tid: String, rng: RandomNumberGenerator) -> Dictionary:
 	if OUTLAW_TROOPS.has(tid):
 		culture = "outlaw" if tid != "fn_deserter" else "fire"
 	var sex: String = t.get("sex", "")
-	if t.culture == "kyoshi":
-		sex = "f"
-	elif t.culture == "north" and t.bend == "water" and sex == "":
+	if t.culture == "north" and t.bend == "water" and sex == "":
 		# The Law of the Two Paths: healers are women, combat benders men,
 		# until the law changes.
 		if t.healer:
@@ -25,26 +23,24 @@ static func troop_look(tid: String, rng: RandomNumberGenerator) -> Dictionary:
 		elif not GS.flags.get("two_paths", false):
 			sex = "m"
 	var look := CB.random_look(culture, rng, sex)
-	if t.culture == "kyoshi":
-		look.hair = "Hair_Buns"
 	look.outfit = "peasant" if t.tier <= 1 or t.bend == "air" else "ranger"
 	var helmet: String = t.look.get("helmet", "none")
 	look.accessory = HELMET_MAP.get(helmet, helmet)
 	look.kit = kit_for(tid, culture, t.tier)
-	if look.accessory in ["fn_helmet", "fn_officer", "ek_hat", "ek_helm", "wolf", "parka", "wt_helm", "sand_wrap", "yuyan", "dai_li", "pirate_hat", "bandana"] and look.hair == "Hair_Long":
+	if look.accessory in ["fn_helmet", "fn_officer", "ek_hat", "ek_helm", "wolf", "parka", "wt_helm", "sand_wrap", "yuyan", "censor", "pirate_hat", "bandana"] and look.hair == "Hair_Long":
 		look.hair = "Hair_Buns" if look.sex == "f" else "Hair_Buzzed"
 	return look
 
 static func kit_for(tid: String, culture: String, tier: int) -> String:
-	if tid == "ek_dai_li":
-		return "dai_li_robe"
+	if tid == "ek_censor":
+		return "censor_robe"
 	match culture:
 		"fire":
 			return "fn_armor" if tier >= 2 else "sash"
 		"earth", "omashu":
 			return "ek_armor" if tier >= 2 else ""
-		"kyoshi":
-			return "kyoshi_armor"
+		"hamakaze":
+			return "tide_armor"
 		"water", "south":
 			return "water_fur"
 		"air":
@@ -63,7 +59,7 @@ static func lord_look(lid: String) -> Dictionary:
 	look.merge(CB.random_look(culture, rng, look.get("sex", "")), false)
 	look.merge({"culture": culture, "outfit": "ranger", "kit": kit_for("", culture, 4)}, false)
 	if not look.has("accessory"):
-		look.accessory = {"fire": "fn_noble", "earth": "ek_helm", "omashu": "ek_helm", "water": "", "south": "wolf", "kyoshi": "kyoshi", "air": "air_arrow"}.get(culture, "")
+		look.accessory = {"fire": "fn_noble", "earth": "ek_helm", "omashu": "ek_helm", "water": "", "south": "wolf", "hamakaze": "hamakaze", "air": "air_arrow"}.get(culture, "")
 	return look
 
 static func player_look() -> Dictionary:
@@ -78,9 +74,9 @@ static func player_look() -> Dictionary:
 			kit = "fn_armor"
 		"ek_armor", "ek_royal":
 			kit = "ek_armor"
-		"kyoshi_armor":
-			culture = "kyoshi"
-			kit = "kyoshi_armor"
+		"tide_armor":
+			culture = "hamakaze"
+			kit = "tide_armor"
 		"water_parka", "fur_armor":
 			culture = "water"
 			kit = "water_fur"

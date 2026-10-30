@@ -2,7 +2,8 @@ extends RefCounted
 ## Expansion: Embers of the First Flame (fire). New people: Master Sayuri Ono
 ## (companion), Kazan of the Cinder Monastery, Mistress Tomoe Ikari of the Fire
 ## Fountain duelling hall. Stories: Sayuri's last student; the First Flame
-## mastery trial; the comet forge. Techniques: scripts/battle/techniques.gd.
+## mastery trial (an ember of the Sun Warriors' Eternal Flame); the Great Comet
+## forge. Techniques: scripts/battle/techniques.gd.
 
 const NPCS := {
 	"kazan": {"name": "Kazan of the Cinder Monastery", "culture": "fire", "vlook": {"sex": "m", "hair": "", "beard": true, "hair_color": Color(0.7, 0.68, 0.66), "height": 1.02}, "kit": "sash"},
@@ -118,7 +119,7 @@ const DIALOGUES := {
 			"do": [["gold", -500], ["wait", 72.0], ["learn", "f_jets"]], "next": "hub"},
 		"whip": {"who": "tomoe", "expr": "neutral", "text": "A long line is a promise you make with your shoulder and keep with your wrist. Don't break promises in my hall.",
 			"do": [["gold", -600], ["wait", 72.0], ["learn", "f_whip"]], "next": "hub"},
-		"kazan": {"who": "tomoe", "expr": "thoughtful", "text": "The Cinder Monastery. West, on the dead mountain. They keep a flame older than the Fire Sages' books and teach the breath before the fire. Kazan runs it now. He used to command artillery on the Ember Coast. People change, or they climb mountains to try.", "next": "hub"},
+		"kazan": {"who": "tomoe", "expr": "thoughtful", "text": "The Cinder Monastery. West, on the dead mountain. They keep a flame lit from the Sun Warriors' Eternal Flame and teach the breath before the fire. Kazan runs it now. He used to command artillery in the Strait Isles. People change, or they climb mountains to try.", "next": "hub"},
 	}},
 
 	# -----------------------------------------------------------------------
@@ -126,28 +127,28 @@ const DIALOGUES := {
 	# -----------------------------------------------------------------------
 	"fx_monastery": {"title": "The Cinder Monastery", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "Four hundred steps cut into black rock. At the top, a courtyard of cinders raked into patterns, and in a shrine with no door, a flame the size of a fist, burning on nothing.", "next": "b"},
-		"b": {"who": "kazan", "expr": "neutral", "text": "I commanded the guns at the siege of Gaipan. Now I rake cinders. Both jobs are mostly about patience. You've come to learn something, or to be told you can't. Which?",
+		"b": {"who": "kazan", "expr": "neutral", "text": "I commanded the guns at the siege of Saltreach. Now I rake cinders. Both jobs are mostly about patience. You've come to learn something, or to be told you can't. Which?",
 			"do": [["flag", "fx_kazan_met", true]], "next": "hub"},
 		"hub": {"who": "kazan", "expr": "thoughtful", "text": "Ask.", "choices": [
 			{"text": "Learn the Inner Flame (three days of breathing; Bending 5)", "next": "inner", "if": {"bend": "fire", "no_tech": "f_inner_flame", "skill": ["bending", 5]}, "hint": "firebenders with Bending 5"},
 			{"text": "Learn the Ring of Fire (two days; Bending 6, knows Fire Jets)", "next": "ring", "if": {"bend": "fire", "no_tech": "f_ring", "skill": ["bending", 6], "tech": "f_jets"}, "hint": "Bending 6 and Fire Jets"},
 			{"text": "Learn Breath of Fire (two days; Bending 4)", "next": "breath", "if": {"bend": "fire", "no_tech": "f_breath_fire", "skill": ["bending", 4]}, "hint": "firebenders with Bending 4"},
-			{"text": "\"I want to carry the First Flame.\" (the mastery trial)", "next": "trial", "if": {"bend": "fire", "not_flag": "fx_ember", "call": "not_master", "skill": ["bending", 7], "techs": ["fire", 3], "duel_wins": 2}, "hint": "Bending 7, three fire techniques and two duels won"},
+			{"text": "\"I want to carry the ember.\" (the mastery trial)", "next": "trial", "if": {"bend": "fire", "not_flag": "fx_ember", "call": "not_master", "skill": ["bending", 7], "techs": ["fire", 3], "duel_wins": 2}, "hint": "Bending 7, three fire techniques and two duels won"},
 			{"text": "\"What is the flame?\"", "next": "flame"},
 			{"text": "\"Why did you leave the guns?\"", "next": "guns"},
 			{"text": "\"I'll go.\"", "next": ""},
 		]},
-		"flame": {"who": "kazan", "expr": "neutral", "text": "The first firebenders lit it, or so we say. Nobody can prove otherwise, which is the best kind of history. It has never been fed. It is never allowed to go out. We do not know how either of those is true, and we have stopped asking.", "next": "hub"},
-		"guns": {"who": "kazan", "expr": "sad", "text": "One morning at Gaipan I realised I could no longer tell the difference between the smell of our powder and the smell of their bread ovens. That is not a good thing to be unable to tell. I walked away at noon. Nobody stopped me. I think they were relieved.", "next": "hub"},
+		"flame": {"who": "kazan", "expr": "neutral", "text": "A child of the first fire. The dragons gave the Sun Warriors the Eternal Flame, and the Sun Warriors still keep it in their city in the south of the islands. Nine hundred years ago one of them carried an ember of it up this mountain and taught the founders to breathe before they burn. Ours has never been fed. It is never allowed to go out.", "next": "hub"},
+		"guns": {"who": "kazan", "expr": "sad", "text": "One morning at Saltreach I realised I could no longer tell the difference between the smell of our powder and the smell of their bread ovens. That is not a good thing to be unable to tell. I walked away at noon. Nobody stopped me. I think they were relieved.", "next": "hub"},
 		"inner": {"who": "kazan", "expr": "determined", "text": "Breathe the fire in, not out. Hold it the way you'd hold a sleeping child: firmly, and without waking it. Three days. You will be bored. Boredom is the fire learning your name.",
 			"do": [["wait", 72.0], ["learn", "f_inner_flame"]], "next": "hub"},
 		"ring": {"who": "kazan", "expr": "smirk", "text": "Turn, and let the flame come round with you like a skirt. Yes, a skirt. The old masters had a sense of humour; you'll need one when you set the monastery's hedge alight.",
 			"do": [["wait", 48.0], ["learn", "f_ring"]], "next": "hub"},
 		"breath": {"who": "kazan", "expr": "neutral", "text": "From the belly. Not the chest; the chest lies. Again.",
 			"do": [["wait", 48.0], ["learn", "f_breath_fire"]], "next": "hub"},
-		"trial": {"who": "kazan", "expr": "determined", "text": "Then here is the First Flame, in a clay lamp. Carry it to the Fire Sages on Crescent Island within nine days. It goes out if you use fire in anger on the way: raid, burn, execute, and it will know. Bring it there lit, then bring yourself back to me.",
+		"trial": {"who": "kazan", "expr": "determined", "text": "Then here is an ember of the Eternal Flame, in a clay lamp. Carry it to the Fire Sages on Crescent Island within nine days. It goes out if you use fire in anger on the way: raid, burn, execute, and it will know. Bring it there lit, then bring yourself back to me.",
 			"do": [["flag", "fx_ember", true], ["flag_day", "fx_ember_day"], ["call", "fx_ember_infamy"],
-				["journal", "fx_trial", "The First Flame", "Kazan gave you an ember of the First Flame. Carry it to the Fire Sages on Crescent Island within nine days, without using fire in anger on the way."]]},
+				["journal", "fx_trial", "The First Flame", "Kazan gave you an ember of the Eternal Flame. Carry it to the Fire Sages on Crescent Island within nine days, without using fire in anger on the way."]]},
 	}},
 	"fx_ember_out": {"title": "The First Flame", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "You wake and the clay lamp is cold. You didn't see it go out. You never do. It will be waiting at the monastery, lit, as if nothing happened. Kazan will be waiting too.",
@@ -180,7 +181,7 @@ const DIALOGUES := {
 	# The comet forge (a comet must be in the sky)
 	# -----------------------------------------------------------------------
 	"fx_comet": {"title": "The Comet Forge", "start": "a", "nodes": {
-		"a": {"who": "narrator", "text": "A monk from the Cinder Monastery finds you with a message in Kazan's square hand: 'The comet is up. We have a lump of sky-iron that fell when I was a boy and has never been hot enough to work. It will be, for three days. Come, or send me a firebender.'", "choices": [
+		"a": {"who": "narrator", "text": "A monk from the Cinder Monastery finds you with a message in Kazan's square hand: 'The Great Comet is up. We have a lump of sky-iron that fell when I was a boy and has never been hot enough to work. It will be, for three days. Come, or send me a firebender.'", "choices": [
 			{"text": "Go and work the forge. (1,000 gold for the smiths and charcoal)", "next": "forge", "if": {"gold": 1000}, "hint": "need 1,000 gold"},
 			{"text": "\"Let the monks keep the iron for something better than a sword.\"", "next": "keep"},
 		]},

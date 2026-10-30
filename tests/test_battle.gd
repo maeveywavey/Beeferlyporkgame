@@ -16,7 +16,7 @@ func _ready() -> void:
 		elem = args[1]
 	B = load("res://scripts/battle/battle.gd")
 	B.autotest = not mode in ["bend", "tech"]
-	var bg := {"fire": "fn_deserter", "earth": "ek_refugee", "water": "swt_warrior", "air": "air_nomad", "": "kyoshi"}
+	var bg := {"fire": "fn_deserter", "earth": "ek_refugee", "water": "swt_warrior", "air": "air_nomad", "": "hamakaze"}
 	var bend_arg := "earth" if mode == "avatar" else elem
 	var p := GS.create_player("Tester", bg.get(bend_arg, "ek_refugee"), bend_arg, Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 	GS.new_game(p)
@@ -33,7 +33,7 @@ func _ready() -> void:
 	Roster.add(e.roster, "fn_firebender", 8)
 	Roster.add(e.roster, "fn_archer", 6)
 	Roster.add(e.roster, "fn_rhino_rider", 4)
-	var sg := "pohuai" if mode == "siege" else ""
+	var sg := "kettle_rock" if mode == "siege" else ""
 	if mode == "siege":
 		GS.settings.battle_size = 120
 	if mode == "big":
@@ -52,10 +52,10 @@ func _ready() -> void:
 		# The Avatar's company against a fortified, trapped seat (elem = era)
 		var AvatarSys = load("res://scripts/core/avatar.gd")
 		AvatarSys.init_era(elem if elem in ["young", "prime", "elder"] else "prime")
-		GS.settlements.pohuai.owner = "player"
-		GS.settlements.pohuai.avatar_fort = 1
-		GS.settlements.pohuai.avatar_traps = 2
-		GS.player_party().pos = Data.settlements.pohuai.pos
+		GS.settlements.kettle_rock.owner = "player"
+		GS.settlements.kettle_rock.avatar_fort = 1
+		GS.settlements.kettle_rock.avatar_traps = 2
+		GS.player_party().pos = Data.settlements.kettle_rock.pos
 		Roster.add(GS.player_party().roster, "chi_blocker", 6)
 		AvatarSys.spawn_company()
 		AvatarSys.start_battle()

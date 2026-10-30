@@ -124,18 +124,18 @@ func _eras() -> void:
 		# a season of simulated days: no errors, sightings for adults only
 		_days(120)
 		var seen: int = AvatarSys.state().seen.size()
-		var spirit := 0
+		var away := 0
 		for i in 60:
 			_days(1)
-			if AvatarSys.state().loc == "spirit":
-				spirit += 1
-		print("era %s: stage %s, %d sightings in 120 days, %d/60 days in the Spirit World, date '%s'" % [e, st, seen, spirit, GS.day_name(GS.day())])
+			if AvatarSys.state().loc == "away":
+				away += 1
+		print("era %s: stage %s, %d sightings in 120 days, %d/60 days out of reach, date '%s'" % [e, st, seen, away, GS.day_name(GS.day())])
 		if e == "quiet" and seen > 0:
 			_err("an untold child Avatar was sighted")
 		if e != "quiet" and seen == 0:
 			_err("era %s: adult Avatar never sighted" % e)
-		if e == "elder" and spirit < 25:
-			_err("elder Avatar spends too little time in the Spirit World (%d/60)" % spirit)
+		if e == "elder" and away < 25:
+			_err("elder Avatar is too easy to find (%d/60 days out of reach)" % away)
 		if e == "quiet" and Story.flag("trig_ms_prologue") == false:
 			Story.fire("daily")
 		if e != "quiet":
@@ -260,7 +260,7 @@ func _tyrant_battle_loss() -> void:
 func _local() -> void:
 	_new("prime")
 	var A: Dictionary = AvatarSys.state()
-	var here: Vector2 = Data.settlements.chin.pos
+	var here: Vector2 = Data.settlements.tanshui.pos
 	GS.player_party().pos = here
 	A.loc = "gaoling"
 	A.pos = Data.settlements.gaoling.pos

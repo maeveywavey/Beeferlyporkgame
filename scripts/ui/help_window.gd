@@ -5,7 +5,7 @@ var map
 var tab := 0
 
 const PAGES := [
-	["Getting started", """[b]Welcome to the world of Avatar.[/b] The Hundred Year War rages on, and you start with a handful of followers and a little gold.
+	["Getting started", """[b]Welcome to the world of Avatar[/b], long before Aang and before Yangchen. The four nations live in an uneasy harmony, the Fire Nation's Admiralty holds the disputed Strait Isles, and you start with a handful of followers and a little gold.
 
 [b]Travel[/b] by left-clicking the map. Time passes only while you travel or wait. Click a town to visit it, or a party to approach it. Scroll to zoom, right-drag to rotate, and press F to re-centre on your party.
 
@@ -27,8 +27,9 @@ const PAGES := [
 • Fire: Fire Blast, Fire Wave, Lightning (needs Bending skill 5)
 • Earth: Rock Throw, Earth Wall, Earthquake
 • Water: Water Whip, Healing Water, Ice Spikes
+• Air: Air Blast, Air Sweep, Falling Wind
 
-Firebenders are strongest by day, waterbenders at night and under a full moon. Solar eclipses take firebending away while the sun is dark; lunar eclipses do the same to waterbending. A passing comet makes fire burn hotter. The sages announce each one five days ahead — plan around them."""],
+Firebenders are strongest by day, waterbenders at night and strongest under a full moon. Once a century the Great Comet passes and firebending burns a hundred times hotter; if it comes during your game, the Fire Sages will announce it days ahead. Only waterbenders heal with bending."""],
 	["Rising in the world", """[b]Renown[/b] grows with every victory. It enlarges your party and opens doors.
 
 • Talk to any lord to become a [b]mercenary[/b] for their nation, with weekly pay.
@@ -39,8 +40,8 @@ Firebenders are strongest by day, waterbenders at night and under a full moon. S
 [b]Places of note[/b]
 • Gaoling's [b]Stone Pit[/b]: five fights, ending with the champion they call the Quiet Mountain.
 • The four [b]Air Temples[/b] cannot be attacked. Rest there for free, and the monks tend your wounded.
-• Wan Shi Tong's Library and the Ruins of Taku hold one-time rewards for explorers.
-• Air Nomad pilgrims fly the world on sky bison. They never fight, and they will heal your wounded."""],
+• Wan Shi Tong's Library and the Cave of Two Lovers hold one-time rewards for explorers.
+• Air Nomad pilgrims fly the world on sky bison. They never fight, and they will tend your wounded."""],
 ]
 
 func _init() -> void:

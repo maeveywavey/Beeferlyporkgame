@@ -304,7 +304,7 @@ func _preview() -> Control:
 	box.add_child(_preview_vp)
 	if _preview_actor != null:
 		_preview_actor.queue_free()
-	var culture: String = {"fn_deserter": "fire", "fn_noble": "fire", "swt_warrior": "south", "nwt_noble": "water", "kyoshi": "kyoshi",
+	var culture: String = {"fn_deserter": "fire", "fn_noble": "fire", "swt_warrior": "south", "nwt_noble": "water", "hamakaze": "hamakaze",
 		"air_nomad": "air", "temple_courier": "air"}.get(c_background, "earth")
 	_preview_actor = Actor.new()
 	_preview_actor.setup({"sex": c_body, "skin": c_skin, "hair": c_hair_style, "hair_color": c_hair, "beard": c_beard,

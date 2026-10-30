@@ -296,16 +296,14 @@ func _hourly_cosmic() -> void:
 		if d == e.day - 5 and not GS.flags.has(key + "_warn"):
 			GS.flags[key + "_warn"] = true
 			match e.kind:
-				"solar": GS.log_msg("The Fire Sages of Crescent Island announce a solar eclipse in five days (%s). Every firebender will be powerless while the sun is dark." % GS.day_name(e.day), Color(0.8, 0.6, 1))
-				"lunar": GS.log_msg("Water Tribe astronomers predict an eclipse of the full moon in five days (%s). For a few hours that night, no waterbender will bend." % GS.day_name(e.day), Color(0.7, 0.75, 1))
-				"comet": GS.log_msg("Astronomers report a comet approaching. In five days it will burn in the sky, and firebenders will burn hotter while it does.", Color(1, 0.55, 0.3))
+				"lunar": GS.log_msg("Water Tribe astronomers predict an eclipse of the full moon in five days (%s). For a few hours that night the moon will be hidden, and its strength with it." % GS.day_name(e.day), Color(0.7, 0.75, 1))
+				"comet": GS.log_msg("The Fire Sages of Crescent Island announce the return of the Great Comet, once in a hundred years. In five days it will cross the sky, and every firebender will burn as never in their life.", Color(1, 0.55, 0.3))
 		if d == e.day and h >= e.from and not GS.flags.has(key):
 			GS.flags[key] = true
 			match e.kind:
-				"solar": GS.log_msg("The moon slides across the sun. Day turns to dusk, and every firebender's flame gutters out.", Color(0.8, 0.6, 1))
-				"lunar": GS.log_msg("The full moon turns the colour of rust. The tides go slack, and so does every waterbender.", Color(0.85, 0.5, 0.5))
+				"lunar": GS.log_msg("The full moon turns the colour of rust. Waterbenders lose the full moon's strength until it clears.", Color(0.85, 0.5, 0.5))
 				"comet":
-					GS.log_msg("A comet blazes across the sky, its tail brighter than the moon. Firebenders feel it in their breath.", Color(1, 0.45, 0.2))
+					GS.log_msg("The Great Comet blazes across the sky, its tail brighter than the moon. Firebenders feel it in their breath.", Color(1, 0.45, 0.2))
 					# Fire Nation hawks seize the moment if a war is on
 					for k in Data.KINGDOMS:
 						if GS.at_war("fire_nation", k):
@@ -368,7 +366,7 @@ func _daily_events() -> void:
 		if ev.has("campaign"):
 			var f: String = ev.campaign[0]
 			var target: String = ev.campaign[1]
-			if GS.at_war(f, GS.settlements[target].faction):
+			if GS.at_war(f, GS.settlements[target].faction) and Data.may_besiege(f, target, GS.settlements[target].faction):
 				_force_campaign(f, target, ev.get("leaders", []))
 		match ev.get("effect", ""):
 			"north_debate":
@@ -1089,7 +1087,7 @@ func _start_campaign(f: String, forced: bool) -> void:
 	for sid in GS.settlements:
 		var s: Dictionary = GS.settlements[sid]
 		var d: Dictionary = Data.settlements[sid]
-		if d.type in ["town", "castle"] and GS.at_war(f, s.faction) and s.faction in Data.KINGDOMS + ["player"]:
+		if d.type in ["town", "castle"] and GS.at_war(f, s.faction) and s.faction in Data.KINGDOMS + ["player"] and Data.may_besiege(f, sid, s.faction):
 			var score: float = d.pos.distance_to(center) + Roster.total(s.garrison) * 2.0 + randf() * 150.0
 			if score < best_score:
 				best_score = score

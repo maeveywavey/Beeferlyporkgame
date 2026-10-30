@@ -1,6 +1,6 @@
 # Mount & Bend: The Quiet Years, and after
 
-A Mount & Blade–style sandbox set in the world of *Avatar: The Last Airbender*, built in **Godot 4.3**. It uses the original series' world and peoples but tells original stories, in times before Aang.
+A Mount & Blade–style sandbox set in the world of *Avatar: The Last Airbender*, built in **Godot 4.3**. It uses the original series' world, peoples and rules of bending, set at an unnamed time long before Aang and before Yangchen, with original characters and stories. Lore is held to `docs/canon.md`.
 
 **The core sandbox.** You raise an army, trade, take quests, serve or betray kingdoms, besiege cities, walk their streets, and fight real-time 3D battles with swords, bows and bending. That includes bending forms you compose yourself.
 
@@ -12,18 +12,18 @@ A Mount & Blade–style sandbox set in the world of *Avatar: The Last Airbender*
 
 | Era | Mode | The Avatar |
 |---|---|---|
-| **The Quiet Years** | Story campaign, *The Drowned Testament* | Eleven years ago the Avatar drowned. The next one is a ten-year-old child, untold and unreachable. |
+| **The Quiet Years** | Story campaign, *The Drowned Testament* | Eleven years ago the Avatar was lost at sea. The next one is a ten-year-old child, untold and unreachable. |
 | **The Young Avatar** | Sandbox | Siku, 16, Southern Water Tribe, newly told and looking for masters |
 | **The Avatar's Prime** | Sandbox | Lei Shan, 38, Earth Kingdom, master of all four elements and everywhere at once |
-| **The Elder Avatar** | Sandbox | Akane, 84, Fire Nation, mostly in the Spirit World and roused only by great evil |
+| **The Elder Avatar** | Sandbox | Akane, 84, Fire Nation, who keeps to her lake hamlet and is roused only by great evil |
 
 In the Quiet Years the wars are these:
-- the Fire Nation and the Earth Kingdom fight over the Ember Coast;
+- the Fire Nation and the Earth Kingdom fight over the Strait Isles, islands both crowns have claimed for centuries;
 - Omashu has seceded from Ba Sing Se;
 - the Southern Water Tribe raids the Fire Navy;
 - the Air Nomads shelter everyone.
 
-There is no Day of Black Sun and no Sozin's Comet. Eclipses and comets happen as natural events, announced by astronomers a few days ahead.
+The four nations otherwise live in harmony: no nation's army besieges another nation's land outside the disputed Isles. The Great Comet passes once a century and falls in about one game in three; there are no solar eclipses.
 
 ## Running the game
 
@@ -81,7 +81,7 @@ The Avatar is a persistent NPC who ages with the calendar. Life stage governs in
 ![The Avatar window](docs/screenshots/avatar.jpg)
 
 **Hard to find.**
-- Spirit-World absences, visits of a few days, and rumours that arrive late.
+- Long absences in remote places (travelling, secluded at temples, with teachers or family), visits of a few days, and rumours that arrive late.
 - Where they are visiting, you can seek an audience; your chance is shown.
 
 **Four reasons to come to you:**
@@ -97,7 +97,7 @@ Infamy comes from raids, executions, scorched fields, betrayals and hostages.
 
 **Countermeasures** against a hostile Avatar:
 - fortify your seat;
-- lay spirit-wards and chi-blocker nets;
+- deny the ground (timber over courtyards, drained cisterns) and hang chi-blocker nets;
 - hire chi-blockers;
 - spy out whom they love and take them hostage;
 - stage an army to raid their home when they move, so they turn back;
@@ -106,7 +106,7 @@ Infamy comes from raids, executions, scorched fields, betrayals and hostages.
 **The Avatar is never killed.** They bend every element they have mastered and enter the Avatar State once per battle. Beaten, they withdraw and return. If they beat you, they take apart what you built and give it back.
 
 ### The story: *The Drowned Testament* (Quiet Years)
-On day 2 a wounded Air Nomad courier brings you a page of the drowned Avatar's logbook. Six pages are scattered, each with two or more ways to get it. Along the way you meet the two men who let the Avatar die, over tea and over dinner. Then you decide what the truth is for:
+On day 2 a wounded Air Nomad courier brings you a page of the lost Avatar's logbook. Six pages are scattered, each with two or more ways to get it. Along the way you meet the two men who let the Avatar die, over tea and over dinner. Then you decide what the truth is for:
 - tell it to a Council of Nations;
 - give it to one ruler;
 - sell it to the man it condemns;
@@ -140,23 +140,27 @@ Each can be switched off in Settings. Each adds:
 
 | Expansion | Techniques | Bending at work | Mastery trial |
 |---|---|---|---|
-| **Embers of the First Flame** | Breath of Fire, Inner Flame, Fire Whip, Fire Daggers, Fire Jets, Ring of Fire | Temper blades, fire kilns, warm the camp, cook for the column, controlled burns, festival lanterns, and scorching fields (cruel) | Carry the First Flame without using fire in anger; light a lamp with breath |
+| **Embers of the First Flame** | Breath of Fire, Inner Flame, Fire Whip, Fire Daggers, Fire Jets, Ring of Fire | Temper blades, fire kilns, warm the camp, cook for the column, controlled burns, festival lanterns, and scorching fields (cruel) | Carry an ember of the Sun Warriors' Eternal Flame without using fire in anger; light a lamp with breath |
 | **The Turning Tide** | Ice Lance, Ice Prison, Octopus Form, Tidal Surge, Vine Snare, Mist Veil, Chi-Path Healing | Healing houses, irrigation, fishing, clean wells, ice roads, ice carving | Walk the Moon's Road on your own ice |
-| **Roots of the Mountain** | Seismic Sense, Fissure, Stone Gloves, Stone Cuffs, Boulder Toss, Stone Armour | Mining, raising walls, terraces, roads, shelters, shoring tunnels | Three days listening to the mountain |
-| **The Thirty-Six Winds** | Glider Strike, Updraft, Air Ball, Air Shield, Healing Breath, Vortex, Wind Blade | Scouting by glider, filling sails, mills, smothering fires, meditation, bison flights | Four temples, four tests, and the arrows |
+| **Roots of the Mountain** | Seismic Sense (from the badgermoles), Fissure, Stone Fists, Stone Cuffs, Boulder Toss, Stone Armour | Mining, raising walls, terraces, roads, shelters, shoring tunnels | Three days listening to the mountain |
+| **The Thirty-Six Winds** | Glider Strike, Updraft, Air Ball, Air Shield, Clearing Wind, Vortex, Wind Blade | Scouting by glider, filling sails, mills, smothering fires, meditation, bison flights | Four temples, four tests, and the arrows |
 
 ### Cultures and class
 - **Standing** (Commoner, Citizen, Gentry, Noble) decides which gates open.
-- **Ba Sing Se** has three rings with guarded gates, and the Dai Li remember thieves.
+- **Ba Sing Se** has three rings with guarded gates, and the Censorate remembers thieves.
 - **Fire Nation nobles** settle insults by **Agni Kai**.
 - **The Northern Water Tribe** keeps the **Law of the Two Paths** until it changes.
 - **The Southern council** can be swayed on war and peace.
 - **Air Temples** cannot be attacked, heal you for free, and sell no meat.
 
 ### Bending
-Fire is stronger by day, water by night and under a full moon. A solar eclipse takes firebending away; a lunar eclipse takes waterbending; a comet strengthens fire.
+Fire is stronger by day, water by night and strongest under a full moon. The Great Comet, if it comes, makes fire burn far hotter; a lunar eclipse hides the full moon's strength. Only waterbenders heal with bending.
 
-The **Bending Forms** designer composes forms from real martial-arts movements. Stances must chain and breath should alternate, and power, wind-up, chi and properties follow from what you chose.
+The **Bending Forms** designer composes forms (in the spirit of *Kengo*'s technique-building) from real martial-arts movements. Stances must chain and breath should alternate, and power, wind-up, chi and properties follow from what you chose.
+
+To use it, open **Character → Bending Forms**, chain movements whose stances connect, name the form, and press **F** in battle.
+
+![A designed firebending form, then Fire Blast and Lightning](docs/screenshots/bending.gif)
 
 ### Interface
 The interface is made of the world's materials, all generated in code:
@@ -176,17 +180,9 @@ Type is set in Alegreya and Alegreya SC, with a **Readable font** option (Atkins
 
 | | |
 |---|---|
-| `docs/01_team_review.md` | Simulated expert review of the first prototype, art bible, production plan |
-| `docs/02_writers_room.md` | Setting bible; two simulated writing teams' drafts and edits |
-| `docs/03_playtests.md` | Seven simulated playtesters, persona bots, fix log, known limits |
-| `docs/04_launch_reception.md` | Simulated reception of a licensed release of game 1 |
-| `docs/05_sequel_design.md` | Sequel design (*The Sixteenth Year*): doubled team, art studio, martial-arts capture, Form Designer |
-| `docs/06_script_review.md` | Script and story-arc review: findings and the fixes made |
-| `docs/07_avatar_and_dlcs.md` | The Avatar as a persistent NPC, and the four element expansions: rules, numbers, verification |
-| `docs/08_sequel_release.md` | Simulated release of the sequel, and the four-team Player Insights department |
-| `docs/09_third_game.md` | Third game: studio, simulated executive review, the two UI teams, the interface overhaul in this build |
-
-The teams, writers, playtesters, reception and executives in these documents are **simulated by Claude**, and each document says so at the top. The executives named in `docs/09_third_game.md` are real people represented only through lenses drawn from their public work. They have not seen or commented on this project, and no words are attributed to them.
+| `docs/canon.md` | The lore authority: sources (the original series only; *Legend of Korra* excluded), when the game is set, the Avatar, bending, the sky, peoples, and every workaround the game uses to stay inside canon. Enforced in part by `tests/test_canon.tscn`. |
+| `docs/setting.md` | The world at the start of play, cultures and class, the main story, lords, companions, sample banter |
+| `docs/design.md` | Systems and their numbers: the Avatar, the element expansions, the Bending Forms designer, the interface |
 
 ## Art and licences
 
@@ -222,6 +218,7 @@ tests/                  headless tests (below)
 
 ```
 godot --headless --path . res://tests/check_scripts.tscn    # parse every script
+godot --headless --path . res://tests/test_canon.tscn       # forbidden names, map, sieges across nations, the sky, the Avatar's cycle and whereabouts
 godot --headless --path . res://tests/test_story.tscn       # validate all dialogue graphs; play every ending and companion quest
 godot --headless --path . res://tests/test_avatar.tscn      # eras, life stages, the four motives, countermeasures, judgement, teaching
 godot --headless --path . res://tests/test_dlc.tscn         # every technique teachable, every trial and quest, all 25 bending jobs, expansion switches

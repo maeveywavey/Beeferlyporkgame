@@ -3,7 +3,7 @@ extends RefCounted
 ## main storyline. Content lives in the dialogue scripts listed in SOURCES;
 ## this file only interprets it. All state is kept in GS.flags (saved).
 ##
-## Dialogue format (see docs/02_writers_room.md for the writing):
+## Dialogue format (see docs/setting.md for the writing):
 ##   "id": {"start": "a", "nodes": {"a": {"who": "hana", "expr": "thoughtful",
 ##       "text": "...", "do": [effects], "next": "b" | "choices": [
 ##       {"text": "...", "next": "c", "if": {conditions}, "hint": "...", "do": [effects]}]}}}
@@ -249,7 +249,7 @@ static func callv_bool(name: String) -> bool:
 	match name:
 		"has_wounded": return Roster.wounded(GS.player_party().roster) > 0
 		"any_companion": return not GS.player.companions.is_empty()
-		"has_evidence": return flag("dai_li_testify") or flag("kuro_ledgers") or flag("kuro_implicated")
+		"has_evidence": return flag("censor_testify") or flag("kuro_ledgers") or flag("kuro_implicated")
 		"pemba_or_nima": return in_party("pemba") or in_party("nima")
 		"nima_wins": return _nima_wins()
 		"nima_loses": return not _nima_wins()
@@ -257,7 +257,7 @@ static func callv_bool(name: String) -> bool:
 		"not_master": return GS.player.get("master_title", "") == ""
 		"not_air": return GS.player.get("bend", "") != "air"
 		"wx_can_share": return GS.skill("trade") >= 3 or GS.player.gold >= 800
-		"ex_academy_ok": return not flag("hana_spared") and not flag("dai_li_enemy")
+		"ex_academy_ok": return not flag("hana_spared") and not flag("censor_enemy")
 		"fx_ember_clean": return AvatarSys.infamy() <= int(flag("fx_ember_inf", 0))
 		"fx_ember_dirty": return AvatarSys.infamy() > int(flag("fx_ember_inf", 0))
 		"av_seat": return AvatarSys.seat_near() != ""

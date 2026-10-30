@@ -150,11 +150,11 @@ func _notification(what: int) -> void:
 # Character creation
 # ---------------------------------------------------------------------------
 const BACKGROUNDS := {
-	"ek_refugee": {"name": "Ember Coast Refugee", "start": "omashu", "bends": ["earth", ""], "standing": "commoner",
+	"ek_refugee": {"name": "Strait Isles Refugee", "start": "omashu", "bends": ["earth", ""], "standing": "commoner",
 		"attrs": {"str": 1, "cha": 1}, "skills": {"athletics": 1, "trade": 1}, "gold": 350,
 		"equip": {"weapon": "staff", "armor": "peasant_clothes", "helmet": "straw_hat"},
 		"troops": [["ek_peasant", 4]], "goods": {"rice": 6, "cabbages": 4}, "rel": {"fire_nation": -5},
-		"desc": "The Admiralty came to 'protect' your village on the Ember Coast and stayed until there was nothing left to protect. You walked inland with a staff, four neighbours and a grudge, and Omashu let you in when Ba Sing Se would not."},
+		"desc": "The Admiralty came to 'protect' your village in the Strait Isles and stayed until there was nothing left to protect. You crossed the strait in a borrowed boat with a staff, four neighbours and a grudge, and Omashu let you in when Ba Sing Se would not."},
 	"lower_ring": {"name": "Lower Ring Labourer", "start": "ba_sing_se", "bends": ["earth", ""], "standing": "commoner",
 		"attrs": {"str": 2}, "skills": {"ironflesh": 1, "trainer": 1}, "gold": 200,
 		"equip": {"weapon": "axe", "armor": "peasant_clothes"},
@@ -164,7 +164,7 @@ const BACKGROUNDS := {
 		"attrs": {"str": 1, "agi": 1}, "skills": {"weapon_mastery": 1, "tactics": 1}, "gold": 300,
 		"equip": {"weapon": "dao", "armor": "peasant_clothes"}, "rel": {"fire_nation": -5},
 		"troops": [["fn_conscript", 2]], "goods": {"fire_flakes": 6, "rice": 4},
-		"desc": "You were conscripted for the Ember Coast and served until the day you were ordered to burn a granary with a family still inside. You walked away that night, and two others walked with you."},
+		"desc": "You were conscripted for the Strait Isles and served until the day you were ordered to burn a granary with a family still inside. You walked away that night, and two others walked with you."},
 	"fn_noble": {"name": "Fire Nation Minor Noble", "start": "caldera", "bends": ["fire", ""], "standing": "gentry",
 		"attrs": {"int": 1, "cha": 1}, "skills": {"leadership": 1, "weapon_mastery": 1}, "gold": 900,
 		"equip": {"weapon": "jian", "armor": "peasant_clothes"}, "rel": {"fire_nation": 5},
@@ -195,11 +195,11 @@ const BACKGROUNDS := {
 		"equip": {"weapon": "staff", "armor": "nomad_robes"}, "rel": {"air_nomads": 5},
 		"troops": [["an_novice", 1]], "goods": {"tea": 2, "rice": 6},
 		"desc": "For six years you carried letters between the four temples and every court that would receive a monk: by bison, on foot, once on a very confused ostrich horse. Every gate opens for a temple courier. You have started to wonder what is in the letters."},
-	"kyoshi": {"name": "Kyoshi Island Trainee", "start": "kyoshi_island", "bends": [""], "standing": "commoner",
+	"hamakaze": {"name": "Tide Warden Trainee", "start": "hamakaze", "bends": [""], "standing": "commoner",
 		"attrs": {"agi": 2}, "skills": {"weapon_mastery": 2, "athletics": 1}, "gold": 250,
-		"equip": {"weapon": "kyoshi_fans", "armor": "kyoshi_armor"},
-		"troops": [["ky_initiate", 3]], "goods": {"fish": 6, "rice": 4},
-		"desc": "Trained in the dojo of Kyoshi Island, you leave with your fans and face paint. Captain Oyama gave you one instruction: defend those who cannot defend themselves, and never confuse that with conquest."},
+		"equip": {"weapon": "warden_glaive", "armor": "tide_armor"},
+		"troops": [["tw_initiate", 3]], "goods": {"fish": 6, "rice": 4},
+		"desc": "Trained on the beaches of Hamakaze, you leave with a glaive, a white headband and a fisherwoman's opinion of weather. Captain Oyama gave you one instruction: defend those who cannot defend themselves, and never confuse that with conquest."},
 }
 
 func create_player(pname: String, background: String, bend: String, skin: Color, hair: Color, era: String = "quiet") -> Dictionary:
@@ -316,10 +316,10 @@ func new_game(p: Dictionary) -> void:
 	sim.reset_clock()
 	game_active = true
 	match AvatarSys.era():
-		"quiet": log_msg("Winter of the eleventh Quiet Year. Eleven years since the Avatar drowned; somewhere a child who will be the next one does not yet know it. Until then, the world must manage on its own.", Color(1, 0.85, 0.5))
+		"quiet": log_msg("Winter of the eleventh Quiet Year. Eleven years since the Avatar was lost at sea; somewhere a child who will be the next one does not yet know it. Until then, the world must manage on its own.", Color(1, 0.85, 0.5))
 		"young": log_msg("Winter. On Whaletail Island, a sixteen-year-old named Siku has been told she is the Avatar, and has three elements to learn. The world's masters are waiting to see who she comes to.", Color(1, 0.85, 0.5))
-		"prime": log_msg("Winter of the twenty-third year of Avatar Lei Shan. The Avatar is everywhere at once: in council halls, in siege camps, in the Spirit World. Everywhere except where you are.", Color(1, 0.85, 0.5))
-		"elder": log_msg("Winter. Avatar Akane is eighty-four and has not left the Boiling Lake Hamlet since autumn. The sages say she walks the Spirit World more than this one. The world has learned to manage, mostly.", Color(1, 0.85, 0.5))
+		"prime": log_msg("Winter of the twenty-third year of Avatar Lei Shan. The Avatar is everywhere at once: in council halls, in siege camps, in forests nobody else visits. Everywhere except where you are.", Color(1, 0.85, 0.5))
+		"elder": log_msg("Winter. Avatar Akane is eighty-four and has not left the Boiling Lake Hamlet since autumn. She teaches, meditates and receives few visitors. The world has learned to manage, mostly.", Color(1, 0.85, 0.5))
 
 func _make_garrison(culture: String, size: int) -> Array:
 	var r := []
@@ -383,25 +383,22 @@ func moon_phase() -> float:
 func is_full_moon() -> bool:
 	return absf(moon_phase() - 0.5) < 0.04
 
-# Eclipses and comets are natural events, as in real life: rare, irregular,
-# and predicted by the sages and astronomers days in advance. A solar eclipse
-# takes firebending away for its duration, a lunar eclipse takes waterbending,
-# and a comet strengthens fire for a few days. Scheduled per new game.
+# The sky, held to canon (docs/canon.md §5). The Great Comet passes once a
+# century, so it falls inside a playthrough only sometimes (about one game in
+# three), and never twice. A total solar eclipse that silences firebending is
+# known only twice in all recorded history, so none is scheduled. Lunar
+# eclipses happen; canon gives them no effect beyond hiding the full moon,
+# so they only cancel its strengthening. Scheduled per new game.
 func schedule_cosmic_events() -> void:
 	var ev := []
-	var d := randi_range(50, 170)
-	while d < 720:
-		var h := randf_range(8.0, 13.0)
-		ev.append({"kind": "solar", "day": d, "from": h, "to": h + 2.5})
-		d += randi_range(150, 280)
 	# lunar eclipses fall on full-moon nights (see moon_phase)
-	d = randi_range(30, 150)
+	var d := randi_range(30, 150)
 	while d < 720:
 		var fm := int(round((d - 7) / 28.0)) * 28 + 7
 		ev.append({"kind": "lunar", "day": fm, "from": 21.0, "to": 23.9})
 		d += randi_range(140, 260)
-	if randf() < 0.6:
-		ev.append({"kind": "comet", "day": randi_range(100, 600), "from": 0.0, "to": 24.0, "days": 4})
+	if randf() < 0.33:
+		ev.append({"kind": "comet", "day": randi_range(100, 600), "from": 0.0, "to": 24.0, "days": 3})
 	ev.sort_custom(func(a, b): return a.day < b.day)
 	flags.cosmic = ev
 
@@ -464,13 +461,11 @@ func bending_mult(element: String) -> float:
 				return 0.0
 			var m := 1.15 if is_daytime() else 0.85
 			if is_comet():
-				m *= 1.6
+				m *= 2.2
 			return m
 		"water":
-			if is_lunar_eclipse():
-				return 0.0
 			var m := 1.15 if not is_daytime() else 0.95
-			if is_full_moon() and not is_daytime():
+			if is_full_moon() and not is_daytime() and not is_lunar_eclipse():
 				m *= 1.5
 			return m
 	return 1.0

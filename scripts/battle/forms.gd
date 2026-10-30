@@ -1,5 +1,5 @@
 extends RefCounted
-## Bending Forms (sequel prototype, docs/05_sequel_design.md §7). The player
+## Bending Forms (docs/design.md §7). The player
 ## composes movements learned from each art's martial basis into a named
 ## form: Tai Chi for water, Hung Gar for earth, Northern Shaolin for fire,
 ## Baguazhang for air. Stats are computed from the movements, never chosen,

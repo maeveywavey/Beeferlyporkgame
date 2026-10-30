@@ -207,13 +207,10 @@ static func _helmet(style: String, head: Node3D, hair: Color, body_c: Color, tri
 		"ek_helm":
 			_sph(0.21, Color(0.22, 0.35, 0.18), Vector3(0, 0.12, 0), head, true)
 			_cyl(0.32, 0.32, 0.03, Color(0.85, 0.75, 0.35), Vector3(0, 0.13, 0), head, Vector3.ZERO, 10)
-		"dai_li":
-			_cyl(0.05, 0.36, 0.1, Color(0.08, 0.12, 0.06), Vector3(0, 0.3, 0), head, Vector3.ZERO, 10)
-			_cyl(0.2, 0.2, 0.12, Color(0.08, 0.12, 0.06), Vector3(0, 0.22, 0), head, Vector3.ZERO, 10)
-		"kyoshi":
-			_box(Vector3(0.3, 0.12, 0.04), Color(0.95, 0.95, 0.95), Vector3(0, 0.1, 0.15), head)
-			_cyl(0.18, 0.2, 0.12, Color(0.9, 0.75, 0.2), Vector3(0, 0.25, 0), head)
-			_box(Vector3(0.05, 0.18, 0.05), Color(0.9, 0.75, 0.2), Vector3(0, 0.38, 0), head)
+		"censor":
+			_box(Vector3(0.3, 0.14, 0.3), Color(0.08, 0.08, 0.09), Vector3(0, 0.24, 0), head)
+		"hamakaze":
+			_cyl(0.215, 0.215, 0.05, Color(0.94, 0.93, 0.9), Vector3(0, 0.12, 0), head, Vector3.ZERO, 12)
 		"parka", "wt_helm":
 			var hood := _sph(0.23, body_c, Vector3(0, 0.1, -0.02), head)
 			hood.scale = Vector3(1.0, 1.05, 1.0)

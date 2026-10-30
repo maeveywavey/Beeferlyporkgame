@@ -132,7 +132,7 @@ func _fire() -> void:
 	if not Story.flag("daisuke_humbled") or not Story.flag("sayuri_done"):
 		_err("Sayuri's quest did not resolve")
 	# The First Flame: carry it clean, then light the lamp with breath
-	_run("fx_monastery", ["carry the First Flame"], 12)
+	_run("fx_monastery", ["carry the ember"], 12)
 	if not Story.flag("fx_ember"):
 		_err("First Flame trial did not start")
 	_run("fx_ember_arrive")
@@ -143,7 +143,7 @@ func _fire() -> void:
 	_new("fn_noble", "fire")
 	for id in ["f_jets", "f_whip", "f_daggers"]:
 		Tech.learn(id)
-	_run("fx_monastery", ["carry the First Flame"], 12)
+	_run("fx_monastery", ["carry the ember"], 12)
 	AvatarSys.add_infamy(25, Vector2.ZERO, "test")
 	var p := _run("fx_ember_arrive")
 	if not p.contains("dark"):
@@ -302,7 +302,7 @@ func _work() -> void:
 			_err("job %s has no cooldown after use" % id)
 	print("bending work: %d of %d jobs done" % [done, Work.WORK.size()])
 	# A non-bender's companion does the work
-	_new("kyoshi", "")
+	_new("hamakaze", "")
 	GS.player.companions = ["nima"]
 	GS.player_party().pos = Data.settlements.omashu.pos
 	if Work.blocker("heal_house", "omashu") != "":

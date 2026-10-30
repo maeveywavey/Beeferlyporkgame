@@ -1,6 +1,9 @@
 extends RefCounted
-## The main storyline, "The Drowned Testament" (docs/02_writers_room.md, part 3).
-## Eleven years ago the Avatar drowned on the way to a peace conference. Their
+## The main storyline, "The Drowned Testament" (docs/setting.md §3).
+## Eleven years ago the Avatar died at sea on the way to a peace conference:
+## poisoned days before (which blocked the Avatar State) and spent holding the
+## sea off the crew's boats (docs/canon.md §9). The player is never told this
+## outright; pages I, IV and V hint at it. Their
 ## logbook was torn apart by salvage, theft and fear. The player gathers six
 ## pages, learns what happened, and decides what the truth is for.
 
@@ -11,7 +14,7 @@ const NPCS := {
 	"clerk": {"name": "Records Clerk Fumio", "culture": "fire", "vlook": {"sex": "m", "hair": "Hair_SimpleParted", "accessory": "topknot"}, "kit": "sash"},
 	"wan_shi_tong": {"name": "Wan Shi Tong", "portrait": false},
 	"refugee": {"name": "Grandmother Ai", "culture": "earth", "vlook": {"sex": "f", "hair": "Hair_Buns", "hair_color": Color(0.75, 0.73, 0.7)}},
-	"kyoshi_delegate": {"name": "Captain Oyama", "culture": "kyoshi", "vlook": {"sex": "f", "hair": "Hair_Buns", "accessory": "kyoshi"}, "kit": "kyoshi_armor", "outfit": "ranger"},
+	"hamakaze_delegate": {"name": "Captain Oyama", "culture": "hamakaze", "vlook": {"sex": "f", "hair": "Hair_Long", "accessory": "hamakaze"}, "kit": "tide_armor", "outfit": "ranger"},
 }
 
 const SPAWNS := {
@@ -23,9 +26,9 @@ const SPAWNS := {
 		"on_defeat": [["flag", "kuro_implicated", true], ["queue", "ms_agents_beaten"]]},
 	"kuro_rebels": {"name": "Kuro's Last Fleet", "faction": "bandits", "troops": [["fn_veteran", 30], ["fn_imperial_fb", 12], ["fn_yuyan", 10], ["fn_rhino_rider", 8]], "gold": 3000,
 		"on_defeat": [["flag", "kuro_defeated", true], ["queue", "ms_kuro_falls"]]},
-	"dai_li_agents": {"name": "Dai Li Agents", "scale": true, "faction": "bandits", "troops": [["ek_dai_li", 6], ["ek_earthbender", 4]], "gold": 250,
-		"on_defeat": [["queue", "ms_dai_li_beaten"]]},
-	"wu_loyalists": {"name": "Wu Jian's Loyalists", "faction": "bandits", "troops": [["ek_dai_li", 14], ["ek_royal_guard", 16], ["ek_earthbender", 20]], "gold": 3000,
+	"censor_agents": {"name": "Censorate Agents", "scale": true, "faction": "bandits", "troops": [["ek_censor", 6], ["ek_earthbender", 4]], "gold": 250,
+		"on_defeat": [["queue", "ms_censor_beaten"]]},
+	"wu_loyalists": {"name": "Wu Jian's Loyalists", "faction": "bandits", "troops": [["ek_censor", 14], ["ek_royal_guard", 16], ["ek_earthbender", 20]], "gold": 3000,
 		"on_defeat": [["flag", "wu_defeated", true], ["queue", "ms_wu_falls"]]},
 }
 
@@ -34,8 +37,8 @@ const TRIGGERS := [
 	{"on": "daily", "dlg": "ms_norbu_dies", "if": {"flag": "ms_norbu_fight", "not_flag": "ms_norbu_saved", "days_since": ["ms_norbu_fight_day", 2]}},
 	{"on": "daily", "dlg": "ms_assassins", "if": {"pages": 3, "not_flag": "ms_truth_decided"}, "chance": 0.15, "do": [["spawn", "kuro_agents"]]},
 	{"on": "daily", "dlg": "ms_refugees_raided", "if": {"flag": "refugees_betrayed", "days_since": ["refugees_betrayed", 10]}},
-	{"on": "daily", "dlg": "ms_dai_li_hunt", "once": false, "if": {"flag": "dai_li_enemy", "not_flag": "wu_defeated", "near_faction": "earth_kingdom", "days_since": ["dai_li_hunt_day", 25]}, "chance": 0.1,
-		"do": [["flag_day", "dai_li_hunt_day"], ["spawn", "dai_li_agents"]]},
+	{"on": "daily", "dlg": "ms_censor_hunt", "once": false, "if": {"flag": "censor_enemy", "not_flag": "wu_defeated", "near_faction": "earth_kingdom", "days_since": ["censor_hunt_day", 25]}, "chance": 0.1,
+		"do": [["flag_day", "censor_hunt_day"], ["spawn", "censor_agents"]]},
 	{"on": "daily", "dlg": "ms_told_epilogue", "if": {"flags": ["kuro_defeated", "wu_defeated", "ending_told"]}},
 ]
 
@@ -45,13 +48,13 @@ const OPTIONS := [
 	{"sid": "eastern_air_temple", "text": "Bring Grandmother Ai's refugees into the temple", "dlg": "ms_refugees_deliver", "if": {"flag": "ms_refugees_gathered", "not_flag": "ms_got3"}},
 	{"sid": "full_moon_bay", "text": "Seek out Old Mother Shiyo", "dlg": "ms_shiyo", "if": {"flag": "ms_act1", "not_flag": "ms_got2"}},
 	{"sid": "full_moon_bay", "text": "Gather the refugees bound for the Eastern Air Temple", "dlg": "ms_refugees_gather", "if": {"flag": "ms_refugee_escort", "not_flag": "ms_refugees_gathered"}},
-	{"sid": "ba_sing_se", "text": "Look into the Dai Li vault", "dlg": "ms_vault", "if": {"flag": "ms_act1", "not_flag": "ms_got4"}},
+	{"sid": "ba_sing_se", "text": "Look into the Censorate vault", "dlg": "ms_vault", "if": {"flag": "ms_act1", "not_flag": "ms_got4"}},
 	{"sid": "fire_navy_harbor", "text": "Find the Admiralty's records room", "dlg": "ms_admiralty", "if": {"flag": "ms_act1", "not_flag": "ms_got5"}},
 	{"sid": "wan_shi_tong", "text": "Descend into the library and find the owl", "dlg": "ms_library", "if": {"flag": "ms_act1", "not_flag": "ms_got6"}},
 	{"sid": "ba_sing_se", "text": "Accept the Grand Secretary's invitation to tea", "dlg": "ms_wu_tea", "if": {"pages": 4, "not_flag": "ms_truth_decided"}, "once": true},
 	{"sid": "fire_navy_harbor", "text": "Dine aboard the Admiral's flagship", "dlg": "ms_kuro_dinner", "if": {"pages": 4, "not_flag": "ms_truth_decided"}, "once": true},
 	{"sid": "ba_sing_se", "text": "Tell the Earth Queen what the pages say, as you promised", "dlg": "ms_queen_first", "if": {"flags": ["queen_ally", "ms_truth"], "not_flag": "ms_queen_told"}},
-	{"sid": "kyoshi_island", "text": "Open the Council of Nations", "dlg": "ms_council", "if": {"eq": ["ms_path", "told"], "not_flag": "ending_told"}},
+	{"sid": "hamakaze", "text": "Open the Council of Nations", "dlg": "ms_council", "if": {"eq": ["ms_path", "told"], "not_flag": "ending_told"}},
 	{"sid": "caldera", "text": "Lay the logbook before the Fire Lord", "dlg": "ms_sold_fire", "if": {"eq": ["ms_path", "sold_fire"], "not_flag": "ms_ended"}},
 	{"sid": "ba_sing_se", "text": "Lay the logbook before the Earth Queen", "dlg": "ms_sold_earth", "if": {"eq": ["ms_path", "sold_earth"], "not_flag": "ms_ended"}},
 	{"sid": "omashu", "text": "Lay the logbook before King Feng Tao", "dlg": "ms_sold_omashu", "if": {"eq": ["ms_path", "sold_omashu"], "not_flag": "ms_ended"}},
@@ -102,18 +105,18 @@ const DIALOGUES := {
 	"ms_abbess": {"title": "The Eastern Air Temple", "start": "a", "nodes": {
 		"a": {"who": "tsering", "expr": "thoughtful", "text": "Norbu's knot. He ties it backwards; he always has. Sit down, {name}. You have been carrying something heavy, and I don't only mean the packet.", "next": "b"},
 		"b": {"who": "tsering", "expr": "sad", "text": "This is their hand. I would know it anywhere — they wrote to me every winter for thirty years, mostly to complain about my tea. The logbook was in a waterproof case. The salvagers cut it apart and sold it by the page, like a fish.", "next": "c"},
-		"c": {"who": "tsering", "expr": "neutral", "text": "Six pages survived that we know of. This is the first. One went to a pirate, Old Mother Shiyo, who anchors off Full Moon Bay. One came here, to our archive, before any of this. One vanished into the Dai Li's vaults in Ba Sing Se. One sits in the Fire Navy's records at the Admiralty harbour. And one was carried into the desert and traded to Wan Shi Tong, who does not give things back.", "next": "d"},
+		"c": {"who": "tsering", "expr": "neutral", "text": "Six pages survived that we know of. This is the first. One went to a pirate, Old Mother Shiyo, who anchors off Full Moon Bay. One came here, to our archive, before any of this. One vanished into the Censorate's vaults in Ba Sing Se. One sits in the Fire Navy's records at the Admiralty harbour. And one was carried into the desert and traded to Wan Shi Tong, who does not give things back.", "next": "d"},
 		"d": {"who": "tsering", "expr": "determined", "text": "I will not tell you what to do with them. I will tell you that two very powerful men have spent eleven years making sure nobody asks what happened on that ship. If you gather these pages, you will become a question they cannot ignore.", "choices": [
 			{"text": "\"Then I'll be a very loud question.\"", "next": "e"},
 			{"text": "\"Which two men?\"", "next": "who"},
 		]},
 		"who": {"who": "tsering", "expr": "thoughtful", "text": "If I said their names, you would go looking for proof that I was right. Find the pages first. Then you will not need my opinion.", "next": "e"},
-		"e": {"who": "tsering", "expr": "tender", "text": "Go gently. And if you are tempted to sell what you find — and you will be, the offers will be very large — remember that the person who wrote it drowned trying to make the shouting stop.",
+		"e": {"who": "tsering", "expr": "tender", "text": "Go gently. And if you are tempted to sell what you find — and you will be, the offers will be very large — remember that the person who wrote it died at sea trying to make the shouting stop.",
 			"do": [["flag", "ms_act1", true], ["xp", 300],
 				["journal", "ms_main", "The Drowned Testament", "Abbess Tsering told you where the other five pages went. Gather them, then decide what the truth is for."],
 				["journal", "ms_page2", "Page II: Old Mother Shiyo", "The pirate queen Old Mother Shiyo bought a page from the salvagers. She anchors off Full Moon Bay."],
 				["journal", "ms_page3", "Page III: The Temple Archive", "The Eastern Air Temple's archive holds a letter the Avatar left the winter before the talks. Ask Abbess Tsering."],
-				["journal", "ms_page4", "Page IV: The Dai Li Vault", "A page vanished into the Dai Li's vaults beneath Ba Sing Se."],
+				["journal", "ms_page4", "Page IV: The Censorate Vault", "A page vanished into the Censorate's vaults beneath Ba Sing Se."],
 				["journal", "ms_page5", "Page V: The Admiralty Records", "The Fire Navy filed a page in its records room at the Fire Navy Harbour."],
 				["journal", "ms_page6", "Page VI: Wan Shi Tong", "A page was traded to the owl spirit Wan Shi Tong, whose library lies under the Si Wong Desert. He trades knowledge only for knowledge."]]},
 	}},
@@ -146,7 +149,7 @@ const DIALOGUES := {
 	}},
 	"ms_shiyo": {"title": "Old Mother Shiyo", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "Shiyo's flagship is an old grain barge with three masts nailed onto it and a great many cannons. She receives you on deck in a wicker chair, eating lychees and spitting the stones at a gull.", "next": "b"},
-		"b": {"who": "shiyo", "expr": "smirk", "text": "The Avatar's page. Of course. Everyone wants my page this year. An admiral's man offered me a ship for it. A Dai Li man offered me my life, which was less generous, since I already have it.", "next": "c"},
+		"b": {"who": "shiyo", "expr": "smirk", "text": "The Avatar's page. Of course. Everyone wants my page this year. An admiral's man offered me a ship for it. A Censorate man offered me my life, which was less generous, since I already have it.", "next": "c"},
 		"c": {"who": "shiyo", "expr": "thoughtful", "text": "I bought it because I thought it would be worth more later. It is. Fifteen hundred gold, and it's yours, and I'll forget your face as a courtesy.", "choices": [
 			{"text": "Pay her. (1,500 gold)", "next": "pay", "if": {"gold": 1500}, "hint": "need 1,500 gold"},
 			{"text": "(Reika) \"Hello, Shiyo. You still owe me for the Cinder Strait.\"", "next": "reika", "if": {"companion": "reika"}, "hide": true},
@@ -162,16 +165,16 @@ const DIALOGUES := {
 			"do": [["spawn", "shiyo_fleet"], ["close_windows"]]},
 	}},
 	"ms_vault": {"title": "Beneath Ba Sing Se", "start": "a", "nodes": {
-		"a": {"who": "narrator", "text": "The Dai Li's vaults are said to lie under Lake Laogai, under the Upper Ring, under the palace, under everything. What is certain is that nobody who asks about them asks twice.", "choices": [
+		"a": {"who": "narrator", "text": "The Censorate's vaults are said to lie under the Imperial Reservoir, under the Upper Ring, under the palace, under everything. What is certain is that nobody who asks about them asks twice.", "choices": [
 			{"text": "(Hana) Ask Hana about the tunnels.", "next": "hana", "if": {"companion": "hana"}, "hide": true},
 			{"text": "Petition the Earth Queen for it.", "next": "queen", "if": {"standing": 2}, "hint": "needs Gentry standing"},
 			{"text": "Break into the vault yourself.", "next": "steal", "if": {"skill": ["tactics", 4]}, "hint": "needs Tactics 4"},
 			{"text": "Break in anyway.", "next": "caught"},
 			{"text": "Leave it for now.", "next": ""},
 		]},
-		"hana": {"who": "hana", "expr": "thoughtful", "text": "The vault is under the old Wenlong granary, not Lake Laogai. That rumour is maintained on purpose. There is a drainage tunnel the Dai Li sealed in the forty-third year of the old king. They sealed it badly. I have been meaning to tell someone about that for six years.", "next": "hana2"},
+		"hana": {"who": "hana", "expr": "thoughtful", "text": "The vault is under the old Wenlong granary, not the Reservoir. That rumour is maintained on purpose. There is a drainage tunnel the Censorate sealed in the forty-third year of the old king. They sealed it badly. I have been meaning to tell someone about that for six years.", "next": "hana2"},
 		"hana2": {"who": "narrator", "text": "Hana walks you through two hours of dripping darkness without once lighting a lamp, counting steps under her breath. The vault is a room of filing cabinets. The page is filed under 'Weather'.",
-			"do": [["flag", "ms_got4", true], ["page", 4], ["approval", "hana", 6], ["journal_done", "ms_page4", "Hana led you through a forgotten drainage tunnel into the Dai Li vault. The page was filed under 'Weather'."]]},
+			"do": [["flag", "ms_got4", true], ["page", 4], ["approval", "hana", 6], ["journal_done", "ms_page4", "Hana led you through a forgotten drainage tunnel into the Censorate vault. The page was filed under 'Weather'."]]},
 		"queen": {"who": "hualing", "expr": "thoughtful", "text": "A page of the Avatar's logbook in my own vaults, and nobody told me. That is the most interesting thing anyone has said to me in a year. Secretary Wu will be unhappy. I find that I don't mind.", "next": "queen2"},
 		"queen2": {"who": "hualing", "expr": "determined", "text": "You may have it. In return, promise me this: whatever it says, you will tell me before you tell anyone else. I have spent nineteen years being the last to know things in my own palace.", "choices": [
 			{"text": "\"You'll hear it first. I promise.\"", "next": "queen3", "do": [["flag", "queen_ally", true], ["lord_rel", "hualing", 15]]},
@@ -181,11 +184,11 @@ const DIALOGUES := {
 			"do": [["flag", "ms_got4", true], ["page", 4], ["flag", "upper_invite", true], ["journal_done", "ms_page4", "Earth Queen Hualing gave you the page from her own vault — and asked to hear the truth first."]]},
 		"queen4": {"who": "hualing", "expr": "sad", "text": "Honest, at least. Take it anyway. I would rather it be in the hands of someone who refuses me than someone who lies to me.",
 			"do": [["flag", "ms_got4", true], ["page", 4], ["journal_done", "ms_page4", "Earth Queen Hualing gave you the page from her own vault."]]},
-		"steal": {"who": "narrator", "text": "You watch the guard changes for three nights, bribe a laundress, and walk out of the Dai Li's vault with the page folded into a sock. Nobody notices. Nobody notices for almost a week.",
-			"do": [["flag", "ms_got4", true], ["page", 4], ["journal_done", "ms_page4", "You stole the page from the Dai Li vault without being seen."]]},
-		"caught": {"who": "narrator", "text": "You get the page. You also get a stone glove around your ankle, two Dai Li agents, and a very long chase through the Middle Ring. You escape. The Dai Li will not forget you.",
-			"do": [["flag", "ms_got4", true], ["page", 4], ["flag", "dai_li_enemy", true], ["rel", "earth_kingdom", -20], ["lord_rel", "shu_fan", -30], ["lord_rel", "wu_jian", -15],
-				["journal_done", "ms_page4", "You stole the page from the Dai Li vault and were seen doing it."]]},
+		"steal": {"who": "narrator", "text": "You watch the guard changes for three nights, bribe a laundress, and walk out of the Censorate's vault with the page folded into a sock. Nobody notices. Nobody notices for almost a week.",
+			"do": [["flag", "ms_got4", true], ["page", 4], ["journal_done", "ms_page4", "You stole the page from the Censorate vault without being seen."]]},
+		"caught": {"who": "narrator", "text": "You get the page. You also get a stone cuff around your ankle, two censors, and a very long chase through the Middle Ring. You escape. The Censorate will not forget you.",
+			"do": [["flag", "ms_got4", true], ["page", 4], ["flag", "censor_enemy", true], ["rel", "earth_kingdom", -20], ["lord_rel", "shu_fan", -30], ["lord_rel", "wu_jian", -15],
+				["journal_done", "ms_page4", "You stole the page from the Censorate vault and were seen doing it."]]},
 	}},
 	"ms_admiralty": {"title": "The Admiralty Records", "start": "a", "nodes": {
 		"a": {"who": "clerk", "expr": "neutral", "text": "Records. Requisitions, manifests, court-martials, weather. If it happened to the Fire Navy, I filed it. If it didn't, I filed that too. What do you want?", "choices": [
@@ -233,12 +236,12 @@ const DIALOGUES := {
 			{"text": "\"No.\"", "next": "no"},
 		]},
 		"boats": {"who": "wu_jian", "expr": "neutral", "text": "I filed an order that lifeboats return before dark in a storm. Lifeboats returned. The sea did the rest. If you intend to make that a crime, you will have to make filing a crime, and then where would any of us be?", "next": "offer"},
-		"offer": {"who": "wu_jian", "expr": "smirk", "text": "Three thousand gold today. A post in the Middle Ring, if you want one. And whatever the Dai Li have written about you is lost in a fire that, regrettably, has not happened yet.", "choices": [
+		"offer": {"who": "wu_jian", "expr": "smirk", "text": "Three thousand gold today. A post in the Middle Ring, if you want one. And whatever the Censorate has written about you is lost in a fire that, regrettably, has not happened yet.", "choices": [
 			{"text": "Take the money. (He thinks he has bought your silence.)", "next": "take"},
 			{"text": "\"Keep your tea.\"", "next": "no"},
 		]},
 		"take": {"who": "wu_jian", "expr": "happy", "text": "Splendid. I find that people who take money are so much easier to understand than people who don't. Mind the stairs.",
-			"do": [["gold", 3000], ["flag", "wu_paid", true], ["flag", "dai_li_enemy", false], ["lord_rel", "wu_jian", 30], ["approval", "hana", -8], ["approval", "shen_mu", -5], ["approval", "reika", 3]]},
+			"do": [["gold", 3000], ["flag", "wu_paid", true], ["flag", "censor_enemy", false], ["lord_rel", "wu_jian", 30], ["approval", "hana", -8], ["approval", "shen_mu", -5], ["approval", "reika", 3]]},
 		"no": {"who": "wu_jian", "expr": "neutral", "text": "Then we are both collectors, and you have made yourself a very interesting item. Mind the stairs. They are steeper going down.",
 			"do": [["lord_rel", "wu_jian", -15], ["flag", "wu_refused", true], ["approval", "hana", 4]]},
 	}},
@@ -268,10 +271,10 @@ const DIALOGUES := {
 	"ms_agents_beaten": {"title": "Men Without Banners", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "Among the dead you find a lacquered pay-chit stamped with a private seal: a wave breaking over a flame. Half the sailors in the Fire Navy would recognise it. It belongs to Admiral Tenzai Kuro.", "do": [["journal", "ms_main", "The Drowned Testament", "Someone sent soldiers without banners after you. Their pay-chits carry Admiral Kuro's private seal. Keep gathering the pages."]]},
 	}},
-	"ms_dai_li_hunt": {"title": "Green Robes", "start": "a", "nodes": {
-		"a": {"who": "narrator", "text": "A farmer at a well will not meet your eyes. Further on, a road you took yesterday has been rebuilt overnight, a little narrower. The Dai Li remember the vault, and they have come to discuss it."},
+	"ms_censor_hunt": {"title": "Green Robes", "start": "a", "nodes": {
+		"a": {"who": "narrator", "text": "A farmer at a well will not meet your eyes. Further on, a road you took yesterday has been rebuilt overnight, a little narrower. The Censorate remembers the vault, and it has come to discuss it."},
 	}},
-	"ms_dai_li_beaten": {"title": "Green Robes", "start": "a", "nodes": {
+	"ms_censor_beaten": {"title": "Green Robes", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "The agents leave no names and no seals, only stone gloves and a written description of you that is unflatteringly accurate. There will be others."},
 	}},
 	"ms_refugees_raided": {"title": "The Mountain Road", "start": "a", "nodes": {
@@ -283,7 +286,7 @@ const DIALOGUES := {
 	# The pages
 	# -----------------------------------------------------------------------
 	"page_1": {"title": "The Avatar's Logbook — Page I", "start": "a", "nodes": {
-		"a": {"who": "narrator", "text": "Day one of the talks. The Fire Lord's envoys brought their own tea, which is an insult, and the Regent brought his own chairs, which is worse. I have decided to find all of this funny. If I don't, I'll be furious, and the Avatar is not supposed to be furious at breakfast.\n\nThe Water Tribe captain says there's weather coming. She says it the way people say 'your uncle is visiting'. I like her."},
+		"a": {"who": "narrator", "text": "Day one of the talks. The Fire Lord's envoys brought their own tea, which is an insult, and the Regent brought his own chairs, which is worse. I have decided to find all of this funny. If I don't, I'll be furious, and the Avatar is not supposed to be furious at breakfast.\n\nSomething at the Regent's welcome dinner disagreed with me: two days of fever, and my hands still shake. When I sit to meditate the quiet place has a door in it now, and the door is shut. Probably nothing. Probably I'm tired.\n\nThe Water Tribe captain says there's weather coming. She says it the way people say 'your uncle is visiting'. I like her."},
 	}},
 	"page_2": {"title": "The Avatar's Logbook — Page II", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "A deckhand asked me tonight if the Avatar is ever scared. She can't have been more than fifteen. I told her yes, all the time, and that being scared is just your body taking something seriously.\n\nShe looked so relieved I almost cried. I think everyone on this ship thinks I'm going to fix it. I think I'm going to sit in a room with frightened old men and try to make them slightly less frightened. That's the whole job. It always was."},
@@ -292,10 +295,10 @@ const DIALOGUES := {
 		"a": {"who": "narrator", "text": "Tsering — your tea is still terrible, and I'll miss it. I'm writing because I can't sleep and you're the only person who won't make it into a prophecy.\n\nI'm so tired of being the reason other people stop trying. Every village I save is a village that waits for the next Avatar instead of building a wall. Every war I stop is a war nobody learned to stop themselves. If these talks work, I want to go somewhere small and be useless for a year. If they don't — well. Tell the novices the joke about the bison and the bell tower. Norbu will hate it."},
 	}},
 	"page_4": {"title": "The Avatar's Logbook — Page IV", "start": "a", "nodes": {
-		"a": {"who": "narrator", "text": "[Stapled behind the page: a Dai Li rescue log. 'Lifeboats of the escort squadron recalled on the Regent's standing order. Lanterns extinguished. Report to G.S. only.']\n\nThe storm has us. I can see lanterns — boats coming from the escort, six or seven, bobbing. Thank the spirits. I'm going to stop writing and help with the lines.\n\n…They've turned back. All of them, at once, like someone gave an order. Why would anyone give that order?"},
+		"a": {"who": "narrator", "text": "[Stapled behind the page: a rescue log under Censorate seal. 'Lifeboats of the escort squadron recalled on the Regent's standing order. Lanterns extinguished. Report to G.S. only.']\n\nThe storm has us. I've put the crew in the boats and I'm holding the sea flat around them. That much I can still do. I can see lanterns — boats coming from the escort, six or seven, bobbing. Thank the spirits. Not long now.\n\n…They've turned back. All of them, at once, like someone gave an order. Why would anyone give that order?"},
 	}},
 	"page_5": {"title": "The Avatar's Logbook — Page V", "start": "a", "nodes": {
-		"a": {"who": "narrator", "text": "[Folded into the page: a rudder pin, sawn three-quarters through. The foundry mark is a Fire Navy anchor.]\n\nThe helm's gone slack. The captain says the rudder isn't broken, it's been cut — clean, a saw, not the sea. Someone didn't want this ship to arrive on time. I don't think they wanted it to sink. I think they wanted a delay, and a storm made it something else.\n\nI keep thinking: two small cowardices, and the weather did the rest."},
+		"a": {"who": "narrator", "text": "[Folded into the page: a rudder pin, sawn three-quarters through. The foundry mark is a Fire Navy anchor.]\n\nThe helm's gone slack. The captain says the rudder isn't broken, it's been cut — clean, a saw, not the sea. Someone didn't want this ship to arrive on time. I don't think they wanted it to sink. I think they wanted a delay, and a storm made it something else.\n\nI keep thinking: two small cowardices, and the weather did the rest.\n\nThe boats with the crew have reached the rocks. All of them. I can let go of the water now. Usually, when I'm this far past the end of myself, something older stands up inside me and finishes the job. Tonight there's only me. That's all right. Tonight, me was enough for them."},
 	}},
 	"page_6": {"title": "The Avatar's Logbook — Page VI", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "Notes for the speech, in case I'm allowed to give it:\n\nPeace isn't a treaty. A treaty is a piece of paper saying peace is allowed. Peace is a lot of ordinary people deciding to be a little less afraid at the same time — the fisherman who doesn't burn the other village's nets, the clerk who files the order and then 'loses' it, the soldier who aims high.\n\nI can't make anyone do that. Nobody can. That's the terrible thing about it, and the hopeful thing too."},
@@ -307,14 +310,14 @@ const DIALOGUES := {
 	"ms_truth": {"title": "The Drowned Testament", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "Six pages. You lay them out on a camp table in order and read them through, start to finish, twice. The last entry is written in a hand so shaken it is barely a hand at all.", "next": "b"},
 		"b": {"who": "narrator", "text": "\"The rudder is gone and the boats have turned back. I don't know whose hands did either. I know whose fault it will be called.\n\nWhoever finds this — I'm sorry I wasn't enough. I don't want my death to be a reason. Please let it be an ending.\"", "next": "c"},
-		"c": {"who": "narrator", "text": "The rudder pin bears a Fire Navy anchor: Admiral Tenzai Kuro's men cut it, to delay a peace that would have cost him his colonies. The rescue log bears a Dai Li seal: Grand Secretary Wu Jian's order turned the boats back, so the Fire Nation would carry the blame. Neither man meant for the Avatar to die. Both of them let it happen, and have lived on it for eleven years.", "next": "d"},
-		"d": {"who": "narrator", "text": "Nobody ordered the Avatar's death. That is the truth, and it is worse than a villain. What you do with it is yours to decide.",
+		"c": {"who": "narrator", "text": "The rudder pin bears a Fire Navy anchor: Admiral Tenzai Kuro's men cut it, to delay a peace that would have cost him the Isles. The rescue log bears the Censorate's seal: Grand Secretary Wu Jian's order turned the boats back, so the Fire Nation would carry the blame. Neither man meant for the Avatar to die. Both of them let it happen, and have lived on it for eleven years.", "next": "d"},
+		"d": {"who": "narrator", "text": "Neither man ordered the Avatar's death. That is the truth you can prove, and it is worse than a villain. What you do with it is yours to decide.",
 			"do": [["flag", "ms_truth", true], ["xp", 1500], ["renown", 25],
 				["journal", "ms_main", "The Drowned Testament", "You know what happened on the Lantern: Kuro's men cut the rudder, Wu Jian's order turned back the rescue. Decide what to do with the truth (open the logbook from the camp menu)."]]},
 	}},
 	"ms_decide": {"title": "What the Truth Is For", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "The logbook sits in its oilcloth. Everyone who knows you have it wants something from it. The Avatar asked for one thing: let it be an ending.", "choices": [
-			{"text": "Convene a Council of Nations on Kyoshi Island and read it aloud to everyone at once.", "next": "told", "if": {"renown": 160, "peace_with": 3}, "hint": "needs 160 renown and peace with at least three nations"},
+			{"text": "Convene a Council of Nations on Hamakaze and read it aloud to everyone at once.", "next": "told", "if": {"renown": 160, "peace_with": 3}, "hint": "needs 160 renown and peace with at least three nations"},
 			{"text": "Take it to Fire Lord Haoren. It clears his nation's name, and he will reward the one who brings it.", "next": "sold_fire"},
 			{"text": "Take it to Earth Queen Hualing. It gives her the means to break her regent.", "next": "sold_earth"},
 			{"text": "Take it to King Feng Tao. Proof of Ba Sing Se's guilt would make Omashu's freedom unanswerable.", "next": "sold_omashu"},
@@ -323,8 +326,8 @@ const DIALOGUES := {
 			{"text": "Keep it for the next Avatar. Give it to Abbess Tsering, to be read when the child turns sixteen.", "next": "kept"},
 			{"text": "Not yet.", "next": ""},
 		]},
-		"told": {"who": "narrator", "text": "You send riders to every capital. Captain Oyama agrees to host; the Kyoshi Warriors will guarantee safe passage. Go to Kyoshi Island to open the council.",
-			"do": [["flag", "ms_path", "told"], ["journal", "ms_main", "The Drowned Testament", "You have called a Council of Nations. Go to Kyoshi Island to open it and read the logbook aloud."]]},
+		"told": {"who": "narrator", "text": "You send riders to every capital. Captain Oyama agrees to host; the Tide Wardens will guarantee safe passage. Go to Hamakaze to open the council.",
+			"do": [["flag", "ms_path", "told"], ["journal", "ms_main", "The Drowned Testament", "You have called a Council of Nations. Go to Hamakaze to open it and read the logbook aloud."]]},
 		"sold_fire": {"who": "narrator", "text": "Caldera, then. The Fire Lord loved the Avatar once. Perhaps that is enough.",
 			"do": [["flag", "ms_path", "sold_fire"], ["journal", "ms_main", "The Drowned Testament", "Bring the logbook to Fire Lord Haoren in Caldera City."]]},
 		"sold_earth": {"who": "narrator", "text": "Ba Sing Se, then. A young queen, an old regent, and a page with his seal on it.",
@@ -343,9 +346,9 @@ const DIALOGUES := {
 	# Act III: endings
 	# -----------------------------------------------------------------------
 	"ms_council": {"title": "The Council of Nations", "start": "a", "nodes": {
-		"a": {"who": "kyoshi_delegate", "expr": "determined", "text": "Every nation sent someone. The Fire Lord sent his daughter. The Earth Queen came herself, which nearly gave her regent a stroke. The North sent Iluq, the South sent Siqiniq, and Omashu sent Jiang Wei and a great deal of luggage. The floor is yours.", "next": "b"},
+		"a": {"who": "hamakaze_delegate", "expr": "determined", "text": "Every nation sent someone. The Fire Lord sent his daughter. The Earth Queen came herself, which nearly gave her regent a stroke. The North sent Iluq, the South sent Siqiniq, and Omashu sent Jiang Wei and a great deal of luggage. The floor is yours.", "next": "b"},
 		"b": {"who": "narrator", "text": "You read the logbook aloud, all six pages, start to finish. Nobody speaks. When you reach the last entry, Princess Ryoko puts her hand over her mouth. Queen Hualing does not move at all.", "choices": [
-			{"text": "Lay out the evidence: the rudder pin, the rescue log, and the testimony you've gathered.", "next": "proof", "if": {"call": "has_evidence"}, "hint": "needs corroboration: Kuro's ledgers, the Dai Li's testimony, or Kuro's seal", "hide": false},
+			{"text": "Lay out the evidence: the rudder pin, the rescue log, and the testimony you've gathered.", "next": "proof", "if": {"call": "has_evidence"}, "hint": "needs corroboration: Kuro's ledgers, the Censorate's testimony, or Kuro's seal", "hide": false},
 			{"text": "Speak from the heart. Ask them to let it be an ending.", "next": "heart", "if": {"renown": 320}, "hint": "needs 320 renown to sway them without corroboration"},
 			{"text": "There is not enough here to convince them yet. Adjourn.", "next": "adjourn"},
 		]},
@@ -353,9 +356,9 @@ const DIALOGUES := {
 		"heart": {"who": "narrator", "text": "You do not argue. You tell them about Norbu, and a deckhand of fifteen, and a letter complaining about tea. You ask them to be a little less afraid at the same time. It should not work. Somehow, in that room, on that day, it does.", "next": "accord"},
 		"accord": {"who": "hualing", "expr": "determined", "text": "The Earth Kingdom will sign. I will sign it myself. And the Grand Secretary will answer for the boats — if anyone can find him.", "next": "accord2"},
 		"accord2": {"who": "ryoko", "expr": "grief", "text": "My father wept when the Avatar died. He'll weep again tonight, I think, but differently. The Fire Nation signs. The Admiral is relieved of command, as of this moment, wherever he is hiding.", "next": "accord3"},
-		"accord3": {"who": "narrator", "text": "The Kyoshi Accord is signed at sunset. By morning, word comes that Admiral Kuro has taken the flagship and his loyal crews, and Wu Jian has vanished from Ba Sing Se with two hundred Dai Li. Peace has enemies. It always does.",
+		"accord3": {"who": "narrator", "text": "The Hamakaze Accord is signed at sunset. By morning, word comes that Admiral Kuro has taken the flagship and his loyal crews, and Wu Jian has vanished from Ba Sing Se with two hundred censors. Peace has enemies. It always does.",
 			"do": [["call", "ending", "told"]]},
-		"adjourn": {"who": "kyoshi_delegate", "expr": "sad", "text": "They'll come back, if you send for them again. Bring them something they can't argue with."},
+		"adjourn": {"who": "hamakaze_delegate", "expr": "sad", "text": "They'll come back, if you send for them again. Bring them something they can't argue with."},
 	}},
 	"ms_kuro_falls": {"title": "The Last Fleet", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "Tenzai Kuro surrenders on the deck of his own flagship, in his dress uniform, with his sword laid across his palms. \"Every sailor I had ate because of me,\" he says. \"Write that down too.\" Somebody does."},
@@ -363,7 +366,7 @@ const DIALOGUES := {
 	"ms_wu_falls": {"title": "The Grand Secretary", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "Wu Jian is found in a mountain shrine, sitting very straight, filling out a form. It is a confession. It is complete, correct, and in triplicate. He has never once raised his voice."},
 	}},
-	"ms_told_epilogue": {"title": "The Kyoshi Accord", "start": "a", "nodes": {
+	"ms_told_epilogue": {"title": "The Hamakaze Accord", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "The last enemies of the Accord are beaten. There will be other wars — there always are — but not this one, and not for the reason it was fought.", "do": [["flag", "pending_epilogue", "told"]]},
 	}},
 	"ms_sold_fire": {"title": "Caldera", "start": "a", "nodes": {
@@ -373,7 +376,7 @@ const DIALOGUES := {
 	}},
 	"ms_sold_earth": {"title": "The Upper Ring", "start": "a", "nodes": {
 		"a": {"who": "hualing", "expr": "furious", "text": "His seal. On the order that turned back the boats. He's stood behind my chair every day for nine years and told me what to think.", "next": "b"},
-		"b": {"who": "hualing", "expr": "determined", "text": "Wu Jian is arrested as of tonight. The Dai Li answer to me now. And the Fire Navy cut the rudder — the Fire Nation started this. Let the coast see what a queen can do when she finally knows the truth. You'll have lands for this. Ba Sing Se remembers its friends.",
+		"b": {"who": "hualing", "expr": "determined", "text": "Wu Jian is arrested as of tonight. The Censorate answers to me now. And the Fire Navy cut the rudder — the Fire Nation started this. Let the coast see what a queen can do when she finally knows the truth. You'll have lands for this. Ba Sing Se remembers its friends.",
 			"do": [["call", "ending", "sold_earth"]]},
 	}},
 	"ms_sold_omashu": {"title": "Omashu", "start": "a", "nodes": {

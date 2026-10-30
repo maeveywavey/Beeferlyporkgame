@@ -2,7 +2,7 @@ extends RefCounted
 ## Lays out a walkable settlement: buildings, walls, streets, props, trees,
 ## the places people work and the points the player can interact with. The
 ## plan depends on the settlement type (town, castle, village, temple) and
-## culture (Earth, Omashu, Fire, Kyoshi, Water Tribes, Air Nomads, swamp).
+## culture (Earth, Omashu, Fire, Hamakaze, Water Tribes, Air Nomads, swamp).
 ##
 ## Coordinates: the settlement centre is the origin, +Z is south, where the
 ## player arrives.
@@ -146,7 +146,7 @@ func tree(pos: Vector3) -> void:
 	prop(names[rng.randi() % names.size()], pos, rng.randf() * TAU, sc, 0.6 * sc)
 
 func street_lantern(pos: Vector3, rot: float) -> void:
-	var col := Color(0.95, 0.25, 0.15) if culture in ["fire", "earth", "omashu", "kyoshi"] else Color(0.95, 0.85, 0.5)
+	var col := Color(0.95, 0.25, 0.15) if culture in ["fire", "earth", "omashu", "hamakaze"] else Color(0.95, 0.85, 0.5)
 	if culture == "air":
 		col = Color(0.98, 0.65, 0.2)
 	if ice:
@@ -370,7 +370,7 @@ func _village() -> void:
 			prop("Rope_1", rp, 0.0, 1.5, 0.0)
 			npc_spot(rp + Vector3(0, 0, 1.5), PI, "", "ual2/Farm_Harvest")
 	elif culture != "swamp":
-		var water := culture in ["earth", "fire", "kyoshi", "omashu"]
+		var water := culture in ["earth", "fire", "hamakaze", "omashu"]
 		for i in 4:
 			var fp := Vector3(-24.0 + i * 13.0, 0, -26.0 + (i % 2) * 4.0)
 			add(Arch.paddy(10.0, 7.0, water), fp)

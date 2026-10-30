@@ -13,7 +13,7 @@ var factions := {
 	"fire_nation": {
 		"name": "Fire Nation", "short": "Fire Nation", "color": Color(0.78, 0.16, 0.12),
 		"trim": Color(0.95, 0.75, 0.2), "culture": "fire", "king": "haoren", "capital": "caldera",
-		"desc": "An island nation of volcanoes and old noble houses. Three ruined harvests drove its Admiralty to seize the Earth Kingdom's Ember Coast. The Fire Lord wants peace; his admiral wants the coast.",
+		"desc": "An island nation of volcanoes and old noble houses. After three ruined harvests its Admiralty occupied the Strait Isles, which both crowns have claimed for centuries and neither has ever fully held. The Fire Lord wants peace; his admiral wants the Isles.",
 	},
 	"earth_kingdom": {
 		"name": "Earth Kingdom", "short": "Earth Kingdom", "color": Color(0.24, 0.55, 0.22),
@@ -53,7 +53,7 @@ var factions := {
 	"red_lanterns": {
 		"name": "Red Lantern Brotherhood", "short": "Red Lanterns", "color": Color(0.7, 0.18, 0.15),
 		"trim": Color(0.95, 0.7, 0.3), "culture": "earth", "king": "", "capital": "",
-		"desc": "Sworn daofei who rob the Earth Kingdom's tax barges and feed Ba Sing Se's Lower Ring with the grain. Heroes to the hungry, murderers to the Dai Li.",
+		"desc": "Sworn daofei who rob the Earth Kingdom's tax barges and feed Ba Sing Se's Lower Ring with the grain. Heroes to the hungry, murderers to the Censorate.",
 	},
 	"avatar": {
 		"name": "The Avatar's Company", "short": "The Avatar", "color": Color(0.92, 0.9, 0.75),
@@ -71,17 +71,29 @@ var factions := {
 # never go to war and hold no fiefs that can be taken.
 const KINGDOMS := ["fire_nation", "earth_kingdom", "omashu", "northern_water", "southern_water"]
 
+## Which of the four nations each kingdom belongs to. Before Sozin no nation
+## conquers another's land (docs/canon.md §6): the AI only besieges across
+## national lines in the Strait Isles, which both crowns claim.
+const NATION_OF := {"fire_nation": "fire", "earth_kingdom": "earth", "omashu": "earth", "northern_water": "water", "southern_water": "water"}
+const DISPUTED := ["kettle_rock", "fire_navy_harbor", "tieshan", "navy_docks"]
+
+## True if faction f's armies may lay siege to settlement sid.
+static func may_besiege(f: String, sid: String, owner_faction: String) -> bool:
+	if not NATION_OF.has(f) or not NATION_OF.has(owner_faction):
+		return true
+	return NATION_OF[f] == NATION_OF[owner_faction] or DISPUTED.has(sid)
+
 # Wars already being fought when the game begins.
 const STARTING_WARS := [["fire_nation", "earth_kingdom"], ["earth_kingdom", "omashu"], ["fire_nation", "southern_water"]]
 
 # How each people orders itself: shown in the Nations window, and the source
-# of the class rules the game enforces (see docs/02_writers_room.md, part 2).
+# of the class rules the game enforces (see docs/setting.md §2).
 var societies := {
-	"fire_nation": {"ladder": ["The Fire Lord and the royal family", "The old noble houses", "Fire Sages (outside rank, inside every decision)", "Officers, merchants and civil servants", "Commoners: farmers, fishers, smiths — conscripted at sixteen", "Ember Coast settlers: neither wholly Fire nor Earth"],
-		"text": "Rank is inherited, and the noble houses of Caldera terrace the crater walls in order of precedence. Disputes of honour between nobles are settled by Agni Kai, a firebending duel before witnesses. Commoners serve; three ruined harvests have made the service longer and the rations smaller. The Fire Sages chart the sky and announce eclipses, and nobody declares war without asking them first.",
+	"fire_nation": {"ladder": ["The Fire Lord and the royal family", "The old noble houses", "Fire Sages (outside rank, inside every decision)", "Officers, merchants and civil servants", "Commoners: farmers, fishers, smiths — conscripted at sixteen", "Strait Islanders: neither wholly Fire nor Earth"],
+		"text": "Rank is inherited, and the noble houses of Caldera terrace the crater walls in order of precedence. Disputes of honour between nobles are settled by Agni Kai, a firebending duel before witnesses. Commoners serve; three ruined harvests have made the service longer and the rations smaller. The Fire Sages chart the sky and keep the calendar, and nobody declares war without asking them first.",
 		"rules": "Fire Nation nobles accept an Agni Kai only from someone of Gentry standing; a non-bender must name a firebending champion. Refusing a noble's challenge costs honour."},
-	"earth_kingdom": {"ladder": ["The Earth Queen", "The Grand Secretariat, and the Dai Li who serve it", "Upper Ring nobility", "Middle Ring merchants and scholars, who rise by civil examination", "Lower Ring labourers and refugees", "Villagers beyond the walls"],
-		"text": "The Kingdom is held together by walls, seals and paperwork. Ba Sing Se's three rings are three worlds, and the gates between them are guarded. The Dai Li were founded long ago to protect the city's culture; now they protect its silence. Most earthbenders are miners, builders and farmers, not soldiers.",
+	"earth_kingdom": {"ladder": ["The Earth Queen", "The Grand Secretariat, and the Censorate that serves it", "Upper Ring nobility", "Middle Ring merchants and scholars, who rise by civil examination", "Lower Ring labourers and refugees", "Villagers beyond the walls"],
+		"text": "The Kingdom is held together by walls, seals and paperwork. Ba Sing Se's three rings are three worlds, and the gates between them are guarded. The Censorate was founded long ago to keep the city's records honest; now it protect its silence. Most earthbenders are miners, builders and farmers, not soldiers.",
 		"rules": "Ba Sing Se's Middle Ring needs Citizen standing or papers; the Upper Ring needs Gentry standing or an invitation. A trade permit improves prices in Earth Kingdom markets."},
 	"omashu": {"ladder": ["The King and his Consort", "The Courier Guild and the old mountain families", "Valley farmers", "Refugees, who are granted 'stair rights' after a year"],
 		"text": "Omashu promotes by deeds. Anyone who carries a message through a siege has their name carved on the palace stairs, and the stairs are long. The city loves spectacle, argument and its king, roughly in that order. Since the Secession every citizen has been a little bit of a soldier.",
@@ -100,7 +112,7 @@ var societies := {
 # Culture -> the tier 1 troop a village or town of that culture offers.
 var culture_recruit := {
 	"fire": "fn_conscript", "earth": "ek_peasant", "north": "nwt_hunter",
-	"south": "swt_villager", "kyoshi": "ky_initiate", "swamp": "sw_swamper",
+	"south": "swt_villager", "hamakaze": "tw_initiate", "swamp": "sw_swamper",
 	"omashu": "om_militia", "air": "an_novice",
 }
 
@@ -187,11 +199,11 @@ func _init_troops() -> void:
 		"bend_power": 1.0, "armor": 10, "upgrades": ["ek_earthbender"],
 		"look": {"body": Color(0.4, 0.5, 0.3), "trim": ek_trim, "helmet": "none"}})
 	_t("ek_earthbender", "Earthbender Soldier", "earth", 3, {"weapon": "fists", "bend": "earth",
-		"bend_power": 1.3, "armor": 18, "upgrades": ["ek_dai_li"],
+		"bend_power": 1.3, "armor": 18, "upgrades": ["ek_censor"],
 		"look": {"body": ek_body, "trim": Color(0.5, 0.4, 0.2), "helmet": "ek_hat"}})
-	_t("ek_dai_li", "Dai Li Agent", "earth", 4, {"weapon": "fists", "bend": "earth",
+	_t("ek_censor", "Censorate Agent", "earth", 4, {"weapon": "fists", "bend": "earth",
 		"bend_power": 1.7, "armor": 20, "skill": 85,
-		"look": {"body": Color(0.15, 0.25, 0.12), "trim": Color(0.1, 0.1, 0.1), "helmet": "dai_li"}})
+		"look": {"body": Color(0.24, 0.26, 0.28), "trim": Color(0.08, 0.08, 0.09), "helmet": "censor"}})
 
 	# Kingdom of Omashu: hardier and faster than Ba Sing Se's levies, less armoured
 	var om_body := Color(0.42, 0.5, 0.25)
@@ -213,17 +225,17 @@ func _init_troops() -> void:
 		"hp": 68, "armor": 16,
 		"look": {"body": om_body, "trim": om_trim, "helmet": "none"}})
 
-	# Kyoshi Island
-	var ky_body := Color(0.2, 0.55, 0.3)
-	var ky_trim := Color(0.85, 0.7, 0.2)
-	_t("ky_initiate", "Kyoshi Initiate", "kyoshi", 1, {"weapon": "kyoshi_fans", "skill": 35,
-		"upgrades": ["ky_warrior"], "look": {"body": ky_body, "trim": ky_trim, "helmet": "kyoshi"}})
-	_t("ky_warrior", "Kyoshi Warrior", "kyoshi", 2, {"weapon": "kyoshi_fans", "skill": 60,
-		"upgrades": ["ky_veteran"], "look": {"body": ky_body, "trim": ky_trim, "helmet": "kyoshi"}})
-	_t("ky_veteran", "Kyoshi Veteran", "kyoshi", 3, {"weapon": "jian", "skill": 75, "shield": false,
-		"upgrades": ["ky_elite"], "look": {"body": Color(0.15, 0.45, 0.25), "trim": ky_trim, "helmet": "kyoshi"}})
-	_t("ky_elite", "Kyoshi Elite Guard", "kyoshi", 4, {"weapon": "jian", "skill": 90, "armor": 26,
-		"look": {"body": Color(0.12, 0.4, 0.22), "trim": Color(0.95, 0.8, 0.25), "helmet": "kyoshi"}})
+	# Hamakaze
+	var tw_body := Color(0.16, 0.2, 0.36)
+	var tw_trim := Color(0.62, 0.3, 0.18)
+	_t("tw_initiate", "Tide Warden Initiate", "hamakaze", 1, {"weapon": "warden_glaive", "skill": 35,
+		"upgrades": ["tw_warden"], "look": {"body": tw_body, "trim": tw_trim, "helmet": "hamakaze"}})
+	_t("tw_warden", "Tide Warden", "hamakaze", 2, {"weapon": "warden_glaive", "skill": 60,
+		"upgrades": ["tw_veteran"], "look": {"body": tw_body, "trim": tw_trim, "helmet": "hamakaze"}})
+	_t("tw_veteran", "Tide Warden Veteran", "hamakaze", 3, {"weapon": "jian", "skill": 75, "shield": false,
+		"upgrades": ["tw_captain"], "look": {"body": Color(0.14, 0.17, 0.32), "trim": tw_trim, "helmet": "hamakaze"}})
+	_t("tw_captain", "Tide Warden Captain", "hamakaze", 4, {"weapon": "jian", "skill": 90, "armor": 26,
+		"look": {"body": Color(0.12, 0.15, 0.28), "trim": Color(0.9, 0.88, 0.82), "helmet": "hamakaze"}})
 
 	# Northern Water Tribe
 	var nwt_body := Color(0.2, 0.35, 0.65)
@@ -354,7 +366,7 @@ var items := {
 	"spear": {"name": "Spear", "slot": "weapon", "dmg": 17, "reach": 2.5, "speed": 0.95, "dtype": "pierce", "price": 120, "model": "spear"},
 	"war_club": {"name": "Water Tribe Club", "slot": "weapon", "dmg": 18, "reach": 1.3, "speed": 1.05, "dtype": "blunt", "price": 110, "model": "club"},
 	"machete": {"name": "Machete", "slot": "weapon", "dmg": 19, "reach": 1.35, "speed": 1.15, "dtype": "cut", "price": 180, "model": "machete"},
-	"kyoshi_fans": {"name": "Kyoshi War Fans", "slot": "weapon", "dmg": 16, "reach": 1.25, "speed": 1.35, "dtype": "cut", "price": 260, "model": "fans"},
+	"warden_glaive": {"name": "Tide Warden Glaive", "slot": "weapon", "dmg": 20, "reach": 1.7, "speed": 1.1, "dtype": "cut", "price": 260, "model": "guan_dao"},
 	"jian": {"name": "Jian", "slot": "weapon", "dmg": 21, "reach": 1.55, "speed": 1.2, "dtype": "cut", "price": 380, "model": "sword"},
 	"dao": {"name": "Dao Broadsword", "slot": "weapon", "dmg": 23, "reach": 1.5, "speed": 1.05, "dtype": "cut", "price": 420, "model": "dao"},
 	"hook_swords": {"name": "Hook Swords", "slot": "weapon", "dmg": 22, "reach": 1.6, "speed": 1.25, "dtype": "cut", "price": 650, "model": "hooks"},
@@ -373,7 +385,7 @@ var items := {
 	"water_parka": {"name": "Water Tribe Parka", "slot": "armor", "armor": 8, "price": 120},
 	"fur_armor": {"name": "Fur and Bone Armour", "slot": "armor", "armor": 15, "price": 420},
 	"ek_armor": {"name": "Earth Kingdom Lamellar", "slot": "armor", "armor": 17, "price": 520},
-	"kyoshi_armor": {"name": "Kyoshi Warrior Armour", "slot": "armor", "armor": 19, "price": 700},
+	"tide_armor": {"name": "Tide Warden Lamellar", "slot": "armor", "armor": 19, "price": 700},
 	"fn_armor": {"name": "Fire Nation Plate", "slot": "armor", "armor": 21, "price": 760},
 	"ek_royal": {"name": "Royal Guard Armour", "slot": "armor", "armor": 27, "price": 1500},
 	"fn_officer_armor": {"name": "Fire Nation Officer's Plate", "slot": "armor", "armor": 30, "price": 2100},
@@ -395,7 +407,7 @@ var culture_shop := {
 	"earth": ["staff", "axe", "spear", "jian", "dao", "hook_swords", "guan_dao", "short_bow", "throwing_knives", "peasant_clothes", "ek_armor", "ek_royal", "straw_hat", "ek_hat", "ostrich_horse"],
 	"north": ["spear", "war_club", "machete", "boomerang", "water_parka", "fur_armor", "parka_hood", "wolf_helm"],
 	"south": ["spear", "war_club", "machete", "boomerang", "water_parka", "fur_armor", "parka_hood", "wolf_helm"],
-	"kyoshi": ["kyoshi_fans", "jian", "kyoshi_armor", "straw_hat"],
+	"hamakaze": ["warden_glaive", "jian", "tide_armor", "straw_hat"],
 	"omashu": ["staff", "spear", "jian", "guan_dao", "throwing_knives", "short_bow", "peasant_clothes", "ek_armor", "straw_hat", "ek_hat", "ostrich_horse"],
 }
 
@@ -427,7 +439,7 @@ var goods := {
 # ---------------------------------------------------------------------------
 # bend: element, power: bending multiplier, weapon: item, troops: starting size.
 # bio: what they want, what they fear, and one human detail (see
-# docs/02_writers_room.md). look: fixed appearance keys (sex, hair, ...).
+# docs/setting.md §4). look: fixed appearance keys (sex, hair, ...).
 # no_offense: never joins offensive campaigns.
 const GREY := Color(0.62, 0.6, 0.58)
 var lords := {
@@ -439,14 +451,14 @@ var lords := {
 		"line": "Sit. Everyone who comes before me wants something, and most of them want a war. Which are you?"},
 	"ryoko": {"name": "Crown Princess Ryoko", "faction": "fire_nation", "bend": "fire", "power": 2.5, "weapon": "fists", "hp": 180, "troops": 70, "home": "caldera", "aggression": 0.35,
 		"look": {"sex": "f", "hair": "Hair_Buns"},
-		"bio": "Wants to end the colonies; fears her father's disappointment more than any army. Her wife, Lady Satsuki, keeps the royal archives — and keeps Ryoko honest.",
-		"line": "If you've come to tell me the Ember Coast is worth dying for, save your breath. If you've come with an idea, I have tea."},
+		"bio": "Wants the Admiralty out of the Strait Isles; fears her father's disappointment more than any army. Her wife, Lady Satsuki, keeps the royal archives — and keeps Ryoko honest.",
+		"line": "If you've come to tell me the Strait Isles are worth dying for, save your breath. If you've come with an idea, I have tea."},
 	"kuro": {"name": "Admiral Tenzai Kuro", "faction": "fire_nation", "bend": "fire", "power": 2.0, "weapon": "dao", "hp": 170, "troops": 90, "home": "fire_navy_harbor", "aggression": 0.85,
 		"look": {"sex": "m", "hair": "Hair_Buzzed", "beard": true},
-		"bio": "Wants the colonies, and the fortune he has made in them; fears the truth about the night the Avatar drowned. Generous to his sailors and utterly self-justifying.",
-		"bio_sandbox": "Wants the colonies, and the fortune he has made in them; fears the day the Avatar takes an interest in his ledgers. Generous to his sailors and utterly self-justifying.",
+		"bio": "Wants the Strait Isles, and the fortune he has made in them; fears the truth about the night the Avatar was lost. Generous to his sailors and utterly self-justifying.",
+		"bio_sandbox": "Wants the Strait Isles, and the fortune he has made in them; fears the day the Avatar takes an interest in his ledgers. Generous to his sailors and utterly self-justifying.",
 		"line": "Every sailor in my fleet eats because I made hard choices. Remember that before you judge me."},
-	"ito": {"name": "General Masaru Ito", "faction": "fire_nation", "bend": "", "power": 1.0, "weapon": "dao", "hp": 160, "troops": 90, "home": "pohuai", "aggression": 0.5,
+	"ito": {"name": "General Masaru Ito", "faction": "fire_nation", "bend": "", "power": 1.0, "weapon": "dao", "hp": 160, "troops": 90, "home": "kettle_rock", "aggression": 0.5,
 		"look": {"sex": "m", "hair": "Hair_Buzzed", "hair_color": GREY},
 		"bio": "Wants to bring his conscripts home alive; fears becoming irrelevant. A non-bender who rose through the ranks and remembers the name of every soldier he has lost.",
 		"line": "I have three hundred and twelve names in this book. I would rather not add yours."},
@@ -458,10 +470,10 @@ var lords := {
 		"look": {"sex": "m", "hair": "Hair_Long"},
 		"bio": "Wants glory; fears being ordinary. A twenty-two-year-old firebending prodigy, insufferable and secretly terrified. Humbled kindly, he could become someone worth following.",
 		"line": "You've heard of me, obviously. Everyone has. Go on — ask me about the Battle of Shu Jing Strait."},
-	"oda": {"name": "Warden Sakura Oda", "faction": "fire_nation", "bend": "", "power": 1.0, "weapon": "guan_dao", "hp": 140, "troops": 60, "home": "boiling_rock", "aggression": 0.3, "no_offense": true,
+	"oda": {"name": "Castellan Sakura Oda", "faction": "fire_nation", "bend": "", "power": 1.0, "weapon": "guan_dao", "hp": 140, "troops": 60, "home": "boiling_keep", "aggression": 0.3, "no_offense": true,
 		"look": {"sex": "f", "hair": "Hair_Buns", "hair_color": GREY},
-		"bio": "Wants order; fears chaos. Runs the Boiling Rock and believes in rehabilitation far more than her guards do.",
-		"line": "Every prisoner here is someone's child. I try to remember that. My guards try to forget it."},
+		"bio": "Wants order; fears chaos. Holds Boiling Lake Keep and believes in schooling far more than her officers do.",
+		"line": "Every soldier here is someone's child. I try to remember that. My officers try to forget it."},
 	# Earth Kingdom
 	"hualing": {"name": "Earth Queen Hualing", "faction": "earth_kingdom", "bend": "", "power": 1.0, "weapon": "staff", "hp": 100, "troops": 110, "home": "ba_sing_se", "king": true, "aggression": 0.3,
 		"look": {"sex": "f", "hair": "Hair_Buns"},
@@ -471,10 +483,10 @@ var lords := {
 		"look": {"sex": "m", "hair": "Hair_SimpleParted", "hair_color": GREY, "beard": true},
 		"bio": "Wants control; fears chaos. A careful, soft-spoken regent who believes order is the only real mercy. He has never once raised his voice.",
 		"line": "There is a form for that. There is a form for everything. It is how a city of a million people does not burn."},
-	"shu_fan": {"name": "Commander Shu Fan", "faction": "earth_kingdom", "bend": "earth", "power": 1.8, "weapon": "fists", "hp": 150, "troops": 70, "home": "ba_sing_se", "aggression": 0.55,
-		"look": {"sex": "m", "accessory": "dai_li", "kit": "dai_li_robe"},
-		"bio": "Commander of the Dai Li. Wants rank; fears Wu Jian. Loyal to the regent exactly as long as loyalty pays.",
-		"line": "The Dai Li hear everything. Choose your next words as if I'm writing them down. I am."},
+	"shu_fan": {"name": "Chief Censor Shu Fan", "faction": "earth_kingdom", "bend": "earth", "power": 1.8, "weapon": "fists", "hp": 150, "troops": 70, "home": "ba_sing_se", "aggression": 0.55,
+		"look": {"sex": "m", "accessory": "censor", "kit": "censor_robe"},
+		"bio": "Chief Censor of Ba Sing Se. Wants rank; fears Wu Jian. Loyal to the regent exactly as long as loyalty pays.",
+		"line": "The Censorate hears everything. Choose your next words as if I'm writing them down. I am."},
 	"ba_tsai": {"name": "General Ba Tsai", "faction": "earth_kingdom", "bend": "", "power": 1.0, "weapon": "guan_dao", "hp": 160, "troops": 85, "home": "outer_wall", "aggression": 0.5,
 		"look": {"sex": "m", "hair": "Hair_Buzzed", "hair_color": GREY, "beard": true},
 		"bio": "Wants to hold the Outer Wall; fears pointless orders from the palace. Gruff, fair, and the author of truly bad poetry for his late wife.",
@@ -491,10 +503,10 @@ var lords := {
 		"look": {"sex": "f", "hair": "Hair_Buns"},
 		"bio": "Wants to keep the Serpent's Pass open for refugees; fears that the capital has forgotten her fort exists. It has.",
 		"line": "The pass is open to anyone who comes in peace. You'd be surprised how few do."},
-	"oyama": {"name": "Captain Oyama", "faction": "earth_kingdom", "bend": "", "power": 1.0, "weapon": "kyoshi_fans", "hp": 150, "troops": 40, "home": "gaoling", "aggression": 0.5, "culture": "kyoshi", "no_offense": true,
+	"oyama": {"name": "Captain Oyama", "faction": "earth_kingdom", "bend": "", "power": 1.0, "weapon": "warden_glaive", "hp": 150, "troops": 40, "home": "gaoling", "aggression": 0.5, "culture": "hamakaze", "no_offense": true,
 		"look": {"sex": "f", "hair": "Hair_Buns"},
-		"bio": "Leader of the Kyoshi Warriors. Wants to protect Kyoshi Island; fears being drawn into conquest. She has refused three royal orders to march, politely.",
-		"line": "The Kyoshi Warriors defend. We don't conquer. If you've come to recruit us for a war, the answer is still no."},
+		"bio": "Leader of the Tide Wardens. Wants to protect Hamakaze; fears being drawn into conquest. She has refused three royal orders to march, politely.",
+		"line": "The Tide Wardens defend. We don't conquer. If you've come to recruit us for a war, the answer is still no."},
 	# Kingdom of Omashu
 	"feng_tao": {"name": "King Feng Tao", "faction": "omashu", "bend": "earth", "power": 2.4, "weapon": "fists", "hp": 210, "troops": 110, "home": "omashu", "king": true, "aggression": 0.6,
 		"look": {"sex": "m", "hair": "Hair_Long", "beard": true},
@@ -557,7 +569,7 @@ var lords := {
 }
 
 # ---------------------------------------------------------------------------
-# Companions (heroes met in taverns). See docs/02_writers_room.md section 5.
+# Companions (heroes met in taverns). See docs/setting.md §5.
 # ---------------------------------------------------------------------------
 # bonus: party skill bonuses; perk: special ability; pronouns for text.
 var companions := {
@@ -567,7 +579,7 @@ var companions := {
 		"pitch": "You're hiring. I have a map of every tunnel under Ba Sing Se, and I prefer to know where we're going before we go. Is that acceptable?"},
 	"juro": {"name": "Juro Sato", "short": "Juro", "pronouns": "he", "culture": "fire", "bend": "", "power": 1.0, "weapon": "dao", "ranged": "throwing_knives", "hp": 120, "armor": 16, "skill": 70, "cost": 450,
 		"bonus": {"trainer": 1}, "perk": "engineer", "vlook": {"sex": "m", "hair": "Hair_SimpleParted", "accessory": "topknot"},
-		"bio": "A Fire Nation artillery engineer who deserted the night one of his designs burned an Ember Coast village. His fire left him that night. His father still writes every week.",
+		"bio": "A Fire Nation artillery engineer who deserted the night one of his designs burned a village in the Strait Isles. His fire left him that night. His father still writes every week.",
 		"pitch": "I used to build siege engines. Now I fix wagon wheels for rice. If you have anything that needs building — or knocking down — I'm cheap and very good."},
 	"pemba": {"name": "Pemba", "short": "Pemba", "pronouns": "they", "culture": "air", "bend": "air", "power": 1.5, "weapon": "staff", "hp": 105, "armor": 6, "skill": 80, "cost": 300, "healer": true, "nonlethal": true,
 		"bonus": {"healing": 3}, "perk": "nonlethal", "vlook": {"sex": "f", "hair": ""},
@@ -627,31 +639,31 @@ var settlements := {
 	"fire_fountain": {"name": "Fire Fountain City", "type": "town", "faction": "fire_nation", "pos": Vector2(392, 618), "owner": "hiyori", "culture": "fire",
 		"produces": ["spices", "pottery"], "desc": "A bustling port crowned by a fire-breathing statue of a Fire Lord nobody can agree on. Every rumour in the Nation passes through its tea houses — and through Lady Hiyori."},
 	"ember_island": {"name": "Ember Island", "type": "town", "faction": "fire_nation", "pos": Vector2(452, 505), "owner": "daisuke", "culture": "fire",
-		"produces": ["fish", "silk"], "desc": "A resort island for the Fire Nation elite, famous for its beaches, its summer houses and its terrible theatre."},
-	"boiling_rock": {"name": "The Boiling Rock", "type": "castle", "faction": "fire_nation", "pos": Vector2(292, 405), "owner": "oda", "walls": 1.3, "culture": "fire",
-		"produces": [], "desc": "The Fire Nation's highest-security prison, set on an island in a boiling lake. Its warden runs reading classes on Tuesdays."},
-	"pohuai": {"name": "Pohuai Stronghold", "type": "castle", "faction": "fire_nation", "pos": Vector2(705, 455), "owner": "ito", "culture": "fire",
-		"produces": [], "desc": "A Fire Nation fortress on the seized Ember Coast, home of the Yuyan archers. General Ito's conscripts call it 'the Kettle'."},
-	"fire_navy_harbor": {"name": "Fire Navy Harbour", "type": "castle", "faction": "fire_nation", "pos": Vector2(618, 585), "owner": "kuro", "culture": "fire",
-		"produces": [], "desc": "An Earth Kingdom port seized by the Admiralty three years ago and rebuilt in iron. Admiral Kuro's flagship rarely leaves it; his ledgers never do."},
+		"produces": ["fish", "silk"], "desc": "A resort island for the Fire Nation elite, famous for its beaches, its summer houses and its sulking volcano."},
+	"boiling_keep": {"name": "Boiling Lake Keep", "type": "castle", "faction": "fire_nation", "pos": Vector2(292, 405), "owner": "oda", "walls": 1.3, "culture": "fire",
+		"produces": [], "desc": "An old keep on an island in a boiling lake, seat of the western garrison. Its castellan runs reading classes for the garrison's children on Tuesdays."},
+	"kettle_rock": {"name": "Kettle Rock", "type": "castle", "faction": "fire_nation", "pos": Vector2(562, 455), "owner": "ito", "culture": "fire",
+		"produces": [], "desc": "A fort the Admiralty raised three years ago on a rock both crowns claim, at the north end of the Strait Isles. General Ito's conscripts call it 'the Kettle'."},
+	"fire_navy_harbor": {"name": "Fire Navy Harbour", "type": "castle", "faction": "fire_nation", "pos": Vector2(556, 598), "owner": "kuro", "culture": "fire",
+		"produces": [], "desc": "The best harbour in the Strait Isles, occupied by the Admiralty three years ago and rebuilt in iron. Admiral Kuro's flagship rarely leaves it; his ledgers never do."},
 	"shu_jing": {"name": "Shu Jing", "type": "village", "faction": "fire_nation", "pos": Vector2(262, 612), "bound": "caldera", "culture": "fire",
 		"produces": ["rice", "fire_flakes"], "desc": "A quiet farming and fishing village in the Fire Nation heartland. Southern raiders struck its fleet two winters ago, and it has not forgotten."},
 	"crescent_island": {"name": "Crescent Island", "type": "village", "faction": "fire_nation", "pos": Vector2(200, 470), "bound": "caldera", "culture": "fire",
-		"produces": ["fish", "salt"], "desc": "A volcanic island home to an ancient Fire Temple, where the sages chart the sky and announce eclipses days before they come."},
+		"produces": ["fish", "salt"], "desc": "A volcanic island home to an ancient Fire Temple, where the sages keep the calendar and watch for the Great Comet's return."},
 	"jang_hui": {"name": "Jang Hui", "type": "village", "faction": "fire_nation", "pos": Vector2(398, 645), "bound": "fire_fountain", "culture": "fire",
 		"produces": ["fish", "rice"], "desc": "A floating village of stilt houses on the delta. Its people trade with both nations and trust neither."},
 	"ember_shore": {"name": "Ember Shore", "type": "village", "faction": "fire_nation", "pos": Vector2(470, 520), "bound": "ember_island", "culture": "fire",
 		"produces": ["fire_flakes", "salt"], "desc": "Fishing huts and beach houses along the Ember Island shore."},
-	"tieshan": {"name": "Tieshan", "type": "village", "faction": "fire_nation", "pos": Vector2(745, 520), "bound": "pohuai", "culture": "earth",
-		"produces": ["iron", "rice"], "desc": "An Earth Kingdom mining village on the Ember Coast, under the Admiralty's 'protection'. Fire Nation settler families live in the new houses by the mine; the old families live everywhere else."},
-	"navy_docks": {"name": "Ember Coast Docks", "type": "village", "faction": "fire_nation", "pos": Vector2(645, 640), "bound": "fire_navy_harbor", "culture": "earth",
-		"produces": ["fish", "whale_oil"], "desc": "Earth Kingdom fishermen and Fire Nation settlers mend nets side by side and do not talk about the war."},
-	"rocky_hamlet": {"name": "Boiling Lake Hamlet", "type": "village", "faction": "fire_nation", "pos": Vector2(330, 440), "bound": "boiling_rock", "culture": "fire",
-		"produces": ["salt", "iron"], "desc": "Guards' families live here, close to the steaming waters of the Boiling Rock."},
+	"tieshan": {"name": "Tieshan", "type": "village", "faction": "fire_nation", "pos": Vector2(566, 520), "bound": "kettle_rock", "culture": "earth",
+		"produces": ["iron", "rice"], "desc": "A mining village in the Strait Isles, under the Admiralty's 'protection'. The Fire Nation families who came for the mine live in the new houses; the old island families live everywhere else."},
+	"navy_docks": {"name": "Saltreach Docks", "type": "village", "faction": "fire_nation", "pos": Vector2(570, 655), "bound": "fire_navy_harbor", "culture": "earth",
+		"produces": ["fish", "whale_oil"], "desc": "Island fishers of both peoples mend nets side by side and do not talk about the war."},
+	"rocky_hamlet": {"name": "Boiling Lake Hamlet", "type": "village", "faction": "fire_nation", "pos": Vector2(330, 440), "bound": "boiling_keep", "culture": "fire",
+		"produces": ["salt", "iron"], "desc": "Soldiers' families live here, close to the steaming waters of the boiling lake."},
 
 	# Earth Kingdom
 	"ba_sing_se": {"name": "Ba Sing Se", "type": "town", "faction": "earth_kingdom", "pos": Vector2(1290, 370), "owner": "hualing", "walls": 1.8, "culture": "earth",
-		"produces": ["jade", "silk", "tea"], "desc": "The impenetrable city. Refugees and labourers crowd the Lower Ring, merchants and scholars the Middle, nobles the Upper. The Dai Li police the gates between them — and the thoughts within."},
+		"produces": ["jade", "silk", "tea"], "desc": "The impenetrable city. Refugees and labourers crowd the Lower Ring, merchants and scholars the Middle, nobles the Upper. The Censorate polices the gates between them — and the thoughts within."},
 	"gaoling": {"name": "Gaoling", "type": "town", "faction": "earth_kingdom", "pos": Vector2(1040, 745), "owner": "cheng_mei", "culture": "earth",
 		"produces": ["silk", "tea", "herbs"], "desc": "A wealthy southern town of merchant houses, where the Cheng family's coin reaches every ledger and the Stone Pit draws crowds every night."},
 	"outer_wall": {"name": "Outer Wall Gate", "type": "castle", "faction": "earth_kingdom", "pos": Vector2(1160, 395), "owner": "ba_tsai", "walls": 1.5, "culture": "earth",
@@ -660,8 +672,8 @@ var settlements := {
 		"produces": [], "desc": "An Earth Kingdom fortress facing the rebel kingdom of Omashu, from which General Lu Kang plans his campaigns."},
 	"serpent_fort": {"name": "Serpent's Pass Fort", "type": "castle", "faction": "earth_kingdom", "pos": Vector2(1205, 520), "owner": "tan_yue", "culture": "earth",
 		"produces": [], "desc": "A watchpost above the narrow Serpent's Pass to Ba Sing Se. Refugees cross it daily; General Tan Yue counts every one."},
-	"chin": {"name": "Chin Village", "type": "village", "faction": "earth_kingdom", "pos": Vector2(910, 720), "bound": "gaoling", "culture": "earth",
-		"produces": ["cabbages", "rice"], "desc": "A village that still holds a yearly festival for the fall of Chin the Conqueror, centuries ago."},
+	"tanshui": {"name": "Tanshui Village", "type": "village", "faction": "earth_kingdom", "pos": Vector2(910, 720), "bound": "gaoling", "culture": "earth",
+		"produces": ["cabbages", "rice"], "desc": "A cliff-top village above the southwestern sea, famous for its masked spring festival and its arguments about it."},
 	"gaipan": {"name": "Gaipan", "type": "village", "faction": "earth_kingdom", "pos": Vector2(1045, 430), "bound": "fong_fortress", "culture": "earth",
 		"produces": ["rice", "iron"], "desc": "A small valley town below a great dam, quartering more of Lu Kang's soldiers than it can feed."},
 	"full_moon_bay": {"name": "Full Moon Bay", "type": "village", "faction": "earth_kingdom", "pos": Vector2(1220, 455), "bound": "outer_wall", "culture": "earth",
@@ -670,8 +682,8 @@ var settlements := {
 		"produces": ["spices", "salt"], "desc": "A fading oasis town at the edge of the Si Wong Desert. The Earth Kingdom closed its wells to the sandbender clans last summer."},
 	"chameleon_bay": {"name": "Chameleon Bay", "type": "village", "faction": "earth_kingdom", "pos": Vector2(1470, 500), "bound": "ba_sing_se", "culture": "earth",
 		"produces": ["fish", "whale_oil"], "desc": "A sheltered bay on the eastern coast, far from every war and grateful for it."},
-	"kyoshi_island": {"name": "Kyoshi Island", "type": "village", "faction": "earth_kingdom", "pos": Vector2(770, 890), "bound": "gaoling", "culture": "kyoshi",
-		"produces": ["fish", "silk"], "desc": "Avatar Kyoshi's homeland, defended by the Kyoshi Warriors. Neutral ground for every nation's envoys — and the only place a council of nations could meet. Watch out for the Unagi."},
+	"hamakaze": {"name": "Hamakaze", "type": "village", "faction": "earth_kingdom", "pos": Vector2(770, 890), "bound": "gaoling", "culture": "hamakaze",
+		"produces": ["fish", "silk"], "desc": "A pine-covered peninsula of fishing villages joined to the mainland by a narrow neck, defended by the Tide Wardens. It belongs to the Earth Kingdom on paper and to itself in practice, which makes it the one place every nation's envoys will agree to meet. Watch out for the unagi."},
 	"foggy_swamp": {"name": "Foggy Swamp", "type": "village", "faction": "earth_kingdom", "pos": Vector2(965, 655), "bound": "gaoling", "culture": "swamp",
 		"produces": ["herbs", "fish"], "desc": "A misty swamp where a forgotten tribe of waterbenders lives among the roots of a single great tree."},
 	"agrarian_vale": {"name": "Jade Terraces", "type": "village", "faction": "earth_kingdom", "pos": Vector2(1340, 300), "bound": "ba_sing_se", "culture": "earth",
@@ -724,8 +736,8 @@ var settlements := {
 		"produces": [], "desc": "The tower of a great library peeks out from the desert sands. Its owl spirit trades knowledge for knowledge, and never at a loss."},
 	"cinder_monastery": {"name": "The Cinder Monastery", "type": "ruin", "faction": "neutral", "pos": Vector2(270, 520), "culture": "fire", "dlc": "fire",
 		"produces": [], "desc": "A monastery of firebending monks high on a dormant volcano. They keep a flame that has not gone out in nine hundred years and argue about whether that is the point."},
-	"taku": {"name": "Ruins of Taku", "type": "ruin", "faction": "neutral", "pos": Vector2(790, 520), "culture": "earth",
-		"produces": [], "desc": "A city emptied by an earthquake two centuries ago. Scavengers and pilgrims share the broken streets."},
+	"two_lovers": {"name": "Cave of Two Lovers", "type": "ruin", "faction": "neutral", "pos": Vector2(790, 520), "culture": "earth",
+		"produces": [], "desc": "The maze of tunnels under the Kolau Mountains where Oma and Shu, the first earthbenders, learned from the badgermoles. Bards sing about it; badgermoles still rearrange it."},
 	"red_lantern_den": {"name": "Red Lantern Den", "type": "ruin", "faction": "red_lanterns", "pos": Vector2(1010, 490), "culture": "earth",
 		"produces": [], "desc": "Stilt houses hidden in a reed marsh by the river, lit by red paper lanterns. The Brotherhood watches every barge that passes."},
 }
@@ -736,10 +748,12 @@ var land_ellipses := [
 	# Earth Kingdom mainland
 	[1110, 470, 360, 230, 0], [1280, 350, 250, 190, -10], [930, 560, 220, 190, 15],
 	[780, 520, 150, 120, 0], [1040, 740, 200, 115, 10], [1440, 600, 120, 170, 0],
-	[960, 260, 190, 120, 0], [1160, 620, 160, 120, 0], [700, 600, 90, 80, 0],
+	[960, 260, 190, 120, 0], [1160, 620, 160, 120, 0],
 	[1400, 260, 140, 110, 0],
-	# Kyoshi Island
-	[770, 890, 45, 35, 20],
+	# Hamakaze: a peninsula, joined to the mainland by its neck (docs/canon.md §2)
+	[770, 890, 45, 35, 20], [815, 800, 84, 17, -67],
+	# The Strait Isles, claimed by both crowns (docs/canon.md §9)
+	[562, 545, 30, 100, 4], [570, 655, 26, 20, 0], [562, 455, 26, 22, 0],
 	# Fire Nation
 	[300, 520, 62, 125, 18], [370, 615, 110, 50, -18], [250, 612, 55, 38, 0],
 	[452, 508, 38, 24, 10], [200, 470, 30, 22, 0], [300, 405, 34, 28, 0],
@@ -783,7 +797,7 @@ func rumor() -> String:
 	var e: String = get_node("/root/GS").flags.get("era", "quiet")
 	if e == "quiet":
 		return rumors.pick_random()
-	var pool: Array = rumors.filter(func(r): return not (r.contains("drown") or r.contains("new Avatar") or r.contains("Lantern")))
+	var pool: Array = rumors.filter(func(r): return not (r.contains("lost at sea") or r.contains("new Avatar") or r.contains("Lantern")))
 	pool.append_array(era_rumors.get(e, []))
 	return pool.pick_random()
 
@@ -794,23 +808,23 @@ const era_rumors := {
 		"The Avatar was at a fishing village last week, arguing with a dead man. Out loud. The fishermen took sides.",
 	],
 	"prime": [
-		"Avatar Lei Shan slept in a hayloft in Chin Village last month and paid for it by fixing every roof. People are hoping he comes back. Their roofs, I mean.",
+		"Avatar Lei Shan slept in a hayloft in Tanshui Village last month and paid for it by fixing every roof. People are hoping he comes back. Their roofs, I mean.",
 		"They say the Avatar walked into a siege camp, sat down between the lines, and asked both generals what their mothers would think. It worked. That's the frightening part.",
 		"The Avatar's husband makes pots in the Jade Terraces and won't move to a temple. Says the Avatar can come home for dinner like everyone else.",
 		"You never find the Avatar. The Avatar finds you. Pray it's for the good reason.",
 	],
 	"elder": [
-		"Avatar Akane hasn't left the Boiling Lake Hamlet since spring. The sages say she spends her nights in the Spirit World, arguing with a river.",
+		"Avatar Akane hasn't left the Boiling Lake Hamlet since spring. She teaches three children to breathe before they burn, and argues with the lake about its temperature.",
 		"The old Avatar only travels for real evil now. Last time she came out, a warlord's castle became a very nice orchard.",
 		"My grandfather met Avatar Akane when she was young. He says she was terrifying. He says she's still terrifying, just slower.",
 	],
 }
 
 var rumors := [
-	"Eleven years since the Avatar drowned, and still nobody will say whose fault it was. Everyone knows, of course. Everyone knows something different.",
+	"Eleven years since the Avatar was lost at sea, and still nobody will say whose fault it was. Everyone knows, of course. Everyone knows something different.",
 	"Somewhere there's a child who's the new Avatar and doesn't know it. Five more years, the sages say. I hope there's a world left to hand them.",
-	"The Fire Sages on Crescent Island say the sun will go dark again one of these years. Firebenders get very quiet around an eclipse.",
-	"A tailed star was seen over the northern ice last winter. My grandmother says comets make fire burn hotter. My grandmother says a lot of things.",
+	"The Fire Sages keep a record of a day, long ago, when the sun went black over the islands. They won't say what happened that day. Firebenders don't like to ask.",
+	"My grandmother says the Great Comet comes back once in a hundred years, and every firebender alive goes half mad with it. My grandmother says a lot of things.",
 	"Admiral Kuro feeds his sailors better than the Fire Lord feeds his own guards. Makes you wonder where the coin comes from.",
 	"There's a chute-courier in Omashu carrying a letter everyone wants. Ba Sing Se has put a price on him. So has the Admiralty.",
 	"The Red Lanterns robbed a tax barge on the river and the Lower Ring ate rice for a week. Depends who you ask whether that's a crime.",
@@ -822,22 +836,22 @@ var rumors := [
 	"Southern divers went down to the wreck of the Lantern last summer. They came up with something wrapped in oilcloth and wouldn't say what.",
 	"A great library lies buried in the Si Wong Desert, guarded by an owl spirit who knows ten thousand things and wants to know ten thousand more.",
 	"The sandbender clans are starving since Misty Palms closed its wells. Starving people raid. Then the garrison wonders why.",
-	"Kyoshi Warriors paint their faces like the old Avatar and fight with steel fans. Captain Oyama refused the Earth Queen's summons three times. Politely.",
+	"The Tide Wardens of Hamakaze are fishers first and soldiers on the bad days. Captain Oyama refused the Earth Queen's summons three times. Politely.",
 	"King Feng Tao gives a speech every morning from the palace steps. Omashu loves it. Ba Sing Se hates it. The pigeons are neutral.",
 	"An old woman in green plays Pai Sho in the tea houses and never loses. She asks people about lotus tiles. Odd.",
-	"Under a full moon, a waterbender can do things you would not believe. Under a lunar eclipse, they can't do anything at all.",
-	"The Boiling Rock's warden teaches prisoners to read. Her guards call it soft. Fewer of her prisoners come back.",
+	"Under a full moon, a waterbender can do things you would not believe. Under a lunar eclipse they're ordinary waterbenders again, and they sulk.",
+	"The castellan of Boiling Lake Keep teaches the garrison's children to read. The officers call it soft. Her soldiers desert less than anyone's.",
 ]
 
 # World events on a fixed schedule: political beats of the Quiet Years, not
 # destiny. "campaign" makes a faction march on a target if still at war;
 # "effect" triggers special handling in the world simulation.
 var world_events := [
-	{"day": 4, "text": "Admiral Kuro's fleet tightens its blockade of the Ember Coast. Earth Kingdom merchants are turned back at sea."},
+	{"day": 4, "text": "Admiral Kuro's fleet tightens its blockade of the Strait. Earth Kingdom merchants are turned back at sea."},
 	{"day": 18, "text": "General Lu Kang marches from Shanzhai Fortress to end the Omashu Secession by force.", "campaign": ["earth_kingdom", "stonewatch"], "leaders": ["lu_kang"]},
 	{"day": 35, "text": "Southern raiders burn a Fire Navy supply convoy off Whaletail Island. Admiral Kuro swears revenge."},
 	{"day": 55, "text": "In Caldera, Crown Princess Ryoko calls openly for peace talks. Admiral Kuro calls for more ships. The Fire Lord says nothing in public."},
-	{"day": 80, "text": "The Admiralty lands an army on the southern coast and marches on Gaoling.", "campaign": ["fire_nation", "gaoling"], "leaders": ["kuro"]},
+	{"day": 80, "text": "Earth Kingdom marines cross the strait in fishing boats to take back Kettle Rock.", "campaign": ["earth_kingdom", "kettle_rock"], "leaders": ["tan_yue"]},
 	{"day": 110, "text": "The Northern council debates sending warriors to aid the South. Commander Iluq argues for war; Chief Tulok listens.", "effect": "north_debate"},
 	{"day": 140, "text": "Omashu's couriers carry rumours of a secret letter between Caldera and Omashu. Ba Sing Se doubles its patrols on every road."},
 	{"day": 175, "text": "A hard winter is coming, the farmers say. Every army will be hungry before spring.", "effect": "hard_winter"},
@@ -847,7 +861,7 @@ var world_events := [
 var arena_fighters := [
 	{"name": "Pebble Wen", "bend": "earth", "power": 1.1, "hp": 90, "armor": 6, "skill": 45, "weapon": "fists", "prize": 120,
 		"culture": "earth", "vlook": {"sex": "m", "accessory": "bandana"}},
-	{"name": "The Ember Coast Kid", "bend": "fire", "power": 1.0, "hp": 100, "armor": 8, "skill": 55, "weapon": "fists", "prize": 200,
+	{"name": "The Strait Isles Kid", "bend": "fire", "power": 1.0, "hp": 100, "armor": 8, "skill": 55, "weapon": "fists", "prize": 200,
 		"culture": "fire", "vlook": {"sex": "f", "hair": "Hair_BuzzedFemale"}},
 	{"name": "The Granary", "bend": "earth", "power": 1.4, "hp": 200, "armor": 14, "skill": 40, "weapon": "fists", "prize": 350,
 		"culture": "earth", "vlook": {"sex": "m", "hair": "Hair_Buzzed", "height": 1.08}},

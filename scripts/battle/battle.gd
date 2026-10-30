@@ -127,7 +127,7 @@ func _ready() -> void:
 	if fire_mult == 0.0:
 		msg += " The sun is dark — firebenders are powerless!"
 	elif fire_mult > 1.6:
-		msg += " A comet burns overhead — firebending is at its peak!"
+		msg += " The Great Comet burns overhead — firebending is at its peak!"
 	if water_mult == 0.0:
 		msg += " The moon is eclipsed — waterbenders are powerless!"
 	elif water_mult > 1.4:
@@ -572,7 +572,7 @@ func _spawn_entry(e: Dictionary, team: int, pos: Vector3, face: float):
 			u.hold_pos = Vector3(u.position.x, 0, wall_z + signf(wall_z) * 3.0)
 	return u
 
-## What the player prepared against the Avatar: wards and chi-blocker nets at
+## What the player prepared against the Avatar: denied ground and chi-blocker nets at
 ## the seat (traps), walls (fort), and a raid on their home (demoralised).
 func _apply_avatar_mods(u) -> void:
 	var m: Dictionary = GS.pending_battle.get("avatar", {})
@@ -586,7 +586,7 @@ func _apply_avatar_mods(u) -> void:
 	u.bend_power *= 1.0 - 0.06 * fort
 	if traps > 0:
 		u.bend_block_t = 4.0 * traps
-		hud_note("The wards hold %s for a moment: %d seconds without bending." % [u.display_name, int(u.bend_block_t)])
+		hud_note("The nets and bare timber hold %s for a moment: %d seconds without bending." % [u.display_name, int(u.bend_block_t)])
 
 ## The Avatar State: a shockwave, and every eye on the field turns.
 func avatar_state(u) -> void:
@@ -1016,16 +1016,17 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 			var healed := 0
 			for ally in team_units[caster.team]:
 				if ally.dist_to(caster) < a.range:
-					ally.heal(ally.max_hp * a.amount * (1.0 if ally == caster else 0.7))
+					if a.amount > 0.0:
+						ally.heal(ally.max_hp * a.amount * (1.0 if ally == caster else 0.7))
 					if a.get("cure", false):
 						ally.burn_t = 0.0
 						ally.slow_t = 0.0
 						ally.root_t = 0.0
 						ally.blind_t = 0.0
-					spawn_burst(ally.chest(), Color(0.4, 0.75, 1.0), 0.8)
+					spawn_burst(ally.chest(), Color(0.4, 0.75, 1.0) if a.amount > 0.0 else Color(0.9, 0.92, 0.85), 0.8)
 					healed += 1
 			if caster.is_player:
-				hud_note("Healing water mends %d wounds" % healed)
+				hud_note(("Healing water mends %d wounds" if a.amount > 0.0 else "The wind clears %d of your people") % healed)
 		"quake":
 			for e in team_units[1 - caster.team].duplicate():
 				var d4: Vector3 = e.position - caster.position

@@ -221,7 +221,7 @@ func _check_invariants(persona: String, seed: int) -> void:
 		if is_nan(p.pos.x) or is_nan(p.pos.y):
 			_issue(tag + ": NaN position for " + id)
 	if Story.flag("ending_told") and GS.at_war("fire_nation", "earth_kingdom") and GS.day() - int(Story.flag("accord_day", 0)) < 60:
-		_issue(tag + ": war resumed within 60 days of the Kyoshi Accord")
+		_issue(tag + ": war resumed within 60 days of the Hamakaze Accord")
 	var q: Array = GS.flags.get("dlg_queue", [])
 	if q.size() > 8:
 		_issue(tag + ": dialogue queue backing up (%d)" % q.size())

@@ -57,7 +57,7 @@ func _run() -> void:
 		print(wname, " pressed ", n)
 		await _close_all()
 	# Settlements of every type
-	for sid in ["omashu", "fong_fortress", "senlin", "kyoshi_island", "southern_air_temple", "red_lantern_den", "wan_shi_tong", "stonewatch", "caldera", "agna_qela"]:
+	for sid in ["omashu", "fong_fortress", "senlin", "hamakaze", "southern_air_temple", "red_lantern_den", "wan_shi_tong", "stonewatch", "caldera", "agna_qela"]:
 		GS.player_party().pos = Data.settlements[sid].pos
 		map.open_settlement(sid)
 		await get_tree().process_frame
@@ -178,7 +178,7 @@ func _run() -> void:
 		print("status after pledge: ", GS.player.status, " ", GS.player.faction)
 		await _close_all()
 	# Player siege flow (auto)
-	var target := "pohuai"
+	var target := "kettle_rock"
 	GS.player_party().pos = Data.settlements[target].pos
 	map.open_settlement(target)
 	await get_tree().process_frame
@@ -189,7 +189,7 @@ func _run() -> void:
 	await get_tree().process_frame
 	sw._assault_auto()
 	await get_tree().process_frame
-	print("pohuai faction after auto assault: ", GS.settlements[target].faction, " owner ", GS.settlements[target].owner)
+	print("kettle_rock faction after auto assault: ", GS.settlements[target].faction, " owner ", GS.settlements[target].owner)
 	await _close_all()
 	# Time passes with the map running
 	GS.sim.advance(24.0 * 10)

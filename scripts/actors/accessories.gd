@@ -2,7 +2,7 @@ extends RefCounted
 ## Culture-specific garments and headwear layered over the base outfits:
 ## Fire Nation helmets, shoulder guards and plate tassets, Earth Kingdom conical
 ## helmets and tabards, Air Nomad robes and sashes, Water Tribe fur collars and
-## wolf helms, Kyoshi headdresses, sandbender wraps and so on.
+## wolf helms, Tide Warden headbands, sandbender wraps and so on.
 ##
 ## Each piece is modelled in the rig's T-pose model space (character faces +Z,
 ## ~1.8 m tall) and bound to a skeleton bone, so it follows the animation.
@@ -183,13 +183,13 @@ static func dress_head(parts: Dictionary, style: String, sex: String, hair: Colo
 			add.call(node(lathe([Vector2(0.0, 0.15), Vector2(0.06, 0.13), Vector2(0.12, 0.06), Vector2(0.135, 0.0), Vector2(0.15, -0.03), Vector2(0.155, -0.045), Vector2(0.13, -0.04)], 24), Color(0.22, 0.36, 0.2), at(Vector3(0, top - 0.06, 0.0))))
 			add.call(node(lathe([Vector2(0.0, 0.05), Vector2(0.01, 0.0)], 8), Color(0.85, 0.7, 0.3), at(Vector3(0, top + 0.09, 0.0))))
 			add.call(torus(0.13, 0.145, gold, at(Vector3(0, top - 0.06, 0.0))))
-		"dai_li":
-			add.call(node(lathe([Vector2(0.0, 0.07), Vector2(0.08, 0.06), Vector2(0.3, 0.0), Vector2(0.3, -0.012), Vector2(0.08, 0.02)], 28), Color(0.1, 0.16, 0.09), at(Vector3(0, top - 0.02, 0.0))))
-			add.call(node(lathe([Vector2(0.0, 0.08), Vector2(0.12, 0.08), Vector2(0.125, 0.0)], 20), Color(0.1, 0.16, 0.09), at(Vector3(0, top - 0.06, 0.0))))
-		"kyoshi":
-			# gold headdress with the fan crest
-			add.call(torus(0.115, 0.135, gold, at(Vector3(0, y + 0.07, 0.0), Vector3(-8, 0, 0))))
-			add.call(panel(shell(0.13, 0.12, 70.0, 0.008, 10, -0.03), gold, at(Vector3(0, top + 0.08, 0.0), Vector3(0, 0, 0))))
+		"censor":
+			# a censor's flat-topped black gauze cap with a jade bead
+			add.call(node(lathe([Vector2(0.0, 0.1), Vector2(0.12, 0.1), Vector2(0.125, 0.0)], 4), Color(0.08, 0.08, 0.09), at(Vector3(0, top - 0.05, 0.0), Vector3(0, 45, 0))))
+			add.call(node(lathe([Vector2(0.0, 0.02), Vector2(0.02, 0.0)], 8), Color(0.35, 0.6, 0.45), at(Vector3(0, top + 0.03, 0.12))))
+		"hamakaze":
+			# the Tide Wardens' white headband, knotted at the back
+			add.call(torus(0.112, 0.128, Color(0.94, 0.93, 0.9), at(Vector3(0, y + 0.06, 0.0), Vector3(-6, 0, 0))))
 		"parka", "wt_helm":
 			# the hood itself comes from the outfit kit; add the fur trim
 			add.call(torus(0.1, 0.135, Color(0.95, 0.94, 0.9), at(Vector3(0, y + 0.0, 0.065), Vector3(80, 0, 0), Vector3(1.0, 1.0, 1.2))))
@@ -270,17 +270,17 @@ static func dress_body(parts: Dictionary, kit: String, sex: String, palette: Dic
 			bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, primary.darkened(0.2), at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
 			for side in ["l", "r"]:
 				bind(parts, "lowerarm_" + side, torus(0.04, 0.065, fur, at(Vector3((0.66 if sex == "m" else 0.6) * (1.0 if side == "l" else -1.0), 1.45 if sex == "m" else 1.415, -0.06), Vector3(0, 0, 90))))
-		"kyoshi_armor":
-			bind(parts, "spine_03", panel(shell(0.16 * w, 0.3, 140.0, 0.012, 14, 0.02), Color(0.15, 0.45, 0.25), at(Vector3(0, 1.45 if sex == "m" else 1.41, -0.02))))
+		"tide_armor":
+			bind(parts, "spine_03", panel(shell(0.16 * w, 0.3, 140.0, 0.012, 14, 0.02), Color(0.16, 0.2, 0.36), at(Vector3(0, 1.45 if sex == "m" else 1.41, -0.02))))
 			bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, accent, at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
 			for side in ["l", "r"]:
 				var sx5 := 1.0 if side == "l" else -1.0
-				bind(parts, "thigh_" + side, panel(shell(0.12, 0.3, 150.0, 0.01, 10, 0.05), Color(0.15, 0.45, 0.25), at(Vector3(0.09 * sx5, hip_y + 0.02, 0.0))))
-		"dai_li_robe":
+				bind(parts, "thigh_" + side, panel(shell(0.12, 0.3, 150.0, 0.01, 10, 0.05), Color(0.16, 0.2, 0.36), at(Vector3(0.09 * sx5, hip_y + 0.02, 0.0))))
+		"censor_robe":
 			for side in ["l", "r"]:
 				var sx6 := 1.0 if side == "l" else -1.0
-				bind(parts, "thigh_" + side, panel(shell(0.15, 0.7, 170.0, 0.01, 12, 0.06), Color(0.1, 0.18, 0.1), at(Vector3(0.08 * sx6, hip_y + 0.04, 0.0))))
-				bind(parts, "thigh_" + side, panel(shell(0.15, 0.7, 170.0, 0.01, 12, 0.06), Color(0.1, 0.18, 0.1), at(Vector3(0.08 * sx6, hip_y + 0.04, 0.0), Vector3(0, 180, 0))))
+				bind(parts, "thigh_" + side, panel(shell(0.15, 0.7, 170.0, 0.01, 12, 0.06), Color(0.24, 0.26, 0.28), at(Vector3(0.08 * sx6, hip_y + 0.04, 0.0))))
+				bind(parts, "thigh_" + side, panel(shell(0.15, 0.7, 170.0, 0.01, 12, 0.06), Color(0.24, 0.26, 0.28), at(Vector3(0.08 * sx6, hip_y + 0.04, 0.0), Vector3(0, 180, 0))))
 			bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, Color(0.75, 0.6, 0.2), at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
 		"sash":
 			bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, accent, at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1.1, 0.8))))

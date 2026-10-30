@@ -46,7 +46,7 @@ const DIALOGUES := {
 		"rom2": {"who": "juro", "expr": "happy", "text": "'Dear {name}. The plum tree has fruited.' That's the whole letter. You'll understand later.", "next": "hub"},
 		"rom_no": {"who": "juro", "expr": "smirk", "text": "Of course. Good. Excellent. I'll go and redesign a cart for an hour. Not because of this. Unrelated cart.", "next": "hub"},
 		"father": {"who": "juro", "expr": "tender", "text": "A potter. Hands like shovels. When I told him I was his son, not his daughter, he went quiet for a whole day, and then he came back with a set of carving tools and said, 'A son should have his own.' That was it. That was the whole conversation. He writes every week about the plum tree.", "next": "hub"},
-		"growing": {"who": "juro", "expr": "thoughtful", "text": "Hungry, the last few years. Three bad harvests. You stand in a ration line and someone in a nice uniform tells you the Ember Coast will fix it, and you want so badly to believe them. That's how a war gets built. I should know. I drew the parts.", "next": "hub"},
+		"growing": {"who": "juro", "expr": "thoughtful", "text": "Hungry, the last few years. Three bad harvests. You stand in a ration line and someone in a nice uniform tells you the Strait Isles will fix it, and you want so badly to believe them. That's how a war gets built. I should know. I drew the parts.", "next": "hub"},
 		"really": {"who": "juro", "expr": "neutral", "text": "Better than I was. Building things helps. Being useful helps. You asking helps, which is embarrassing, so please forget I said it.", "next": "hub"},
 	}},
 	"talk_pemba": {"title": "Pemba", "start": "hub", "nodes": {
@@ -98,7 +98,7 @@ const DIALOGUES := {
 			{"text": "\"You're right. I'm sorry I asked.\"", "next": "hub", "do": [["approval", "shen_mu", 3]]},
 			{"text": "(That night, read it while he sleeps.)", "next": "readit"},
 		]},
-		"readit": {"who": "narrator", "text": "The seal lifts cleanly with a hot knife. Princess Ryoko offers to withdraw from two Ember Coast ports in exchange for Omashu's grain, and to recognise Omashu as a kingdom. You reseal it. In the morning Shen Mu looks at the wax for a long time, and then at you, and says nothing at all.",
+		"readit": {"who": "narrator", "text": "The seal lifts cleanly with a hot knife. Princess Ryoko offers to withdraw from two ports in the Strait Isles in exchange for Omashu's grain, and to recognise Omashu as a kingdom. You reseal it. In the morning Shen Mu looks at the wax for a long time, and then at you, and says nothing at all.",
 			"do": [["flag", "letter_read", true], ["approval", "shen_mu", -25]]},
 	}},
 	"talk_reika": {"title": "Reika", "start": "hub", "nodes": {

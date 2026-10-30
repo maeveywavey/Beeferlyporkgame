@@ -49,7 +49,7 @@ func build() -> void:
 	elif GS.day() < int(A.get("wounded_until", -1)):
 		where = "Withdrawn to heal. Nobody knows where."
 	elif A.get("seen", []).is_empty():
-		where = "No sightings yet. The sages say the Avatar is in the Spirit World."
+		where = "No sightings yet. The sages say only that the Avatar is about the Avatar's work, somewhere quiet."
 	else:
 		for e in A.seen:
 			where += "Seen at [b]%s[/b], %d days ago\n" % [Data.settlements[e.sid].name, GS.day() - int(e.day)]
@@ -82,7 +82,7 @@ func build() -> void:
 	b.add_child(UI.expand())
 	b.add_child(UI.button("Done", close, 120))
 
-## Counterplay when the Avatar is coming: walls, wards, chi-blockers, a raid
+## Counterplay when the Avatar is coming: walls, ground denial, chi-blockers, a raid
 ## on their home, intelligence on whom they love, or yielding in advance.
 func _build_preparations(o: VBoxContainer) -> void:
 	var A: Dictionary = AvatarSys.state()
@@ -109,9 +109,9 @@ func _build_preparations(o: VBoxContainer) -> void:
 			AvatarSys.fortify(sid)
 			note = "Masons work through the night at %s." % nm
 			refresh(), def.fort < 3 and GS.player.gold >= AvatarSys.fort_cost(sid)))
-		list.add_child(UI.option("Lay spirit-wards and chi-blocker nets at %s (traps %d/3, %d gold)" % [nm, def.traps, AvatarSys.trap_cost(sid)], func():
+		list.add_child(UI.option("Deny the ground and hang chi-blocker nets at %s (traps %d/3, %d gold)" % [nm, def.traps, AvatarSys.trap_cost(sid)], func():
 			AvatarSys.lay_traps(sid)
-			note = "Paper wards on every lintel, weighted nets in every gatehouse. Each level costs the Avatar strength and holds their bending for a few seconds."
+			note = "Timber laid over the courtyards, cisterns drained, braziers doused, weighted nets in every gatehouse: less earth, water and fire to hand, and something to hold a body still. Each level costs the Avatar strength and holds their bending for a few seconds."
 			refresh(), def.traps < 3 and GS.player.gold >= AvatarSys.trap_cost(sid)))
 	if seats.is_empty():
 		list.add_child(UI.rich("[i]You hold no town or castle to fortify. The Avatar will find you in the open.[/i]", 520))

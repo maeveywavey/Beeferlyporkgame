@@ -3,7 +3,7 @@ extends RefCounted
 ## Madam Cheng Lu of Gaoling, Old Shan of Stonewatch Pass, Master Bo Ren of
 ## Omashu's boulder school. Stories: the Jade Seam strike (Gao Ming); a
 ## cave-in; the Badgermole's Patience mastery trial. Bo Lai (from Hana's
-## quest) can teach the Dai Li's Stone Hand if Hana spared him.
+## quest) can teach the Censorate's Stone Hand if Hana spared him.
 
 const NPCS := {
 	"cheng_lu": {"name": "Madam Cheng Lu", "culture": "earth", "vlook": {"sex": "f", "hair": "Hair_Buns", "hair_color": Color(0.3, 0.28, 0.27)}, "kit": "civ_robe"},
@@ -22,8 +22,8 @@ const TRIGGERS := [
 const OPTIONS := [
 	{"sid": "omashu", "text": "Train with the boulder masters", "dlg": "ex_boulder", "if": {"bend": "earth"}},
 	{"sid": "ba_sing_se", "text": "Find Bo Lai, who sealed the tunnel", "dlg": "ex_bolai", "if": {"bend": "earth", "flag": "hana_spared"}},
-	{"sid": "ba_sing_se", "text": "Petition to study at the Dai Li academy", "dlg": "ex_academy", "if": {"bend": "earth", "standing": 2, "call": "ex_academy_ok"}},
-	{"sid": "stonewatch", "text": "Climb to Old Shan's cave", "dlg": "ex_shan", "if": {}},
+	{"sid": "ba_sing_se", "text": "Petition to study at the Censorate academy", "dlg": "ex_academy", "if": {"bend": "earth", "standing": 2, "call": "ex_academy_ok"}},
+	{"sid": "two_lovers", "text": "Find Old Shan in the tunnels", "dlg": "ex_shan", "if": {}},
 	{"sid": "gaoling", "text": "Go with Gao Ming to the Cheng family's jade seam", "dlg": "ex_seam", "if": {"companion": "gao_ming", "flag": "gao_q", "not_flag": "gao_done"}},
 ]
 
@@ -91,7 +91,7 @@ const DIALOGUES := {
 	}},
 
 	# -----------------------------------------------------------------------
-	# Teachers: Omashu's boulder school, Bo Lai, the Dai Li academy
+	# Teachers: Omashu's boulder school, Bo Lai, the Censorate academy
 	# -----------------------------------------------------------------------
 	"ex_boulder": {"title": "The Boulder School", "start": "hub", "nodes": {
 		"hub": {"who": "bo_ren", "expr": "laugh", "text": "Ha! Another one! Omashu's earthbending is very simple: pick up the biggest rock you can, and then a slightly bigger one. What do you want?", "choices": [
@@ -105,17 +105,17 @@ const DIALOGUES := {
 			"do": [["wait", 72.0], ["learn", "e_armor"]], "next": "hub"},
 	}},
 	"ex_bolai": {"title": "Bo Lai", "start": "a", "nodes": {
-		"a": {"who": "bo_lai", "expr": "sad", "text": "You. Hana's friend. I testify every month, now, at the hearings. It is the least I can do, and I do it. — You want to learn what the Dai Li taught me. I understand. It is efficient. It is not innocent. I will teach it to you on one condition: you use it to hold people, never to bury them.", "choices": [
-			{"text": "\"I promise.\" (Learn Stone Gloves and Stone Cuffs; four days)", "next": "learn", "if": {"no_tech": "e_gloves"}},
+		"a": {"who": "bo_lai", "expr": "sad", "text": "You. Hana's friend. I testify every month, now, at the hearings. It is the least I can do, and I do it. — You want to learn what the Censorate taught me. I understand. It is efficient. It is not innocent. I will teach it to you on one condition: you use it to hold people, never to bury them.", "choices": [
+			{"text": "\"I promise.\" (Learn Stone Fists and Stone Cuffs; four days)", "next": "learn", "if": {"no_tech": "e_gloves"}},
 			{"text": "\"Not from you.\"", "next": "no"},
 		]},
 		"learn": {"who": "bo_lai", "expr": "neutral", "text": "Short. Quick. Close. The hand closes and the stone closes with it. — Good. Now forget how good that felt. That is the part they never taught us.",
 			"do": [["wait", 96.0], ["learn", "e_gloves"], ["learn", "e_cuffs"], ["approval", "hana", 3]]},
 		"no": {"who": "bo_lai", "expr": "sad", "text": "That is fair. More than fair."},
 	}},
-	"ex_academy": {"title": "The Dai Li Academy", "start": "a", "nodes": {
-		"a": {"who": "narrator", "text": "The academy sits under Lake Laogai, which you are told is a rumour, in rooms you are told do not exist. An instructor with no name teaches you for a week. Nobody asks what you will do with it. That is the lesson, if you are paying attention.", "choices": [
-			{"text": "Learn Stone Gloves and Stone Cuffs (one week; 1,200 gold)", "next": "learn", "if": {"gold": 1200, "no_tech": "e_gloves"}, "hint": "need 1,200 gold"},
+	"ex_academy": {"title": "The Censorate Academy", "start": "a", "nodes": {
+		"a": {"who": "narrator", "text": "The academy sits under the Censorate's archive, which you are told has no cellar, in rooms you are told do not exist. An instructor with no name teaches you for a week. Nobody asks what you will do with it. That is the lesson, if you are paying attention.", "choices": [
+			{"text": "Learn Stone Fists and Stone Cuffs (one week; 1,200 gold)", "next": "learn", "if": {"gold": 1200, "no_tech": "e_gloves"}, "hint": "need 1,200 gold"},
 			{"text": "Leave.", "next": ""},
 		]},
 		"learn": {"who": "narrator", "text": "You leave knowing two new things with your hands and a third with your stomach.",
@@ -126,7 +126,7 @@ const DIALOGUES := {
 	# Old Shan and the Badgermole's Patience (mastery trial)
 	# -----------------------------------------------------------------------
 	"ex_shan": {"title": "Old Shan", "start": "a", "nodes": {
-		"a": {"who": "narrator", "text": "The cave is warm and smells of moss. An old man sits cross-legged in the dark with his palms flat on the floor, and does not look up. He speaks so quietly you have to kneel to hear.", "next": "hub"},
+		"a": {"who": "narrator", "text": "Deep in the Cave of Two Lovers, where the crystals in the ceiling give the only light, an old man sits cross-legged with his palms flat on the floor, and does not look up. He speaks so quietly you have to kneel to hear.", "next": "hub"},
 		"hub": {"who": "old_shan", "expr": "neutral", "text": "The first earthbenders learned from the badgermoles, who are blind and hear everything. Most people have forgotten. I have not. What do you want to remember?", "choices": [
 			{"text": "Learn Seismic Sense (a week of listening; Bending 5)", "next": "seismic", "if": {"bend": "earth", "no_tech": "e_seismic", "skill": ["bending", 5]}, "hint": "earthbenders with Bending 5"},
 			{"text": "Learn the Fissure (two days; Bending 4)", "next": "fissure", "if": {"bend": "earth", "no_tech": "e_fissure", "skill": ["bending", 4]}, "hint": "earthbenders with Bending 4"},
@@ -135,7 +135,7 @@ const DIALOGUES := {
 			{"text": "\"I'll go.\"", "next": ""},
 		]},
 		"who": {"who": "old_shan", "expr": "smirk", "text": "A miner who stopped. I was very loud once. Then a mountain fell on me and I lay under it for two days, listening, and it turned out the mountain had been talking the whole time. I stayed to hear the rest.", "next": "hub"},
-		"seismic": {"who": "old_shan", "expr": "thoughtful", "text": "Close your eyes. Bare feet. — No, you're listening with your ears. Stop that. Listen with your heels. There: a beetle, two paces left. A mouse, under the moss. Me. You. Everyone, always, all the time.",
+		"seismic": {"who": "old_shan", "expr": "thoughtful", "text": "I can't teach you this. Nobody human can. Come deeper. — There. Two of them, the size of houses, blind as stones. Sit where they pass. Copy how they move, and close your eyes, and in a week, if they let you, you will feel what they feel: a beetle, two paces left. A mouse, under the moss. Me. You. Everyone, always, all the time.",
 			"do": [["wait", 168.0], ["learn", "e_seismic"]], "next": "hub"},
 		"fissure": {"who": "old_shan", "expr": "neutral", "text": "Find the line the stone already wants to break along. Ask it. Don't tell it.",
 			"do": [["wait", 48.0], ["learn", "e_fissure"]], "next": "hub"},

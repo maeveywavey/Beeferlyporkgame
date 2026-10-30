@@ -1,16 +1,13 @@
-# The Avatar, and the Four Element Expansions
+# Game design
 
-This document specifies two post-launch additions to *Avatar: The Quiet Years*, both implemented in this repository:
-
-- **The Avatar** becomes a persistent non-player character.
-- **Four element expansions**: *Embers of the First Flame*, *The Turning Tide*, *Roots of the Mountain* and *The Thirty-Six Winds*.
-
-Where this document gives a number, the number is the one in the code. Code paths:
+How the game's systems work, with the numbers the code uses. World and story are in `docs/setting.md`; lore rules are in `docs/canon.md`, which overrides this file.
 
 | Area | Files |
 |---|---|
 | Avatar | `scripts/core/avatar.gd`, `scripts/story/avatar_story.gd`, `scripts/ui/avatar_window.gd` |
 | Expansions | `scripts/dlc/`, `scripts/battle/techniques.gd`, `scripts/core/bending_work.gd`, `scripts/ui/techniques_window.gd`, `scripts/ui/bending_work_window.gd` |
+| Bending Forms | `scripts/battle/forms.gd`, `scripts/ui/forms_window.gd` |
+| Interface | `scripts/ui/skin.gd`, `scripts/ui/ui.gd`, `scripts/ui/window_base.gd`, `shaders/` |
 
 ## 1. The player is never the Avatar
 
@@ -61,7 +58,7 @@ The design brief asks that the Avatar's involvement be governed mostly by their 
 
 `INVOLVEMENT` sets, for each stage, a multiplier on the daily chance of acting on each motive, and the share of time spent beyond reach.
 
-| Stage | Ruler | Tyrant | Teacher | Local | Time in the Spirit World |
+| Stage | Ruler | Tyrant | Teacher | Local | Time out of reach |
 |---|---|---|---|---|---|
 | Child | 0 | 0 | 0 | 0 | always |
 | Young | 0.6 | 0.7 | 1.0 | 0.8 | 45% |
@@ -77,7 +74,7 @@ Arrival delays also lengthen at the ends of life:
 The Avatar is not a map party.
 
 **Whereabouts:**
-- **Spirit World:** the Avatar is out of reach for 3–10 days at a time (6–20 when elderly).
+- **Out of reach:** travelling, secluded at a temple, with a teacher or at home, for 3–10 days at a time (6–20 when elderly). Never in the Spirit World: canon visits there are brief (`docs/canon.md` §3).
 - **Visits:** otherwise they visit one settlement for 2–5 days.
 - **Choosing a visit:** sieges add 5 to a settlement's weight and war adds 1. Temples add 2 (5 when elderly) and home adds 2 (6 when elderly).
 
@@ -154,7 +151,7 @@ Thereafter an Avatar who trusts you (attitude ≥ 20) brokers a truce on request
    - Pledging records the current infamy. The Avatar stays away unless infamy rises 40 above it.
    - Defying, or breaking the pledge, starts a gathering. The log announces it, a monk delivers a note, and the Avatar window counts down the days.
 3. **Arrival.** The Avatar's company appears beside the player.
-   - **Company:** the Avatar plus stage-specific allies (monks and warriors when young; masters, earthbenders, waterbenders and Kyoshi Warriors in prime; Kyoshi Warriors, masters and firebenders when elderly).
+   - **Company:** the Avatar plus stage-specific allies (monks and warriors when young; masters, earthbenders, waterbenders and Tide Wardens in prime; Tide Wardens, masters and firebenders when elderly).
    - **Scaling:** the company scales with the defenders (party plus garrison at the seat, ÷35, clamped 0.6–5). It grows a further 30% for every previous defeat.
 
 ### 3.3 Countermeasures
@@ -164,7 +161,7 @@ The player may prepare against a hostile Avatar, through physical means or perso
 | Measure | Cost | Effect |
 |---|---|---|
 | Fortify a seat (×3) | 1,200 + 600 per level | Each level: Avatar bending power −6% |
-| Spirit-wards and chi-blocker nets (×3) | 900 + 450 per level | Each level: Avatar health −12%, bending blocked for 4 s at the start |
+| Ground denial and chi-blocker nets (×3): timber over courtyards, drained cisterns, doused braziers | 900 + 450 per level | Each level: Avatar health −12%, bending blocked for 4 s at the start |
 | Hire 6 chi-blockers | 900 | Their strikes stop a bender bending for 8 s (new troop) |
 | Spies | 800 | Reveals whom the Avatar loves and where |
 | Take a hostage | at the Avatar's home, after spies | +80 infamy; heavy companion disapproval; offers a hostage choice at the confrontation |
@@ -267,7 +264,7 @@ Companions arrive with signature techniques. Battle AI understands every new kin
 
 **People:**
 - **Master Sayuri Ono** (companion), 54. A retired Agni Kai champion with chronic pain from a lightning wound, and a widow (her late wife Haruko was a Fire Sage archivist). Romance open to she/her and they/them players.
-- **Kazan of the Cinder Monastery.** A former artillery commander from the siege of Gaipan who now rakes cinders on a dormant volcano. The Cinder Monastery is a new location.
+- **Kazan of the Cinder Monastery.** A former artillery commander from the siege of Saltreach who now rakes cinders on a dormant volcano. The Cinder Monastery is a new location; its flame was lit from the Sun Warriors' Eternal Flame.
 - **Mistress Tomoe Ikari** of Fire Fountain City's duelling hall.
 
 **Stories:**
@@ -276,10 +273,10 @@ Companions arrive with signature techniques. Battle AI understands every new kin
   - let Sayuri win without throwing a flame;
   - talk him down (renown 150);
   - report him to the Fire Lord (Gentry), which stops him but teaches him nothing.
-- **"The First Flame"** (mastery trial; Bending 7, three fire techniques, two duels won):
+- **"The Ember"** (mastery trial: carry an ember lit from the Sun Warriors' Eternal Flame; Bending 7, three fire techniques, two duels won):
   1. carry an ember of a 900-year-old flame to the Fire Sages within nine days, without using fire in anger (any infamy gained puts it out);
   2. light Kazan's lamp. A precise jab cracks it; waiting leaves it cold; only breath lights it.
-- **"The Comet Forge."** During a natural comet, forge sky-iron into a Comet-Forged Dao, or let the monks make a bell.
+- **"The Comet Forge."** While the Great Comet is overhead (at most once a game), forge sky-iron into a Comet-Forged Dao, or let the monks make a bell.
 
 **Writers' room constraint (§6.3).** The trial honours the original series' teaching that fire comes from breath, without copying the Sun Warrior scene. There are no dragons and no ancient city; the lesson comes from a monastery and a lamp.
 
@@ -315,7 +312,7 @@ Companions arrive with signature techniques. Battle AI understands every new kin
   - break the dam: the swamp lives and the terraces fail;
   - share the water three days in seven: needs Trade 3 or 800 gold;
   - ask the river: an earthbender in the party opens a spring, and both places prosper.
-- **"The Red Moon."** During a lunar eclipse a waterbender learns that the water was never theirs to command (+1 skill point).
+- **"The Red Moon."** During a lunar eclipse the full moon's strength drains away; a waterbender learns that the water was never theirs to command (+1 skill point).
 - **"The Moon's Road"** (mastery trial; Bending 7, three water techniques, a duel won): walk the last stretch to the Moon Fishery on self-made ice on a full-moon night.
 
 **The Law of the Two Paths and pronouns.** Teaching is never gated on pronouns: creation promises that pronouns open and close no doors except romance. Outsiders train on the outer ice with Aklaq, and healing is taught by Elder Pana.
@@ -327,7 +324,7 @@ Companions arrive with signature techniques. Battle AI understands every new kin
 | Style | Martial basis | Techniques |
 |---|---|---|
 | Badgermole Way | Hung Gar stance work | Seismic Sense (buff: power ×1.25, cannot be blinded), Fissure (line) |
-| Stone Hand (the Dai Li's) | Southern Mantis short strikes | Stone Gloves (two-rock volley), Stone Cuffs (root) |
+| Stone Hand (the Censorate's) | Southern Mantis short strikes | Stone Fists (two-rock volley), Stone Cuffs (root) |
 | Boulder Style (Omashu) | Hung Gar tiger forms | Boulder Toss (40 damage, huge knockback), Stone Armour (buff: armour +25, speed ×0.8, knockback immune) |
 
 **Forms movements:** Iron Bridge (Tit Kiu); Double Tiger Claws (Seung Fu Jaau); Butterfly Palms (Wu Dip Jeung); Listening Horse.
@@ -343,9 +340,9 @@ Companions arrive with signature techniques. Battle AI understands every new kin
 **People:**
 - **Gao Ming** (companion), 40. A jade miner and union organiser from the Lower Ring, a bisexual widower raising twelve-year-old Lian. Romance open to every pronoun.
 - **Madam Cheng Lu** of Gaoling. The Cheng family is the creditor named in the Wandering Merchant background.
-- **Old Shan of Stonewatch Pass**, who learned from lying under a mountain for two days.
+- **Old Shan of the Cave of Two Lovers**, who learned from lying under a mountain for two days. He does not teach Seismic Sense himself: he takes the player to the badgermoles, the only teachers of it the series shows.
 - **Master Bo Ren** of Omashu's boulder school.
-- **Bo Lai**, from Hana's quest, teaches the Stone Hand only if Hana spared him: "Use it to hold people, never to bury them." Otherwise the Dai Li academy teaches it for 1,200 gold, at Gentry standing, unless the Dai Li are your enemy. Hana and Gao Ming disapprove.
+- **Bo Lai**, from Hana's quest, teaches the Stone Hand only if Hana spared him: "Use it to hold people, never to bury them." Otherwise the Censorate academy teaches it for 1,200 gold, at Gentry standing, unless the Dai Li are your enemy. Hana and Gao Ming disapprove.
 
 **Stories:**
 - **"The Jade Seam."** A strike after six deaths and a wage cut. There are four resolutions:
@@ -364,7 +361,7 @@ Companions arrive with signature techniques. Battle AI understands every new kin
 |---|---|---|
 | Northern Glide | Baguazhang leaping palms | Glider Strike (12 m dash), Updraft (lift and stun) |
 | Southern Play | Baguazhang circle walking | Air Ball (cheap, huge knockback), Air Shield (buff: −70% damage, knockback immune) |
-| Eastern Stillness | Standing meditation | Healing Breath (small heal, cures) |
+| Eastern Stillness | Standing meditation | Clearing Wind (clears burning, slowing, rooting and blinding from allies; heals nothing, since airbenders do not heal) |
 | Western Wind-Shaping | Baguazhang palm changes | Vortex (pulling nova), Wind Blade (fast piercing edge, "taught reluctantly") |
 
 **Forms movements:** Swimming Body (You Shen); Lion Opens Its Mouth; Yellow Dragon Turns Over; Standing Like a Post (Zhan Zhuang).
@@ -401,7 +398,7 @@ Companions arrive with signature techniques. Battle AI understands every new kin
 
 | Test | Covers | Result |
 |---|---|---|
-| `tests/test_avatar.tscn` | All 19 background/element combinations; four eras (stage, sightings, Spirit World share, the prologue only in the Quiet Years); ruler court and brokered peace; tyrant warning → defiance → gathering → arrival → yield; diversion and hostage; judgement after a lost battle and withdrawal after a won one; local intervention near and far; the teacher path from top-1% check to taught element; the Quiet Years child revealed at 16 with the kept logbook | 0 errors |
+| `tests/test_avatar.tscn` | All 19 background/element combinations; four eras (stage, sightings, time out of reach, the prologue only in the Quiet Years); ruler court and brokered peace; tyrant warning → defiance → gathering → arrival → yield; diversion and hostage; judgement after a lost battle and withdrawal after a won one; local intervention near and far; the teacher path from top-1% check to taught element; the Quiet Years child revealed at 16 with the kept logbook | 0 errors |
 | `tests/test_battle.tscn -- avatar young\|prime\|elder` | The Avatar's company against a fortified, trapped seat | Young: water only, Avatar State triggered, player won. Prime: all four elements, Avatar won. Elder: all four elements (air 16, earth 16, water 8, fire 2 casts), Avatar State, player won |
 | `tests/test_dlc.tscn` | Every technique taught by someone (26 of 26); every Forms movement unlocks; each mastery trial; each companion quest (cooperative and cruel branches); the ember goes out after cruelty; the comet forge; the Red Moon; all 25 jobs done somewhere with their effects checked and cooldowns enforced; a companion doing a non-bender's work; switching an expansion off and on | 0 errors |
 | `tests/test_battle.tscn -- tech <element>` | Every technique cast in a live battle, cycled through Q, E and R | All 26 cast; no script errors |
@@ -414,3 +411,101 @@ Companions arrive with signature techniques. Battle AI understands every new kin
 - **Abbots and new teachers** use the generated face rig and kit system, not authored faces.
 - **The Avatar** has no map token, by design. They are found through rumour and the settlement menu, not seen walking.
 - **Infamy** knows only the acts listed in §3.2. Sacking captured towns is not an action in this build.
+
+## 7. The Bending Forms designer
+
+### 7.1 Inspiration
+
+*Kengo 2* (Kengo: Master of Bushido) had a simple, powerful idea: you learn individual techniques from masters and dojos, train them, and assemble them into your own combinations, so two players' swordsmen fight differently. The Form Designer brings that idea to bending:
+- You learn **movements** from masters, scrolls, companions and from watching opponents.
+- You drill them.
+- You compose them into named **forms**: your firebending, your waterbending.
+
+### 7.2 Building blocks
+
+A **movement unit** is one captured motion, from a real form, between two natural transitions:
+
+| Field | Example (Fire: "Rising Dragon Fist") |
+|---|---|
+| Art | fire |
+| Stance in → out | front stance → horse stance |
+| Footwork | step-through, 0.9 m advance |
+| Breath | exhale on strike (frame 14) |
+| Motion | rising uppercut with rear hand, palm opens at apex |
+| Element shape | column (vertical) |
+| Base stats | power 7, speed 6, reach 2 m, chi 9, stability −1 |
+| Learned from | Master Hotaru (Crescent Island) or the scroll *Flame Ascending* |
+
+The design target is about 60 movements per art. The current build has 12–18 per art, including the expansions' 16.
+
+### 7.3 Composing a form
+* A **form** is a sequence of **2–8 movement units**, plus a **release**: what the element does at the end. The release can be a projectile, cone, wall, wave, whip, column, ring or hold.
+* **Continuity rules** make forms physically real:
+  * each unit's out-stance must chain into the next unit's in-stance, directly or through an authored transition;
+  * footwork cannot cross itself;
+  * breath must alternate.
+  The editor shows valid next movements, the way a fighting-game move list shows cancels.
+* **Stats are computed, not chosen** (simplified):
+  * **Power:** the sum of the units' power × release multiplier × a flow bonus, which rewards sequences that keep weight moving in one direction.
+  * **Wind-up time:** the sum of unit durations ÷ mastery.
+  * **Chi cost:** a base + the square of the unit count. Long forms are strong but expensive.
+  * **Reach, area and stability** come from the footwork and the release.
+  * **Signature properties** emerge from the sequence: three linear strikes become *piercing*; a full circle becomes *redirecting*; a breath held across two units becomes *charged*.
+* **The art's character is enforced.** Water forms gain power from circularity; Earth forms from rootedness (fewer steps, lower stances); Fire forms from breath rhythm; Air forms from evasion (forms that move the bender off-line get a free dodge window).
+
+### 7.4 Training and mastery
+* **Learning:** a movement is learned from a master after a sparring trial, from a scroll after study time, or by surviving it three times in combat (observing).
+* **Drilling:** a rhythm-and-posture minigame in a dojo or camp. Hit the stance windows and breath beats. It raises the movement's **mastery** (0–5 ★), which speeds it, lowers its chi cost and unlocks its *refined* version.
+* **Forms level from use.** A form used in real fights gains **polish**, which lowers its wind-up.
+* **Companions spar with you,** and some teach movements you cannot learn anywhere else. Nima teaches a reversal; Pemba teaches evasive Bagua circles.
+
+### 7.5 In combat
+* **Equipping:** four form slots plus basic strikes. Forms queue like combos. Pressing a form's key begins its first movement; the remaining movements flow automatically, while the player steers direction and can **cancel at transitions** into a block or dodge.
+* **Counterplay is readable.** Opponents' forms telegraph through the stance they start in. A trained player learns to read a horse stance (incoming earth column) or a deep inhale (fire burst), and to answer it.
+* **NPC masters have their own signature forms.** Some of their movements can only be learned by beating them.
+
+### 7.6 Naming and sharing
+* **Naming:** forms get player names, with name suggestions generated from the movements ("Seven Tides Turning").
+* **Sharing:** a form is a short code (art + movement IDs + release) that can be pasted into a friend's game. It works only if their character has learned those movements, which keeps learning meaningful.
+* **Archive:** a "Form Archive" at the Eastern Air Temple displays signature forms of famous benders and of the player's own past characters.
+
+### 7.7 Balance guardrails
+* Every movement's stats are tuned from its *captured* duration and footwork. A fast movement is fast because it is fast in real life.
+* **Diminishing returns:** repeating a movement within one form halves its contribution.
+* **AI library:** AI benders use designer-built forms tuned per difficulty, and adapt by learning which of the player's openings they get punished for.
+
+### 7.8 Accessibility
+* The drill minigame has a **guided mode** with no timing windows; mastery is earned through repetition counts instead.
+* An **auto-chain mode** lets players press one key and have the form steer itself.
+* Forms can also be built from a **list view** instead of the 3D editor.
+
+### 7.9 What is built
+
+The designer is playable now: **Character → Bending Forms**. It uses the current motion clips and procedural stance layers as stand-ins for the captured movement units.
+
+The prototype includes:
+- per-art movement libraries;
+- stance-continuity rules;
+- computed power, wind-up, chi cost and properties;
+- naming;
+- assigning a form to the **F** key in battle, where it plays the movement sequence and fires its release.
+
+The rules are complete; the animation reuses existing clips rather than captured movement.
+
+## 8. Interface
+
+The interface is built from the world's materials, all generated in code:
+
+| File | Change |
+|---|---|
+| `scripts/ui/skin.gd` | New. Generated paper, lacquer, gold-leaf, row, brush and check textures; fonts with lining figures; seals |
+| `scripts/ui/ui.gd` | Theme rebuilt on the skin; menu rows separated from action tablets; gold-leaf selection (`UI.mark_selected`); small-capital headings |
+| `scripts/ui/window_base.gd` | Framed paper windows with corner ornaments, seals, small-capital titles, a brush rule, a lamp-lit backdrop and a settle-in animation (off with Reduce motion) |
+| `shaders/ui_vignette.gdshader`, `shaders/ink_wash.gdshader` | New: the modal backdrop and the title-screen landscape |
+| `scripts/ui/main_menu.gd` | Hanging-scroll title menu over the ink-wash; element seals |
+| `scripts/world/world_map.gd` | Lacquer HUD banner, season seal, stat chips, inked log lines, small-capital map labels |
+| `scripts/ui/dialogue_window.gd` | Gilt portrait frame, nameplate, numbered choices and keyboard selection |
+| `scripts/ui/settings_window.gd` | Readable font, reduced motion, expansion switches, a scrolling options list |
+| `assets/fonts/` | Alegreya, Alegreya SC, Atkinson Hyperlegible and Ma Shan Zheng, with their Open Font Licence texts |
+
+Screenshots of the result are in `docs/screenshots/`.

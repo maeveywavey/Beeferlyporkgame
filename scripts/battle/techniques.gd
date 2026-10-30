@@ -1,5 +1,5 @@
 extends RefCounted
-## The element expansions' catalogue of bending techniques (docs/07_avatar_and_dlcs.md).
+## The element expansions' catalogue of bending techniques (docs/design.md §4).
 ## Each technique belongs to a style, is learned from a teacher or a trial,
 ## and can be set on Q, E or R in place of the art's basic ability
 ## (Character -> Techniques). Learned techniques also open new movements in the
@@ -26,7 +26,7 @@ const STYLES := {
 	},
 	"earth": {
 		"badger": {"name": "Badgermole Way", "basis": "Hung Gar stance work", "desc": "The first earthbending: listen to the ground before moving it."},
-		"stone": {"name": "Stone Hand", "basis": "Southern Mantis short strikes", "desc": "The Dai Li's quick, controlling style. Effective, and not innocent."},
+		"stone": {"name": "Stone Hand", "basis": "Southern Mantis short strikes", "desc": "The Censorate's quick, controlling style. Effective, and not innocent."},
 		"boulder": {"name": "Boulder Style", "basis": "Hung Gar tiger forms", "desc": "Omashu's style: big stones, big stances, big laughs."},
 	},
 	"air": {
@@ -101,13 +101,13 @@ const TECHNIQUES := {
 		"desc": "Split the ground in a straight line; everyone on it is thrown.",
 		"from": "Gao Ming (approval 20), or Old Shan",
 		"ability": {"name": "Fissure", "kind": "line", "cost": 26.0, "cd": 6.0, "dmg": 22.0, "range": 14.0, "width": 1.6, "stun": 1.0, "knock": 4.0, "fx": "rock", "sfx": "earth"}},
-	"e_gloves": {"element": "earth", "style": "stone", "name": "Stone Gloves", "slot": "q",
-		"desc": "Rock fists fired in quick succession. The Dai Li's signature.",
-		"from": "Bo Lai, if Hana spared him; or the Dai Li's academy (Gentry standing)",
-		"ability": {"name": "Stone Gloves", "kind": "volley", "cost": 18.0, "cd": 1.4, "dmg": 15.0, "speed": 30.0, "radius": 0.4, "knock": 3.0, "gravity": 0.0, "range": 24.0, "count": 2, "spread": 6.0, "effect": "", "fx": "rock", "sfx": "earth"}},
+	"e_gloves": {"element": "earth", "style": "stone", "name": "Stone Fists", "slot": "q",
+		"desc": "Rock fists fired in quick succession. The Censorate's signature.",
+		"from": "Bo Lai, if Hana spared him; or the Censorate's academy (Gentry standing)",
+		"ability": {"name": "Stone Fists", "kind": "volley", "cost": 18.0, "cd": 1.4, "dmg": 15.0, "speed": 30.0, "radius": 0.4, "knock": 3.0, "gravity": 0.0, "range": 24.0, "count": 2, "spread": 6.0, "effect": "", "fx": "rock", "sfx": "earth"}},
 	"e_cuffs": {"element": "earth", "style": "stone", "name": "Stone Cuffs", "slot": "e",
 		"desc": "Close stone around a target's feet and hold them in place.",
-		"from": "Bo Lai, if Hana spared him; or the Dai Li's academy (Gentry standing)",
+		"from": "Bo Lai, if Hana spared him; or the Censorate's academy (Gentry standing)",
 		"ability": {"name": "Stone Cuffs", "kind": "projectile", "cost": 20.0, "cd": 5.0, "dmg": 6.0, "speed": 26.0, "radius": 0.6, "knock": 0.0, "gravity": 2.0, "range": 20.0, "effect": "root", "fx": "rock", "sfx": "earth"}},
 	"e_boulder": {"element": "earth", "style": "boulder", "name": "Boulder Toss", "slot": "q",
 		"desc": "A boulder the size of a cart, thrown in an arc. Slow, and unanswerable.",
@@ -134,10 +134,10 @@ const TECHNIQUES := {
 		"desc": "A sphere of turning wind: arrows and blasts slide off for eight seconds.",
 		"from": "Abbot Dorje at the Southern Air Temple",
 		"ability": {"name": "Air Shield", "kind": "buff", "cost": 24.0, "cd": 16.0, "dur": 8.0, "reduce": 0.7, "knock_immune": true, "fx": "air", "sfx": "air"}},
-	"a_breath": {"element": "air", "style": "east", "name": "Healing Breath", "slot": "e",
-		"desc": "Air breathed into the lungs of the wounded. Mends a little, cures much.",
+	"a_breath": {"element": "air", "style": "east", "name": "Clearing Wind", "slot": "e",
+		"desc": "A slow, wide wind that carries off smoke, dust and embers and shakes allies free of ice and stone. It heals nothing: airbenders do not heal.",
 		"from": "Abbess Tsering at the Eastern Air Temple",
-		"ability": {"name": "Healing Breath", "kind": "heal", "cost": 30.0, "cd": 8.0, "amount": 0.25, "range": 6.0, "cure": true, "fx": "air", "sfx": "air"}},
+		"ability": {"name": "Clearing Wind", "kind": "heal", "cost": 22.0, "cd": 8.0, "amount": 0.0, "range": 7.0, "cure": true, "fx": "air", "sfx": "air"}},
 	"a_vortex": {"element": "air", "style": "west", "name": "Vortex", "slot": "r",
 		"desc": "A turning column that drags everyone nearby toward you and spins them.",
 		"from": "Abbess Yeshe at the Western Air Temple",

@@ -355,7 +355,7 @@ func _build_pilgrim(p: Dictionary) -> void:
 	else:
 		content.add_child(UI.rich("[b]Pilgrim:[/b] \"" + [
 			"The novices have named the bison after you. It is meant as a compliment, mostly.",
-			"We carried forty refugees out of the Ember Coast last week. The Admiralty's ships watched us go and did nothing. That will not last.",
+			"We carried forty refugees out of the Strait Isles last week. The Admiralty's ships watched us go and did nothing. That will not last.",
 			"Abbess Tsering asks after you. She says you have the face of someone who is about to make a large decision.",
 			"Violence is always a choice. So is lunch. We have chosen lunch."].pick_random() + "\"", 700))
 	if not met:
@@ -377,9 +377,9 @@ func _build_pilgrim(p: Dictionary) -> void:
 	content.add_child(UI.option("Ask what the sky has in store", func():
 		var e := GS.next_cosmic()
 		if e.is_empty():
-			note = "[b]Pilgrim:[/b] \"The sages see no eclipses and no comets for a long while. Only weather. Weather is enough.\""
+			note = "[b]Pilgrim:[/b] \"The sages see nothing unusual for a long while. Only weather. Weather is enough.\""
 		else:
-			var what: String = {"solar": "the sun will go dark", "lunar": "the full moon will be eclipsed", "comet": "a comet will cross the sky"}[e.kind]
+			var what: String = {"lunar": "the full moon will be eclipsed", "comet": "the Great Comet will return"}.get(e.kind, "the sky will change")
 			note = "[b]Pilgrim:[/b] \"The Crescent Island sages say %s on %s. They are rarely wrong about the sky. People are another matter.\"" % [what, GS.day_name(e.day)]
 		refresh()))
 	content.add_child(UI.option("Ask about the wars", func():
@@ -387,6 +387,6 @@ func _build_pilgrim(p: Dictionary) -> void:
 			"The Fire Nation is hungry and the Earth Kingdom is proud. Hunger and pride make long wars.",
 			"Omashu fed its own people first and Ba Sing Se called it treason. Both are right. That is the trouble with this war.",
 			"The South raids the Fire Navy's supply ships. The supply ships carry rice to soldiers who carry fire to villages. Follow anything far enough and it is all one circle.",
-			"Eleven years ago an Avatar drowned trying to make a peace. We are still waiting for someone to finish the sentence." if GS.flags.get("era", "quiet") == "quiet" else "The Avatar cannot be everywhere. That is why the rest of us have to be somewhere."].pick_random() + "\""
+			"Eleven years ago an Avatar was lost at sea trying to make a peace. We are still waiting for someone to finish the sentence." if GS.flags.get("era", "quiet") == "quiet" else "The Avatar cannot be everywhere. That is why the rest of us have to be somewhere."].pick_random() + "\""
 		refresh()))
 	content.add_child(UI.option("Go in peace.", _leave.bind(p)))

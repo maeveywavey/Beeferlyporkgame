@@ -35,14 +35,14 @@ static func apply(kind: String) -> void:
 			_rebel_army("kuro_rebels", "fire_navy_harbor")
 			_rebel_army("wu_loyalists", "ba_sing_se")
 			if S.flag("wu_weakened"):
-				# Bo Lai's testimony cost Wu half the Dai Li who would have followed him
+				# Bo Lai's testimony cost Wu half the censors who would have followed him
 				var wid: String = S.flag("spawn_wu_loyalists", "")
 				if GS.parties.has(wid):
 					for st in GS.parties[wid].roster:
 						st.n = maxi(1, int(st.n / 2))
 						st.w = mini(st.w, st.n)
-			S.journal("ms_main", "The Drowned Testament", "The Kyoshi Accord is signed. Admiral Kuro and Grand Secretary Wu Jian have fled to raise rebel armies. Defeat Kuro's Last Fleet and Wu Jian's Loyalists to secure the peace.")
-			GS.log_msg("The Kyoshi Accord is signed. Every nation lays down its arms — except two men who have the most to lose.", Color(1, 0.9, 0.5))
+			S.journal("ms_main", "The Drowned Testament", "The Hamakaze Accord is signed. Admiral Kuro and Grand Secretary Wu Jian have fled to raise rebel armies. Defeat Kuro's Last Fleet and Wu Jian's Loyalists to secure the peace.")
+			GS.log_msg("The Hamakaze Accord is signed. Every nation lays down its arms — except two men who have the most to lose.", Color(1, 0.9, 0.5))
 			for cid in ["pemba", "nima", "hana", "juro", "kesi", "shen_mu", "ukiuk"]:
 				S.change_approval(cid, 15)
 			S.change_approval("reika", 10 if S.flag("reika_free") else 0)
@@ -66,7 +66,7 @@ static func apply(kind: String) -> void:
 			GS.change_faction_rel("fire_nation", -40)
 			GS.add_gold(2000)
 			_approvals({"hana": 10, "pemba": -15, "nima": -10, "juro": -15, "kesi": -10, "shen_mu": -5})
-			S.journal_done("ms_main", "You gave the logbook to Earth Queen Hualing. Wu Jian is in a cell, the Dai Li answer to the Queen, and the Earth Kingdom carries the war to the Fire Nation with a clear conscience. You hold lands in her name.")
+			S.journal_done("ms_main", "You gave the logbook to Earth Queen Hualing. Wu Jian is in a cell, the Censorate answers to the Queen, and the Earth Kingdom carries the war into the Strait Isles with a clear conscience. You hold lands in her name.")
 			S.set_flag("pending_epilogue", kind)
 		"sold_omashu":
 			_join_as_lord("omashu")
@@ -76,7 +76,7 @@ static func apply(kind: String) -> void:
 			GS.change_faction_rel("earth_kingdom", -40)
 			GS.add_gold(1500)
 			_approvals({"shen_mu": 10, "hana": -5, "pemba": -15, "nima": -10, "kesi": -5})
-			S.journal_done("ms_main", "You gave the logbook to King Feng Tao. Omashu has the proof that Ba Sing Se's regent let the Avatar drown, and every rebel city in the Kingdom has heard it.")
+			S.journal_done("ms_main", "You gave the logbook to King Feng Tao. Omashu has the proof that Ba Sing Se's regent left the Avatar to the sea, and every rebel city in the Kingdom has heard it.")
 			S.set_flag("pending_epilogue", kind)
 		"buried":
 			GS.add_gold(5000)
@@ -153,9 +153,9 @@ static func _join_as_lord(f: String) -> void:
 # Epilogue text
 # ---------------------------------------------------------------------------
 const WORLD := {
-	"told": "The Kyoshi Accord holds. Not perfectly — treaties never do — but the Ember Coast ports are shared, the Fire Nation eats from Omashu's granaries, and Ba Sing Se's gates open a little wider every year. In the tea houses they still argue about who killed the Avatar. Now they argue with the facts.",
-	"sold_fire": "The Fire Nation wins its just war. The coast is Fire Nation for a generation, and Ba Sing Se's walls hold, barely. Historians will call it the War of the Boats. Very few of them will mention that both sides were guilty, because the winners kept the pages that said so.",
-	"sold_earth": "Queen Hualing rules in her own name at last, and rules well. The Dai Li are disbanded and refounded, smaller. The war on the coast drags on for six more years, fought with the clearest conscience in the world, which is the most dangerous kind.",
+	"told": "The Hamakaze Accord holds. Not perfectly — treaties never do — but the Strait Isles' ports are shared, the Fire Nation eats from Omashu's granaries, and Ba Sing Se's gates open a little wider every year. In the tea houses they still argue about who killed the Avatar. Now they argue with the facts.",
+	"sold_fire": "The Fire Nation wins its just war. The Strait Isles are Fire Nation for a generation, and the Earth Kingdom never forgives it. Historians will call it the War of the Boats. Very few of them will mention that both sides were guilty, because the winners kept the pages that said so.",
+	"sold_earth": "Queen Hualing rules in her own name at last, and rules well. The Censorate is disbanded and refounded, smaller. The war in the Isles drags on for six more years, fought with the clearest conscience in the world, which is the most dangerous kind.",
 	"sold_omashu": "Omashu's proof spreads through the Kingdom like a crack through ice. Three cities rise; two are burned. Omashu stands. Feng Tao makes the longest speech in its history. In Ba Sing Se, they will call you the one who broke the Kingdom. In Omashu, your name is carved on the stairs.",
 	"buried": "The war goes on. It will go on for a long time — long enough that the child who is the Avatar will inherit it whole, and spend their life trying to end what you were paid to let continue. You live comfortably. People who knew you before do not visit.",
 	"burned": "Nobody will ever know what happened on the Lantern. Every few years someone claims to have found the logbook, and it is always a forgery. You never correct them. Some nights you dream of handwriting curling brown in a fire.",
@@ -204,7 +204,7 @@ static func _companion_fate(cid: String) -> String:
 			if f.call("hana_spared"):
 				return "finished the map: three hundred and twelve sheets. The last one is the tunnel in Wenlong, drawn open. %s" % ("She drew you on every sheet after that, very small, in the corner." if f.call("romance_hana") else "She keeps it on the wall where she can see it from bed.")
 			if f.call("hana_exposed"):
-				return "testified at Bo Lai's trial in a voice that never once rose. The Dai Li never sealed another tunnel with someone inside. She checks."
+				return "testified at Bo Lai's trial in a voice that never once rose. The Censorate never sealed another tunnel with someone inside. She checks."
 			if f.call("hana_killed"):
 				return "never went back to the Wenlong district. She still counts birds when the world is too loud. It helps a little."
 			return "went back to the Lower Ring and her map. She never found Bo Lai. She stopped looking, eventually, and was surprised how much lighter it felt."
@@ -213,7 +213,7 @@ static func _companion_fate(cid: String) -> String:
 				return "goes back to Tieshan every autumn for the lantern festival. Mi-sun never forgives him. Every year, she hands him her lantern to light.%s" % (" You go with him. His letters to you are still terrible." if f.call("romance_juro") else "")
 			if f.call("juro_fire"):
 				return "builds bridges now, the kind that hold. His fire is small and blue at the heart, and he mostly uses it to light his father's kiln."
-			return "never got his fire back. He built the Accord's first shared harbour on the Ember Coast instead, and it's still standing."
+			return "never got his fire back. He built the Accord's first shared harbour in the Strait Isles instead, and it's still standing."
 		"pemba":
 			if f.call("dawa_free"):
 				return "writes to Dawa every month. The Lower Ring eats a little better every year, and a Red Lantern sometimes leaves rice at the temple gate with no note."

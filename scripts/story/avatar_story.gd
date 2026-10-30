@@ -26,7 +26,7 @@ const DIALOGUES := {
 		]},
 		"y": {"who": "avatar", "expr": "surprised", "text": "You found me? Nobody finds me. My teachers have been looking for two days. They're going to be furious. — Hi. Sorry. Hello. Is this an official thing? Do I need to stand up?", "next": "hub"},
 		"p": {"who": "avatar", "expr": "smirk", "text": "{name}, isn't it? People talk about you. Some of it's even flattering. Sit. I have until this pear is finished, and then I'm due somewhere I've already forgotten the name of.", "next": "hub"},
-		"e": {"who": "avatar", "expr": "thoughtful", "text": "A visitor. Sit where the sun is. I was in the middle of a conversation with someone you can't see; they'll wait. They're very patient. They've been dead for four hundred years.", "next": "hub"},
+		"e": {"who": "avatar", "expr": "thoughtful", "text": "A visitor. Sit where the sun is. I was meditating, which at my age looks exactly like napping. Nobody can tell the difference, including me.", "next": "hub"},
 		"hub": {"who": "avatar", "expr": "neutral", "text": "What can I do for you?", "choices": [
 			{"text": "\"What is it like, being the Avatar?\"", "next": "like_y", "if": {"call": "av_young"}, "hide": true},
 			{"text": "\"What is it like, being the Avatar?\"", "next": "like_p", "if": {"call": "av_prime"}, "hide": true},
@@ -41,7 +41,7 @@ const DIALOGUES := {
 		"like_y": {"who": "avatar", "expr": "embarrassed", "text": "Like being handed a boat the size of a city and told to sail it while everyone shouts directions. Also the boat is on fire. Also I get seasick. Everyone thinks the Avatar is calm. I've been calm twice. Both times I was asleep.", "next": "hub"},
 		"like_p": {"who": "avatar", "expr": "thoughtful", "text": "Like being everyone's last resort. People wait for me instead of acting, and then they're angry I took so long. I don't blame them. I'd rather be blamed for being late than thanked for being the only one who came.", "next": "hub"},
 		"like_e": {"who": "avatar", "expr": "smirk", "text": "Like being a very old tree that everyone has carved their initials into. I don't mind the initials. I mind when they forget that trees were here first, and will be after.", "next": "hub"},
-		"where": {"who": "avatar", "expr": "thoughtful", "text": "Mostly to the other side. There are rivers there that remember being rivers here, and spirits who are angry about a dam three hundred years old. Somebody has to listen to them. If I don't, they come here to be heard, and nobody enjoys that.", "next": "hub"},
+		"where": {"who": "avatar", "expr": "thoughtful", "text": "Wherever nobody is looking. A forest whose spirit is angry about a dam three hundred years old. A temple where I can sit still for a week. A teacher's kitchen. My family, when I can. Somebody has to listen to the places nobody else listens to, and they are rarely near a road.", "next": "hub"},
 		"me_good": {"who": "avatar", "expr": "happy", "text": "That you're someone people could follow without being ashamed of it. Don't let it go to your head. Power makes everybody stupid eventually. I'm counting on you to take longer than most.", "next": "hub"},
 		"me_bad": {"who": "avatar", "expr": "neutral", "text": "I don't know yet. That's not a polite way of saying I don't like you. It's a polite way of saying I'm watching. I watch everyone. You're just closer than most.", "next": "hub"},
 		"peace": {"who": "avatar", "expr": "determined", "text": "I'll talk to them. Not because you asked; because it's my job. But I'll remember that you asked, and that you didn't ask me to win your war for you.",
@@ -105,10 +105,10 @@ const DIALOGUES := {
 	}},
 	"av_gathering": {"title": "They Are Coming", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "A monk at a waystation presses a folded paper into your hand and hurries off without looking back. It says only: 'They are coming. Make your peace or make your preparations.' Under it someone has drawn a very small, very bad sky bison.",
-			"do": [["journal", "av_main", "The Avatar", "{avatar} is gathering allies against you. Open the Avatar window from the Nations screen to fortify your seat, lay wards and nets, hire chi-blockers, or stage a diversion. Or send word that you yield."]]},
+			"do": [["journal", "av_main", "The Avatar", "{avatar} is gathering allies against you. Open the Avatar window from the Nations screen to fortify your seat, deny the ground and hang nets, hire chi-blockers, or stage a diversion. Or send word that you yield."]]},
 	}},
 	"av_confront": {"title": "The Avatar", "start": "a", "nodes": {
-		"a": {"who": "narrator", "text": "{avatar} is waiting with a few dozen people at {av_their} back: monks, Kyoshi Warriors, farmers with spears, an old woman holding a frying pan like a mace. Nobody moves.", "choices": [
+		"a": {"who": "narrator", "text": "{avatar} is waiting with a few dozen people at {av_their} back: monks, Tide Wardens, farmers with spears, an old woman holding a frying pan like a mace. Nobody moves.", "choices": [
 			{"text": "Meet them at your gates.", "next": "gates", "if": {"call": "av_seat"}, "hide": true},
 			{"text": "Ride out to meet them.", "next": "b", "if": {"call": "av_no_seat"}, "hide": true},
 		]},

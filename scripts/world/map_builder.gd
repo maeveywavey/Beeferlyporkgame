@@ -237,7 +237,7 @@ static func culture_palette(culture: String) -> Dictionary:
 		"fire": return {"wall": Color(0.35, 0.22, 0.18), "house": Color(0.75, 0.62, 0.5), "roof": Color(0.6, 0.12, 0.08), "accent": Color(0.85, 0.65, 0.2)}
 		"earth": return {"wall": Color(0.62, 0.56, 0.45), "house": Color(0.82, 0.76, 0.62), "roof": Color(0.2, 0.42, 0.2), "accent": Color(0.75, 0.62, 0.25)}
 		"omashu": return {"wall": Color(0.58, 0.55, 0.48), "house": Color(0.8, 0.74, 0.62), "roof": Color(0.3, 0.42, 0.18), "accent": Color(0.55, 0.38, 0.62)}
-		"kyoshi": return {"wall": Color(0.45, 0.35, 0.22), "house": Color(0.6, 0.45, 0.3), "roof": Color(0.25, 0.45, 0.25), "accent": Color(0.85, 0.7, 0.2)}
+		"hamakaze": return {"wall": Color(0.45, 0.35, 0.22), "house": Color(0.6, 0.45, 0.3), "roof": Color(0.22, 0.28, 0.4), "accent": Color(0.62, 0.3, 0.18)}
 		"north", "south": return {"wall": Color(0.85, 0.92, 0.98), "house": Color(0.9, 0.95, 1.0), "roof": Color(0.3, 0.5, 0.8), "accent": Color(0.2, 0.4, 0.75)}
 		"swamp": return {"wall": Color(0.3, 0.25, 0.15), "house": Color(0.4, 0.32, 0.2), "roof": Color(0.3, 0.38, 0.2), "accent": Color(0.4, 0.5, 0.3)}
 		"air": return {"wall": Color(0.85, 0.82, 0.75), "house": Color(0.88, 0.85, 0.78), "roof": Color(0.25, 0.45, 0.65), "accent": Color(0.9, 0.55, 0.15)}
@@ -300,7 +300,7 @@ static func build_settlement(sid: String) -> Node3D:
 			if not ice and culture != "swamp":
 				for i in 2:
 					var fp := Vector3(rng.randf_range(-6, 6), 0.02, rng.randf_range(-6, 6))
-					mini.call(Arch.paddy(10.0, 7.0, culture in ["earth", "fire", "kyoshi", "omashu"]), fp, k)
+					mini.call(Arch.paddy(10.0, 7.0, culture in ["earth", "fire", "hamakaze", "omashu"]), fp, k)
 		"temple":
 			var hall = Arch.hall("air", 14.0, 10.0, 3, 0.0, {"floor_h": 3.0})
 			mini.call(hall, Vector3(0, 0, -0.5), k)

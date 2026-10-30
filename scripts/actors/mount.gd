@@ -6,7 +6,7 @@ extends RefCounted
 ##             from Quaternius's CC0 dinosaur pack, painted slate green)
 ##   bison   — an Air Nomad sky bison (huge, white, brown arrow, big saddle)
 ## The source animals are real-world species; the dressing makes them read as
-## the show's hybrids at a distance. See docs/03_playtests.md for the caveat.
+## the show's hybrids at a distance. See docs/design.md, known limits.
 
 const Acc = preload("res://scripts/actors/accessories.gd")
 

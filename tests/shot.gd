@@ -99,7 +99,7 @@ func _ready() -> void:
 		cam2.transform = Transform3D(Basis(), Vector3(1.0, 1.6, 9.5)).looking_at(Vector3(0, 1.1, 0), Vector3.UP)
 		sc2.add_child(cam2)
 		var UnitS = load("res://scripts/battle/unit.gd")
-		var tids := ["ek_veteran", "fn_veteran", "ek_royal_guard", "ky_warrior", "swt_veteran", "red_lantern_elder", "fn_archer", "an_monk"]
+		var tids := ["ek_veteran", "fn_veteran", "ek_royal_guard", "tw_warden", "swt_veteran", "red_lantern_elder", "fn_archer", "an_monk"]
 		var anim_name := mode.substr(8) if mode.length() > 8 else ""
 		for i in tids.size():
 			var u = UnitS.new()
@@ -158,7 +158,7 @@ func _ready() -> void:
 			GS.player.equip.mount = "komodo_rhino"
 			var Roster2 = load("res://scripts/core/roster.gd")
 			var eg := GS.make_party("", "Gallery", "bandit", "fire_nation", Vector2.ZERO)
-			for t in ["fn_soldier", "fn_yuyan", "fn_rhino_rider", "fn_imperial_fb", "ek_soldier", "ek_ostrich_rider", "ek_royal_guard", "ek_dai_li", "ky_warrior", "nwt_waterbender", "nwt_guard", "swt_wolf", "sand_raider", "pirate_captain", "an_master", "om_royal_guard"]:
+			for t in ["fn_soldier", "fn_yuyan", "fn_rhino_rider", "fn_imperial_fb", "ek_soldier", "ek_ostrich_rider", "ek_royal_guard", "ek_censor", "tw_warden", "nwt_waterbender", "nwt_guard", "swt_wolf", "sand_raider", "pirate_captain", "an_master", "om_royal_guard"]:
 				Roster2.add(eg.roster, t, 1)
 			GS.pending_battle = {"enemies": [eg.id], "allies": [], "siege": "", "player_attacking": true, "biome": "grass",
 				"hour": 13.0, "fire_mult": 1.15, "water_mult": 0.95, "enemy_garrison": false, "ally_garrison": false}
@@ -205,7 +205,7 @@ func _ready() -> void:
 			Roster.add(e.roster, "fn_soldier", 12)
 			Roster.add(e.roster, "fn_firebender", 8)
 			Roster.add(e.roster, "fn_rhino_rider", 3)
-			var sg := "pohuai" if mode == "siege" else ""
+			var sg := "kettle_rock" if mode == "siege" else ""
 			GS.pending_battle = {"enemies": [e.id], "allies": [], "siege": sg, "player_attacking": true, "biome": "grass",
 				"hour": 15.0, "fire_mult": 1.15, "water_mult": 0.95, "enemy_garrison": mode == "siege", "ally_garrison": false}
 			get_tree().change_scene_to_file.call_deferred("res://scenes/battle.tscn")

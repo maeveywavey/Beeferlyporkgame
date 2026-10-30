@@ -1,10 +1,10 @@
 extends RefCounted
-## Companion personal quests (docs/02_writers_room.md, part 5). Each begins
+## Companion personal quests (docs/setting.md §5). Each begins
 ## once a companion has travelled with you for a while, resolves somewhere in
 ## the world, and changes both the companion and the world.
 
 const NPCS := {
-	"bo_lai": {"name": "Lieutenant Bo Lai", "culture": "earth", "vlook": {"sex": "m", "hair": "Hair_SimpleParted", "accessory": "dai_li", "hair_color": Color(0.4, 0.38, 0.36)}, "kit": "dai_li_robe", "outfit": "ranger"},
+	"bo_lai": {"name": "Lieutenant Bo Lai", "culture": "earth", "vlook": {"sex": "m", "hair": "Hair_SimpleParted", "accessory": "censor", "hair_color": Color(0.4, 0.38, 0.36)}, "kit": "censor_robe", "outfit": "ranger"},
 	"mi_sun": {"name": "Mi-sun", "culture": "earth", "vlook": {"sex": "f", "hair": "Hair_Buns"}},
 	"sage": {"name": "Sage Hotaru", "culture": "fire", "vlook": {"sex": "f", "hair": "Hair_Buns", "hair_color": Color(0.7, 0.68, 0.66), "accessory": "fn_noble"}, "kit": "sash"},
 	"dawa": {"name": "Dawa", "culture": "air", "vlook": {"sex": "f", "hair": "Hair_BuzzedFemale", "accessory": "bandana"}, "kit": "sash"},
@@ -15,7 +15,7 @@ const NPCS := {
 }
 
 const SPAWNS := {
-	"letter_hunters": {"name": "Dai Li Interceptors", "troops": [["ek_dai_li", 5], ["ek_earthbender", 6], ["ek_soldier", 6]], "gold": 300,
+	"letter_hunters": {"name": "Censorate Interceptors", "troops": [["ek_censor", 5], ["ek_earthbender", 6], ["ek_soldier", 6]], "gold": 300,
 		"on_defeat": [["queue", "cq_shenmu_ambush_beaten"]]},
 }
 
@@ -51,21 +51,21 @@ const DIALOGUES := {
 	# -----------------------------------------------------------------------
 	"cq_hana_start": {"title": "Hana", "start": "a", "nodes": {
 		"a": {"who": "hana", "expr": "thoughtful", "text": "I need to tell you something. I've rehearsed it. Please don't interrupt; if you interrupt, I have to start again from the beginning, and it's long.", "next": "b"},
-		"b": {"who": "hana", "expr": "neutral", "text": "Six years ago the Dai Li raided the smuggling tunnels in the Wenlong district. My teacher, Grandmother Zhu, was in the far gallery. A Dai Li officer sealed the entrance. He was not angry. He did it the way you close a cupboard.", "next": "c"},
-		"c": {"who": "hana", "expr": "sad", "text": "I was on the other side of the wall. I heard the stones settle. I have not dug in Wenlong since. His name is Bo Lai. He is a lieutenant now, under Commander Shu Fan.", "next": "d"},
+		"b": {"who": "hana", "expr": "neutral", "text": "Six years ago the Censorate raided the smuggling tunnels in the Wenlong district. My teacher, Grandmother Zhu, was in the far gallery. A Censorate officer sealed the entrance. He was not angry. He did it the way you close a cupboard.", "next": "c"},
+		"c": {"who": "hana", "expr": "sad", "text": "I was on the other side of the wall. I heard the stones settle. I have not dug in Wenlong since. His name is Bo Lai. He is a lieutenant now, under Chief Censor Shu Fan.", "next": "d"},
 		"d": {"who": "hana", "expr": "determined", "text": "I would like to find him. I have not decided what I will do when I find him. I am telling you in advance because surprises are bad. You didn't say that. I said that. That's the end of what I rehearsed.", "choices": [
 			{"text": "\"Then we'll find him together. You decide what happens.\"", "next": "e", "do": [["approval", "hana", 5]]},
 			{"text": "\"Thank you for telling me first.\"", "next": "e", "do": [["approval", "hana", 8]]},
 			{"text": "\"Are you sure this is a good idea?\"", "next": "f"},
 		]},
 		"e": {"who": "hana", "expr": "happy", "text": "Good. Ba Sing Se, then. The Wenlong district is in the Lower Ring, so we won't need papers. I've already checked. Twice.",
-			"do": [["flag", "hana_q", true], ["journal", "cq_hana", "Hana: The Settled Stones", "Hana's teacher was sealed in a tunnel by the Dai Li officer Bo Lai. Go with Hana to the Wenlong district of Ba Sing Se's Lower Ring."]]},
+			"do": [["flag", "hana_q", true], ["journal", "cq_hana", "Hana: The Settled Stones", "Hana's teacher was sealed in a tunnel by the Censorate officer Bo Lai. Go with Hana to the Wenlong district of Ba Sing Se's Lower Ring."]]},
 		"f": {"who": "hana", "expr": "thoughtful", "text": "No. It is a necessary idea, which is different. Good ideas are optional.", "next": "e"},
 	}},
 	"cq_hana_find": {"title": "The Settled Stones", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "Hana leads you through a cellar, a dry cistern and a crawlway you would never have found. She stops at a wall that looks like every other wall and lays both palms on it.", "next": "b"},
 		"b": {"who": "hana", "expr": "sad", "text": "She's here. There's a hollow behind. Eleven paces deep. I can feel the shape of it.", "next": "c"},
-		"c": {"who": "narrator", "text": "There is incense at the foot of the wall. Fresh. Then footsteps, and a grey-haired man in a Dai Li robe comes around the corner carrying more of it. He stops. He knows exactly who Hana is.", "next": "d"},
+		"c": {"who": "narrator", "text": "There is incense at the foot of the wall. Fresh. Then footsteps, and a grey-haired man in a censor's slate-grey robe comes around the corner carrying more of it. He stops. He knows exactly who Hana is.", "next": "d"},
 		"d": {"who": "bo_lai", "expr": "sad", "text": "I come every year, on this day. I didn't know anyone else remembered. I had orders. I know that isn't a reason. I've had six years to find a better one, and there isn't one.", "choices": [
 			{"text": "\"Hana. This is your choice.\"", "next": "spare", "do": [["approval", "hana", 5]]},
 			{"text": "\"He should answer to the Queen, in public.\"", "next": "expose", "if": {"standing": 2}, "hint": "needs Gentry standing for an audience"},
@@ -74,10 +74,10 @@ const DIALOGUES := {
 		"spare": {"who": "hana", "expr": "determined", "text": "I wanted to bury you in here. I've wanted it for six years. I made a plan. It had diagrams.", "next": "spare2"},
 		"spare2": {"who": "hana", "expr": "grief", "text": "I'm not going to. Not because you deserve it. Because I don't want to be a person who closes tunnels on people. She taught me to open them.", "next": "spare3"},
 		"spare3": {"who": "narrator", "text": "Hana breathes once and the wall unfolds like a flower, stone sliding back into stone, until the far gallery stands open to the lamp. You bury Grandmother Zhu properly, the three of you, in the old way. Afterwards Bo Lai asks what he can do. Hana tells him: testify.",
-			"do": [["flag", "hana_spared", true], ["flag", "dai_li_testify", true], ["call", "hana_mastery"], ["approval", "hana", 15], ["flag", "hana_done", true],
-				["journal_done", "cq_hana", "Hana spared Bo Lai and opened the tunnel to bury her teacher. Bo Lai will testify about the Dai Li. Hana's earthbending has grown stronger."]]},
+			"do": [["flag", "hana_spared", true], ["flag", "censor_testify", true], ["call", "hana_mastery"], ["approval", "hana", 15], ["flag", "hana_done", true],
+				["journal_done", "cq_hana", "Hana spared Bo Lai and opened the tunnel to bury her teacher. Bo Lai will testify about the Censorate. Hana's earthbending has grown stronger."]]},
 		"expose": {"who": "hana", "expr": "thoughtful", "text": "He should be judged by someone who isn't me. Yes. I would make a bad judge. I would want diagrams.", "next": "expose2"},
-		"expose2": {"who": "narrator", "text": "Bo Lai does not resist. Three days later, in the Upper Ring, Queen Hualing hears his confession in open court — and asks, very quietly, on whose orders the Dai Li sealed tunnels with people inside. Secretary Wu Jian is not available for comment.",
+		"expose2": {"who": "narrator", "text": "Bo Lai does not resist. Three days later, in the Upper Ring, Queen Hualing hears his confession in open court — and asks, very quietly, on whose orders the Censorate sealed tunnels with people inside. Secretary Wu Jian is not available for comment.",
 			"do": [["flag", "hana_exposed", true], ["flag", "wu_weakened", true], ["lord_rel", "wu_jian", -20], ["lord_rel", "hualing", 10], ["approval", "hana", 10], ["flag", "hana_done", true],
 				["journal_done", "cq_hana", "Bo Lai confessed before the Earth Queen. The Grand Secretary's grip on Ba Sing Se has slipped."]]},
 		"kill": {"who": "narrator", "text": "Hana does it herself, without a word, the way he did: quickly, and like closing a cupboard. Then she sits down against the wall and does not get up for a long time.", "next": "kill2"},
@@ -94,7 +94,7 @@ const DIALOGUES := {
 	# -----------------------------------------------------------------------
 	"cq_juro_start": {"title": "Juro", "start": "a", "nodes": {
 		"a": {"who": "juro", "expr": "tender", "text": "My father wrote. 'The plum tree finally fruited.' That's the whole letter. It's the best letter I've ever read.", "next": "b"},
-		"b": {"who": "juro", "expr": "sad", "text": "He doesn't ask when I'm coming home. He knows why I can't. Three years ago I designed a fire-pot for the catapults on the Ember Coast. It worked beautifully. We tested it on Tieshan.", "next": "c"},
+		"b": {"who": "juro", "expr": "sad", "text": "He doesn't ask when I'm coming home. He knows why I can't. Three years ago I designed a fire-pot for the catapults in the Strait Isles. It worked beautifully. We tested it on Tieshan.", "next": "c"},
 		"c": {"who": "juro", "expr": "grief", "text": "There were people in the east quarter. The intelligence said there wouldn't be. I walked through it afterwards. That night I tried to light a candle and nothing came. Nothing's come since.", "next": "d"},
 		"d": {"who": "juro", "expr": "thoughtful", "text": "I'd like to see it. Tieshan. I don't expect anything. I just think — a person should look at what they've done, at least once, with their eyes open.", "choices": [
 			{"text": "\"We'll go to Tieshan.\"", "next": "e", "do": [["approval", "juro", 5]]},
@@ -102,7 +102,7 @@ const DIALOGUES := {
 		]},
 		"orders": {"who": "juro", "expr": "neutral", "text": "I was following my own drawings. The orders just told me where to point them. Thank you, though. It's kind. It just isn't true.", "next": "e"},
 		"e": {"who": "juro", "expr": "smirk", "text": "Thank you. I'll try not to be dramatic about it. I'll fail, but I'll try.",
-			"do": [["flag", "juro_q", true], ["journal", "cq_juro", "Juro: Breath Before Flame", "Juro lost his firebending the night his fire-pots burned part of Tieshan, on the Ember Coast. He wants to see the village with his own eyes."]]},
+			"do": [["flag", "juro_q", true], ["journal", "cq_juro", "Juro: Breath Before Flame", "Juro lost his firebending the night his fire-pots burned part of Tieshan, in the Strait Isles. He wants to see the village with his own eyes."]]},
 	}},
 	"cq_juro_village": {"title": "Breath Before Flame", "start": "a", "nodes": {
 		"a": {"who": "narrator", "text": "The east quarter is half rebuilt: new timber over old stone, scorch marks under the whitewash. A woman is stacking bricks at a kiln. She looks at Juro's hands — engineer's calluses, a burn scar in the shape of a fuse-ring — and goes very still.", "next": "b"},
@@ -270,17 +270,17 @@ const DIALOGUES := {
 			"do": [["flag", "shenmu_q", true], ["journal", "cq_shenmu", "Shen Mu: Signed, Sealed", "Shen Mu carries a secret letter from Crown Princess Ryoko to Consort Jiang Wei. Ba Sing Se and the Admiralty both want it. Escort him to Omashu."]]},
 	}},
 	"cq_shenmu_ambush": {"title": "Signed, Sealed", "start": "a", "nodes": {
-		"a": {"who": "shen_mu", "expr": "afraid", "text": "Green robes on the ridge. Dai Li. They're not here for the scenery. — I'm not giving them the letter. I'm just saying that out loud so I hear myself say it."},
+		"a": {"who": "shen_mu", "expr": "afraid", "text": "Grey robes on the ridge. Censors. They're not here for the scenery. — I'm not giving them the letter. I'm just saying that out loud so I hear myself say it."},
 	}},
 	"cq_shenmu_ambush_beaten": {"title": "Signed, Sealed", "start": "a", "nodes": {
 		"a": {"who": "shen_mu", "expr": "happy", "text": "Still sealed. Still s-sealed! Sorry, I need to sit down. My legs have decided to be someone else's legs for a minute."},
 	}},
 	"cq_shenmu_deliver": {"title": "Signed, Sealed", "start": "a", "nodes": {
 		"a": {"who": "jiang_wei", "expr": "thoughtful", "text": "Ryoko's seal. And not opened — you can tell, she uses a hair across the wax. You're a rare courier, young man.", "next": "b"},
-		"b": {"who": "jiang_wei", "expr": "surprised", "text": "…She proposes the Fire Nation withdraw from two Ember Coast ports, in exchange for Omashu grain, and — spirits. Quiet recognition of Omashu as a kingdom. Feng is going to make a speech. Feng is going to make a very long speech.",
+		"b": {"who": "jiang_wei", "expr": "surprised", "text": "…She proposes the Fire Nation withdraw from two ports in the Strait Isles, in exchange for Omashu grain, and — spirits. Quiet recognition of Omashu as a kingdom. Feng is going to make a speech. Feng is going to make a very long speech.",
 			"do": [["call", "omashu_talks"], ["flag", "letter_delivered", true], ["renown", 25], ["approval", "shen_mu", 10], ["lord_rel", "jiang_wei", 20], ["lord_rel", "ryoko", 10]], "next": "c"},
 		"c": {"who": "narrator", "text": "On the way out of the palace, a courier with a bandana and a sprained wrist comes skidding down a chute and nearly lands on Shen Mu. They stare at each other. Shen Mu turns the colour of a fire-lily.", "next": "d"},
-		"d": {"who": "lin", "expr": "embarrassed", "text": "Shen! You're back. You're — I heard there were Dai Li — I walked your route every day to see if — I mean. Hi.", "choices": [
+		"d": {"who": "lin", "expr": "embarrassed", "text": "Shen! You're back. You're — I heard there were censors — I walked your route every day to see if — I mean. Hi.", "choices": [
 			{"text": "Nudge Shen Mu forward.", "next": "e"},
 			{"text": "Discreetly go and look at a very interesting wall.", "next": "e"},
 		]},

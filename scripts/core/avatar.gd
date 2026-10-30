@@ -1,9 +1,9 @@
 extends RefCounted
-## The Avatar as a persistent figure in the world (docs/07_avatar_and_dlc.md).
+## The Avatar as a persistent figure in the world (docs/design.md §1-3).
 ##
 ## The player is never the Avatar. The Avatar is an NPC who ages with the
-## calendar, spends much of their life out of reach (in the Spirit World, in
-## meditation, at the far edges of the map), and comes to the player for four
+## calendar, spends much of their life out of reach (travelling, in seclusion
+## at a temple, with teachers, at the far edges of the map), and comes to the player for four
 ## reasons only:
 ##   ruler   - the player holds great power; the Avatar seeks cooperation
 ##   tyrant  - great power used cruelly; the Avatar must restore balance
@@ -25,7 +25,7 @@ const TEACHER_PCT := 99.0         # top 1% of benders of an element
 
 const ERAS := {
 	"quiet": {"name": "The Quiet Years", "story": true, "year0": 11, "label": "Quiet Year",
-		"pitch": "Story campaign. Eleven years ago the Avatar drowned. The next Avatar is a ten-year-old child somewhere in the world who has not been told. They are not yet part of events, and the world must manage on its own. Includes The Drowned Testament.",
+		"pitch": "Story campaign. Eleven years ago the Avatar was lost at sea. The next Avatar is a ten-year-old child somewhere in the world who has not been told. They are not yet part of events, and the world must manage on its own. Includes The Drowned Testament.",
 		"short": "The Avatar is a child, untold and out of reach."},
 	"young": {"name": "The Young Avatar", "story": false, "year0": 1, "label": "Year of Avatar",
 		"pitch": "Sandbox. Avatar Siku of the Southern Water Tribe was told she is the Avatar this winter. At sixteen she must learn three more elements, and she is looking for masters. She is also still sixteen.",
@@ -34,8 +34,8 @@ const ERAS := {
 		"pitch": "Sandbox. Avatar Lei Shan, born in the Earth Kingdom's Jade Terraces, is thirty-eight and a master of all four elements. He is the busiest person in the world, and the hardest to pin down.",
 		"short": "An Avatar at full strength, involved everywhere."},
 	"elder": {"name": "The Elder Avatar", "story": false, "year0": 69, "label": "Year of Avatar",
-		"pitch": "Sandbox. Avatar Akane of the Fire Nation is eighty-four. She spends most of her days in meditation and the Spirit World, and leaves her lake hamlet only for what truly threatens the balance.",
-		"short": "An old Avatar, mostly in the Spirit World, roused only by great evil."},
+		"pitch": "Sandbox. Avatar Akane of the Fire Nation is eighty-four. She keeps to her lake hamlet, meditates, teaches a few students and receives fewer visitors every year, and leaves only for what truly threatens the balance.",
+		"short": "An old Avatar who keeps to home, roused only by great evil."},
 }
 
 ## The Avatar of each sandbox era. The Quiet Years child is generated per game.
@@ -68,18 +68,18 @@ const CHILDREN := {
 ## How readily the Avatar acts on each motive at each stage of life, and how
 ## much of their time they spend beyond reach.
 const INVOLVEMENT := {
-	"child": {"ruler": 0.0, "tyrant": 0.0, "teacher": 0.0, "local": 0.0, "spirit": 1.0},
-	"young": {"ruler": 0.6, "tyrant": 0.7, "teacher": 1.0, "local": 0.8, "spirit": 0.45},
-	"prime": {"ruler": 1.0, "tyrant": 1.0, "teacher": 0.0, "local": 1.0, "spirit": 0.35},
-	"elder": {"ruler": 0.35, "tyrant": 0.6, "teacher": 0.0, "local": 0.25, "spirit": 0.7},
+	"child": {"ruler": 0.0, "tyrant": 0.0, "teacher": 0.0, "local": 0.0, "away": 1.0},
+	"young": {"ruler": 0.6, "tyrant": 0.7, "teacher": 1.0, "local": 0.8, "away": 0.45},
+	"prime": {"ruler": 1.0, "tyrant": 1.0, "teacher": 0.0, "local": 1.0, "away": 0.35},
+	"elder": {"ruler": 0.35, "tyrant": 0.6, "teacher": 0.0, "local": 0.25, "away": 0.7},
 }
 
 const STAGE_NAMES := {"child": "Childhood", "young": "Youth", "prime": "Prime of life", "elder": "Old age"}
 const STAGE_DESC := {
 	"child": "A child who does not yet know what they are. The sages are searching. They take no part in the world's affairs.",
-	"young": "Newly told, still learning. Often with a teacher or in the Spirit World. Comes readily to masters of the element they need, less readily to kings.",
+	"young": "Newly told, still learning. Often away with a teacher, somewhere remote. Comes readily to masters of the element they need, less readily to kings.",
 	"prime": "At full strength and everywhere at once: brokering truces, lifting sieges, sitting with rulers. Still spends a third of their life where you cannot follow.",
-	"elder": "Spends most days in meditation and the Spirit World. Travels only for what truly threatens the balance, and sends word before coming.",
+	"elder": "Keeps to home: meditation, a few students, family. Travels only for what truly threatens the balance, and sends word before coming.",
 }
 
 static func _story():
@@ -101,7 +101,7 @@ static func init_era(e: String) -> void:
 	if not ERAS.has(e):
 		e = "quiet"
 	GS.flags.era = e
-	var A := {"era": e, "revealed": e != "quiet", "loc": "spirit", "loc_until": randi_range(3, 12), "pos": Vector2(800, 600),
+	var A := {"era": e, "revealed": e != "quiet", "loc": "away", "loc_until": randi_range(3, 12), "pos": Vector2(800, 600),
 		"attitude": 0, "state": "free", "due": {}, "court_done": false, "warned": false, "pledge": false, "pledge_infamy": 0,
 		"defied": false, "defeats": 0, "wounded_until": -1, "hostage": false, "diversion": false, "demoralized": false,
 		"intel": false, "teach_offered": [], "taught": [], "seen": [], "rumour": {}, "teach_until": -1, "local_cd": -1,
@@ -325,7 +325,7 @@ static func motives() -> Dictionary:
 		"progress": clampf(pct / TEACHER_PCT, 0.0, 1.0) if need == GS.player.get("bend", "") else 0.0, "done": A.get("taught", []).has(GS.player.get("bend", ""))}
 	var center := cruelty_center()
 	var reg := 0 if center == Vector2.INF else regional_infamy(center)
-	var near: bool = center != Vector2.INF and Vector2(A.get("pos", Vector2.ZERO)).distance_to(center) <= AVATAR_NEAR and A.get("loc", "spirit") != "spirit"
+	var near: bool = center != Vector2.INF and Vector2(A.get("pos", Vector2.ZERO)).distance_to(center) <= AVATAR_NEAR and A.get("loc", "away") != "away"
 	out.local = {"active": reg >= LOCAL_INFAMY and near and st != "child",
 		"why": "Cruelty in one region: %d of %d in 45 days%s." % [reg, LOCAL_INFAMY, ", and the Avatar is near" if near else ""],
 		"progress": clampf(float(reg) / LOCAL_INFAMY, 0.0, 1.0), "done": false}
@@ -378,7 +378,7 @@ static func _learn(A: Dictionary, st: String) -> void:
 
 static func _move(A: Dictionary, st: String) -> void:
 	if GS.day() < int(A.get("wounded_until", -1)):
-		A.loc = "spirit"
+		A.loc = "away"
 		return
 	if A.get("state", "free") == "teaching":
 		A.loc = "party"
@@ -386,8 +386,10 @@ static func _move(A: Dictionary, st: String) -> void:
 		return
 	if GS.day() < int(A.get("loc_until", 0)):
 		return
-	if randf() < involvement("spirit"):
-		A.loc = "spirit"
+	# Out of reach in this world: travelling, secluded at a temple, with a
+	# teacher or at home with family. Never "in the Spirit World" (canon §3).
+	if randf() < involvement("away"):
+		A.loc = "away"
 		var span := Vector2i(6, 20) if st == "elder" else Vector2i(3, 10)
 		A.loc_until = GS.day() + randi_range(span.x, span.y)
 		return
@@ -443,7 +445,7 @@ static func _world_acts(A: Dictionary, st: String, sid: String) -> void:
 			return
 	# The Avatar cannot end every war: one truce a season at most, and only
 	# for wars that have already run long (tuned after pre-launch bot runs,
-	# docs/08_sequel_release.md §2.3, which found every war ended by day 220)
+	# bot runs found every war ended by day 220 before this limit)
 	var broker: float = {"young": 0.03, "prime": 0.07, "elder": 0.04}.get(st, 0.0)
 	if randf() < broker and GS.day() - int(A.get("broker_day", -999)) >= 90:
 		for k in Data.KINGDOMS:
@@ -550,8 +552,8 @@ static func spawn_company() -> String:
 	var st := stage()
 	Roster.add(p.roster, "avatar", 1)
 	var allies: Array = {"young": [["an_monk", 4], ["swt_waterbender", 4], ["swt_warrior", 6]],
-		"prime": [["an_master", 4], ["ek_earthbender", 8], ["swt_waterbender", 6], ["ky_warrior", 6]],
-		"elder": [["an_master", 3], ["ky_warrior", 8], ["fn_firebender", 4]]}.get(st, [])
+		"prime": [["an_master", 4], ["ek_earthbender", 8], ["swt_waterbender", 6], ["tw_warden", 6]],
+		"elder": [["an_master", 3], ["tw_warden", 8], ["fn_firebender", 4]]}.get(st, [])
 	# A tyrant with a great army (and garrison) brings the nations down on them too
 	var defenders := float(GS.party_size())
 	var seat := seat_near()
@@ -664,7 +666,7 @@ static func on_player_defeated(enemy_ids: Array) -> bool:
 # ---------------------------------------------------------------------------
 static func present_at(sid: String) -> bool:
 	var A := state()
-	return stage() != "child" and A.get("loc", "spirit") == sid and GS.day() >= int(A.get("wounded_until", -1))
+	return stage() != "child" and A.get("loc", "away") == sid and GS.day() >= int(A.get("wounded_until", -1))
 
 ## Chance that the Avatar's companions let you through today.
 static func audience_chance() -> float:
@@ -706,7 +708,7 @@ static func finish_teaching() -> void:
 	A.taught.append(el)
 	A.learn_until = GS.day() + randi_range(200, 260)
 	A.attitude = clampi(int(A.attitude) + 40, -100, 100)
-	A.loc = "spirit"
+	A.loc = "away"
 	A.loc_until = GS.day() + 5
 	GS.player.companions.erase("avatar")
 	GS.add_renown(80)
