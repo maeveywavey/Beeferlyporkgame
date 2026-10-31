@@ -289,3 +289,14 @@ DONE). TASK 6: done (landscape.gd _range_tex: 1024x256 painted ranges,
 haze per layer, no stripes). Now on TASK 2 remainder: walkable Ba Sing Se
 (three nested walled rings) and a Fire Nation volcano-city plan (Caldera).
 Files: scripts/town/town_layout.gd only.
+
+[2026-10-31, Kestrel] Reviews (sent by message, recorded here):
+  TASK 3 accepted. TASK 4 accepted. TASK 5 accepted with 5b (one upgrade
+  path per row; hide Release-all when no prisoners).
+  TASK 1 -> 1b: map Omashu built up the cone in terraces with the spiral
+  chute and rock shading; walkable retaining walls get stonework,
+  parapets, lanterns, houses set back per terrace.
+  NEW TASK 7 battle readability: cap/fade ground fires, cull particles near
+  the camera, feed max 4 lines, smaller/translucent ally markers (heroes
+  only), dimmer shorter rain.
+  Order now: 5b, 1b, 7, 2, 6.
