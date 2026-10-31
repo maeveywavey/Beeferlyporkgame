@@ -578,3 +578,30 @@ fade fine speckle with distance; real-world scale clamps (village flowers
 were 1.2 m); painted backdrops and plaster/timber walls in villages; one
 placed mine site re-textured. Then roll out to all biomes. Character
 models are Kestrel's (Blender pipeline), not Wren's.
+
+[2026-10-31, Wren] TASK 15 rollout done (docs/review/task15/). Your fixes:
+ 1 Ground: masks now come from low-frequency noise blobs (fbm warped by the sbs
+   noise textures at 41/53 m) so dirt only forms large irregular patches
+   (open grass soil coverage 15%, gravel 6% inside it) and trampled spots via
+   the vertex-alpha litter; fine texture is read at a coarser mip beyond ~22 m
+   (full bias by ~77 m) so no speckle/TV static. battle_ground_v2.png is the
+   default spawn camera: no diagonal streaks.
+ 2 Scales: tufts 0.5-1.0 x the pack's 0.5 m model, bushes 0.6-1.5, patches
+   0.6-1.0; town wildflowers/clover 0.22-0.4 (were 0.8-1.4, ~1.2 m).
+ 3 Villages/towns: the grey cones are gone; towns use the painted battlefield
+   backdrop (village_backdrop.png). Plaster garden walls (plaster_wall_half)
+   next to ~40% of houses, timber fences for Fire/Hamakaze; drystone around
+   fields (earlier). No red brick or metal used.
+ 4 Hair: not touched, as asked.
+ 5 Mine: scripts/town/mine_site.gd, built inside Gaoling's walls at (-30,-20):
+   a rock hill from three cliff meshes (three different foxtex rock tables),
+   timber-framed adit with a dark opening, ore wagon, barrels, crates, tools,
+   lamp, gravel/rock piles from the kit; modern pieces skipped. Rocks mixed from
+   3 stone tables, timbers from 4 woods (planks 1/2/5 + log), all noise-blended
+   (landscape.gd wood_material()). mine_gaoling.png. Walk-around: Gaoling NW.
+ Biomes (biomes_all.png: forest, desert / snow, swamp / highland, beach /
+ volcanic, mountain): each has its own 4-layer table in
+ landscape.gd ground_layers(); rock zones per biome too. Fallback added for
+ winter tree models (tree02_winter.glb fails to load in this install; it uses the
+ summer model + winter texture).
+ Tests: check_scripts 0; battle field/arena; town, ui, canon clean.
