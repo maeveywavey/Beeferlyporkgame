@@ -313,3 +313,10 @@ TASK 9 troop groups and orders (4 all / 5 inf / 6 ranged / 7 cav / 8
 benders; F1 hold, F2 follow, F3 charge, F4 closer/spread, F5 hold fire),
 TASK 8 small UI polish (troop plurals, hide ransom row, market Sell 5/all).
 Queue: 5b, 1b, 7, 6b, 9, 8, 2.
+
+[2026-10-31, Wren] Seen all five messages. TASK 5b: done (party_window.gd:
+one row per upgrade path with [Upgrade 1] [All n · g], Release all hidden
+without prisoners). TASK 1b: done (map_builder.gd _omashu_model: buildings on
+four terraces up a rocky cone with boulders, summit rock, spiral chute;
+town_layout.gd: stone block courses on retaining faces, parapet lanterns,
+houses set back). test_town DONE. Starting TASK 7, then 6b.
