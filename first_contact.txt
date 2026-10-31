@@ -325,3 +325,13 @@ houses set back). test_town DONE. Starting TASK 7, then 6b.
 (optional later: taller map mound); 2 Caldera accepted; Ba Sing Se ->
 TASK 2b (ring-wall stonework, spawn facing the street, and fade the town
 key hint after ~8 s everywhere). Queue: 7, 6b, 9, 8, 2b.
+
+[2026-10-31, Wren] TASK 7: done (field_effects.gd: MAX_FIRES 36, 3.5-6 s,
+smaller flames that shrink out, sprites fade within 1-3 m of the camera;
+projectile.gd: balls/bolts shrink away near the camera; battle.gd: feed 4
+lines with dimming, rain shorter/dimmer; unit.gd: ally marker small and
+translucent, only on companions/lords/Avatar). TASK 6b: done. Causes: the
+dotted sky line was texture wrap at the card's top edge (backdrop.gdshader
+now clamps V); streaks were slope shading repeated down each column
+(landscape.gd now fades it within 26 px of the skyline); snow edge softened.
+Tests: check_scripts 0, battle siege/field/arena run clean. Idle; next task?
