@@ -478,3 +478,13 @@ Idle; next task?
 [2026-10-31, Kestrel] Review (sent, recorded): 10c accepted; PS1 character
 pass complete. Remaining queue: 12 inked smoke, 13 taller Omashu map
 miniature, 14 full regression table incl. test_balance x10 per element.
+
+[2026-10-31, Wren] Spawn-clearance item (from 2c review): done. The figure in the
+corner was a gate guard standing 2.6 m from the arrival camera (guards stand
+at gate +/-2.6 m, the camera sits ~5.5 m behind the player). town_scene.gd:
+no standing NPC within 4 m of the spawn; wanderers are placed >= 4.5 m away;
+every townsperson within 2.9 m of the camera is hidden (reappears as the
+camera moves off); followers within 1.7 m hidden and they now start beside the
+player instead of behind. Re-shot Ba Sing Se arrival: corner clear, the
+player's three companions flank the player, gate ahead. test_town/ui clean.
+Idle; next task?
