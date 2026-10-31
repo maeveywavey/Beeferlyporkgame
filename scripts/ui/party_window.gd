@@ -123,11 +123,11 @@ func build() -> void:
 			ex.tooltip_text = "Cruelty is remembered: +60 infamy, and their nation will never forgive it."
 			lrow.add_child(ex)
 		plist.add_child(lrow)
-	right.add_child(UI.button("Release all prisoners (+honour)", func():
-		if not pp.prisoners.is_empty():
+	if not pp.prisoners.is_empty():
+		right.add_child(UI.button("Release all prisoners (+honour)", func():
 			GS.player.honor = GS.player.get("honor", 0) + 1
-		pp.prisoners.clear()
-		refresh()))
+			pp.prisoners.clear()
+			refresh()))
 	var b := UI.hbox()
 	content.add_child(b)
 	b.add_child(UI.expand())
@@ -164,21 +164,22 @@ func _troop_row(s: Dictionary) -> Control:
 	row.add_child(dis1)
 	var can := Roster.upgradable_count(s)
 	if can > 0:
-		var urow := HFlowContainer.new()
-		urow.add_theme_constant_override("h_separation", 6)
-		urow.add_theme_constant_override("v_separation", 4)
-		urow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		v.add_child(urow)
-		urow.add_child(UI.label("   Ready to upgrade (%d):" % can, 14, UI.GREEN))
+		var head := UI.label("   Ready to upgrade (%d):" % can, 14, UI.GREEN)
+		v.add_child(head)
+		# one row per path: the target and cost, then [Upgrade 1] and [All n]
 		for u in Data.troop_upgrades(s.id):
 			var cost := Data.troop_upgrade_cost(u)
-			var ub := UI.button("→ %s (T%d, %d g)" % [Data.troop(u).name, Data.troop(u).tier, cost], _upgrade.bind(s.id, u, 1), 0, GS.player.gold >= cost)
+			var urow := UI.hbox(6)
+			urow.add_child(UI.label("        → %s (T%d, %d g)" % [Data.troop(u).name, Data.troop(u).tier, cost], 14, UI.INK))
+			urow.add_child(UI.expand())
+			var ub := UI.button("Upgrade 1", _upgrade.bind(s.id, u, 1), 0, GS.player.gold >= cost)
 			ub.tooltip_text = "Upgrade one for %d gold." % cost
 			urow.add_child(ub)
 			if can > 1:
-				var ab := UI.button("All %d (%d g)" % [can, cost * can], _upgrade.bind(s.id, u, can), 0, GS.player.gold >= cost * can)
+				var ab := UI.button("All %d · %d g" % [can, cost * can], _upgrade.bind(s.id, u, can), 0, GS.player.gold >= cost * can)
 				ab.tooltip_text = "Upgrade all %d that are ready." % can
 				urow.add_child(ab)
+			v.add_child(urow)
 	return v
 
 func _upgrade(id: String, target: String, n: int) -> void:
