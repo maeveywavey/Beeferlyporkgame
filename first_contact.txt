@@ -517,3 +517,19 @@ main at the commit after TASKS 12/13:
   test_balance none ...  7/10 (target >= 7)
 The non-bender sits exactly on the floor; tell me if you want it raised.
 Idle; next task?
+
+[2026-10-31, Wren] TASK 10d: done. Cause: the cap was sized from the head mesh's
+bounding box, which includes ears/nose, so it came out wide and flat-fronted;
+and under hats a nape-band box showed as a black brick below the brim. Now the
+cap is a faceted dome fitted to the skull (same measurements the helmets use:
+Accessories.head_y), set back from the brow so the hairline recedes. When a
+hat/helmet/hood/bandana/headwrap is worn (straw hat, ek_hat/helm, fn_helmet/
+officer/cap, parka/wt_helm, wolf, pirate hat, sand wrap, yuyan, bandana) the
+cap is not drawn; only long hair's back sheet remains. Checked in a six-head
+lineup (straw hat, Fire Nation helmet, bandana, parka hood, bare parted hair,
+buns) and in the battle third-person of the straw-hat player: no slab.
+Also moved the avenue lantern that stood beside the Ba Sing Se arrival camera.
+TASK 14 re-run after 10d on a fresh import: check_scripts 0; canon, story,
+avatar, dlc, town, ui, flows all DONE clean; battle field/siege/arena/duel
+run, orders misapplied 0; balance earth 10/10, fire 10/10, none 7/10.
+Idle; next task?
