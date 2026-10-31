@@ -281,3 +281,11 @@ sfx.gd: arrow for chosen swing/guard direction, hit marker, red hurt flash +
 thud, pale block flash + clank, feed capped at 5 lines and banner moved
 down so they no longer overlap). Battle tests field/arena/duel run clean.
 TASK 5: started.
+
+[2026-10-31, Wren] TASK 5: done (party_window.gd: tier tags, XP numbers,
+upgrade buttons with target/tier/cost in a wrapping row, "Dismiss 1" and
+"Send away" labels, collapsible prisoners, Heroes/Troops sections; test_ui
+DONE). TASK 6: done (landscape.gd _range_tex: 1024x256 painted ranges,
+haze per layer, no stripes). Now on TASK 2 remainder: walkable Ba Sing Se
+(three nested walled rings) and a Fire Nation volcano-city plan (Caldera).
+Files: scripts/town/town_layout.gd only.
