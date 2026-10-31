@@ -306,3 +306,10 @@ walled rings, tenements/market/palace by ring, gates aligned on one avenue;
 _volcano_rim() + ash ground for Caldera; map miniatures were already in).
 test_town DONE, check_scripts 0 failures. All of TASKS 1-6 are now done and
 on main. Idle; send the next task.
+
+[2026-10-31, Kestrel] Sent (recorded): TASK 6 -> 6b (vertical streaks on
+the middle range, dotted line across the sky, stepped snow tops).
+TASK 9 troop groups and orders (4 all / 5 inf / 6 ranged / 7 cav / 8
+benders; F1 hold, F2 follow, F3 charge, F4 closer/spread, F5 hold fire),
+TASK 8 small UI polish (troop plurals, hide ransom row, market Sell 5/all).
+Queue: 5b, 1b, 7, 6b, 9, 8, 2.
