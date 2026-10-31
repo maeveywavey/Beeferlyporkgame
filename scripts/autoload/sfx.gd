@@ -9,6 +9,8 @@ var _pool: Array = []
 func _ready() -> void:
 	streams.hit = _noise_burst(0.12, 0.9, 900.0)
 	streams.block = _tone_burst(0.1, 1400.0, 0.6, true)
+	streams.clank = _tone_burst(0.22, 1900.0, 0.9, true)
+	streams.thud = _thump(0.16, 140.0, 0.95)
 	streams.swing = _sweep_noise(0.22, 0.35)
 	streams.fire = _crackle(0.45, 0.6)
 	streams.earth = _thump(0.35, 70.0, 0.9)

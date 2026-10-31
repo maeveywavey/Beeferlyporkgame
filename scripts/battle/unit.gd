@@ -644,11 +644,15 @@ func receive_melee(attacker, dmg: float, dtype: String, dir: String) -> bool:
 		else:
 			ok = randf() < clampf(0.55 + skill * 0.35 + (0.2 if shield else 0.0), 0.0, 0.97)
 		if ok:
-			Sfx.play_at("block", position, -4.0)
-			battle.spawn_spark(chest() + forward() * 0.4)
+			Sfx.play_at("block", position, 0.0)
+			Sfx.play_at("clank", position, -2.0)
+			battle.spawn_spark(chest() + forward() * 0.4, Color(1.0, 0.9, 0.55))
 			attacker._set_action("stagger", 0.35)
 			if is_player:
 				battle.hud_note("Blocked!")
+				battle.player_flash(false)
+			elif attacker.is_player:
+				battle.hud_note("%s blocks" % display_name)
 			return false
 	var push: Vector3 = -to_attacker.normalized()
 	apply_damage(dmg, attacker, dtype, push, 2.0 + (4.0 if attacker.mounted() else 0.0))
@@ -723,6 +727,9 @@ func apply_damage(amount: float, attacker, dtype: String, push: Vector3, knockba
 			_set_action("stagger", 0.25)
 		UnitVisual.hit(self, knockback > 6.0)
 		Sfx.play_at("hit", position, -5.0)
+		if is_player:
+			Sfx.play("thud", -2.0)
+			battle.player_flash(true, dmg)
 	if hp <= 0.0:
 		die(attacker, dtype)
 

@@ -91,6 +91,13 @@ var note_label: Label
 var pause_panel: Control
 var crosshair: Control
 var _note_t := 0.0
+## Feedback overlays: the direction just chosen, a hit marker at the crosshair
+## and a flash across the screen when the player is struck or blocks.
+var _dir_show := ""
+var _dir_block := false
+var _dir_t := 0.0
+var _marker_t := 0.0
+var _flash: ColorRect
 var paused := false
 
 # ---------------------------------------------------------------------------
@@ -1094,6 +1101,7 @@ func melee_strike(att) -> void:
 	if landed:
 		spawn_spark(victim.chest(), Color(0.7, 0.1, 0.1))
 		if att.is_player:
+			hit_marker()
 			hud_note("Hit %s for %d" % [victim.display_name, int(maxf(dmg * 0.25, dmg - victim.armor * 0.42))])
 
 func spawn_projectile(p: Dictionary, from: Vector3) -> void:
@@ -1120,6 +1128,7 @@ func projectile_hit(pr, u) -> void:
 	u.apply_damage(pr.dmg, pr.owner_unit, pr.dtype, push.normalized(), pr.knock)
 	_apply_effect(u, pr.effect, pr.dmg)
 	if is_instance_valid(pr.owner_unit) and pr.owner_unit.is_player:
+		hit_marker()
 		hud_note("Hit %s" % u.display_name)
 
 ## Status effects from bending: burn, slow, blind, and the expansions'
@@ -1736,13 +1745,17 @@ func _unhandled_input(event: InputEvent) -> void:
 					if not pu.start_aim():
 						hud_note("Out of ammunition!" if pu.ammo <= 0 else "")
 				else:
-					pu.start_attack(_mouse_dir())
+					var ad := _mouse_dir()
+					_show_dir(ad, false)
+					pu.start_attack(ad)
 			else:
 				if player_ranged_mode:
 					pu.release_aim(aim_point())
 		elif mb.button_index == MOUSE_BUTTON_RIGHT:
 			if mb.pressed:
-				pu.start_block(_mouse_dir())
+				var bd := _mouse_dir()
+				_show_dir(bd, true)
+				pu.start_block(bd)
 			else:
 				pu.stop_block()
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
@@ -1886,8 +1899,27 @@ func _build_hud() -> void:
 		crosshair.draw_line(c - Vector2(9, 0), c - Vector2(3, 0), col, 2.0)
 		crosshair.draw_line(c + Vector2(3, 0), c + Vector2(9, 0), col, 2.0)
 		crosshair.draw_line(c - Vector2(0, 9), c - Vector2(0, 3), col, 2.0)
-		crosshair.draw_line(c + Vector2(0, 3), c + Vector2(0, 9), col, 2.0))
+		crosshair.draw_line(c + Vector2(0, 3), c + Vector2(0, 9), col, 2.0)
+		# the direction of the swing or guard just chosen, as an arrow
+		if _dir_t > 0.0 and _dir_show != "":
+			var v := {"left": Vector2.LEFT, "right": Vector2.RIGHT, "overhead": Vector2.UP, "thrust": Vector2.DOWN}[_dir_show] as Vector2
+			var ac := Color(0.5, 0.8, 1.0) if _dir_block else Color(1.0, 0.85, 0.35)
+			ac.a = clampf(_dir_t * 3.0, 0.0, 1.0)
+			var tip := c + v * 44.0
+			var side := Vector2(-v.y, v.x)
+			crosshair.draw_line(c + v * 16.0, tip, ac, 4.0)
+			crosshair.draw_colored_polygon(PackedVector2Array([tip + v * 9.0, tip + side * 8.0, tip - side * 8.0]), ac)
+		# a hit marker: four ticks cross the crosshair
+		if _marker_t > 0.0:
+			var mc := Color(1, 0.4, 0.3, clampf(_marker_t * 6.0, 0.0, 1.0))
+			for sg in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
+				crosshair.draw_line(c + sg * 7.0, c + sg * 15.0, mc, 3.0))
 	root.add_child(crosshair)
+	_flash = ColorRect.new()
+	_flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flash.color = Color(0.8, 0.05, 0.03, 0.0)
+	root.add_child(_flash)
 	var bl := PanelContainer.new()
 	bl.anchor_top = 1.0
 	bl.anchor_bottom = 1.0
@@ -1931,7 +1963,7 @@ func _build_hud() -> void:
 	big_label.add_theme_constant_override("outline_size", 8)
 	big_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	big_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	big_label.offset_top = 120
+	big_label.offset_top = 175
 	big_label.offset_left = -400
 	big_label.offset_right = 400
 	root.add_child(big_label)
@@ -1985,7 +2017,7 @@ func feed_msg(text: String, c: Color = Color(1, 1, 1)) -> void:
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	l.add_theme_constant_override("outline_size", 4)
 	feed.add_child(l)
-	while feed.get_child_count() > 7:
+	while feed.get_child_count() > 5:
 		var o := feed.get_child(0)
 		feed.remove_child(o)
 		o.queue_free()
@@ -1996,6 +2028,26 @@ func feed_msg(text: String, c: Color = Color(1, 1, 1)) -> void:
 		if is_instance_valid(l):
 			l.queue_free())
 
+func _show_dir(d: String, block: bool) -> void:
+	_dir_show = d
+	_dir_block = block
+	_dir_t = 0.45
+	if crosshair != null:
+		crosshair.queue_redraw()
+
+## The player landed a hit: a marker at the crosshair.
+func hit_marker() -> void:
+	_marker_t = 0.18
+
+## A red flash and a heavy thud when the player is struck; a pale one on a block.
+func player_flash(hurt: bool, amount: float = 10.0) -> void:
+	if _flash == null:
+		return
+	var a := clampf(0.12 + amount * 0.012, 0.15, 0.45) if hurt else 0.16
+	_flash.color = Color(0.8, 0.05, 0.03, a) if hurt else Color(0.7, 0.85, 1.0, a)
+	var tw := _flash.create_tween()
+	tw.tween_property(_flash, "color:a", 0.0, 0.35)
+
 func hud_note(text: String) -> void:
 	if note_label == null or text == "":
 		return
@@ -2004,6 +2056,10 @@ func hud_note(text: String) -> void:
 
 func _update_hud(delta: float) -> void:
 	_note_t -= delta
+	if _dir_t > 0.0 or _marker_t > 0.0:
+		_dir_t -= delta
+		_marker_t -= delta
+		crosshair.queue_redraw()
 	if _note_t <= 0.0 and note_label:
 		note_label.text = ""
 	var pu = player_unit
