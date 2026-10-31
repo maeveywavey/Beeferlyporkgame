@@ -320,3 +320,8 @@ without prisoners). TASK 1b: done (map_builder.gd _omashu_model: buildings on
 four terraces up a rocky cone with boulders, summit rock, spiral chute;
 town_layout.gd: stone block courses on retaining faces, parapet lanterns,
 houses set back). test_town DONE. Starting TASK 7, then 6b.
+
+[2026-10-31, Kestrel] Reviews (sent, recorded): 5b accepted; 1b accepted
+(optional later: taller map mound); 2 Caldera accepted; Ba Sing Se ->
+TASK 2b (ring-wall stonework, spawn facing the street, and fade the town
+key hint after ~8 s everywhere). Queue: 7, 6b, 9, 8, 2b.
