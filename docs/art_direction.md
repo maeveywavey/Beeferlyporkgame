@@ -76,3 +76,30 @@ overrides an earlier one.
   adult woman in common garb (robe hem just below the knee, moving with the
   legs without clipping), showing the base model, her texture map and her
   clothing.
+- 2026-10-31 (review of earth_woman_v1): Overall "pretty good". Changes:
+  - **Shoulders:** arms sit too low in the socket, so shoulders look padded
+    (the child reads as a tiny football player). Raise the arms in the
+    socket; shoulders slope naturally.
+  - **Face:** add jaw contour and highlights.
+  - **Hair:** thicker; it must not read as a buzzcut. Judge two styles: a
+    high bun, and shoulder-length hair worn down with bangs that keep the
+    face clear.
+  - **Hair physics:** simple. A few planes that hang and move limply, like a
+    sheet of fabric (a short chain of bones per strip, damped, with gravity;
+    never a full simulation).
+  - **Body mass:** everyone except the thin shapes gets about 1.2x girth
+    overall, with more on the inner thigh. No large thigh gaps.
+  - **Slider range:** Heavy, Feminine and Curvy can reach up to 2x their
+    current maximum in hips, waist, buttocks, abdomen, breasts and legs:
+    genuinely curvaceous women and genuinely overweight people.
+  - **Asset packs** the owner likes, to use (licences checked, anything
+    out of setting dropped, such as cars, chain-link fences and modern red
+    brick, with natural textures substituted):
+    elegantcrow PSX retro tree pack; foxh3ad foxtexcom; elbolilloduro PSX
+    low-poly model pack 2, vegetation and mine (re-texture the mine's rocks
+    and beams with several varied textures, not one bland one); elegantcrow
+    retro PSX nature pack; valsekamerplant PSX walls and fences;
+    screamingbrainstudios Tiny Texture Pack 3 and Noise Texture Pack (the
+    noise for blending textures and varying colour and contrast on ground,
+    rock, buildings and everything else, so surfaces look natural and lived
+    in, not clean drafts).
