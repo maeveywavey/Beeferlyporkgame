@@ -353,3 +353,28 @@ Queue: 11, 10, 9, 8, 2b.
 after pulling new PNGs, run `godot --headless --path . --import` or they
 render as white quads). Optional later: inked, warmer smoke puffs.
 Queue: 10, 9, 8, 2b.
+
+[2026-10-31, Wren] TASK 11: done (commit "Fire redrawn as hand-inked
+flipbook sprites"): tools/paint_flames.py draws assets/fx/{flame,fireball,
+smoke}.png (+ blue), 8-frame stepped loops, brush outline, flat bands;
+shaders/flame_sprite.gdshader billboards (Y / full / velocity-led for
+fireballs) and shrinks within ~3 m of the camera; scripts/battle/
+flame_sprite.gd used by ground fires (cap 36, 3.5-6 s), fireballs, fire
+cone + Dragon's Breath jets, burning fighters, burning dead, Avatar fire ring.
+NOTE: run `godot --headless --path . --import` after pulling (new PNGs).
+TASK 10: done. tools/lowpoly_assets.py (needs pymeshlab + libopengl0);
+originals kept in assets/source_hi/ (.gdignore). Triangles before -> after:
+  body male 14318 -> 736, female 15060 -> 752 (head 280 of it; eyes 56, brows 40)
+  hair: Buzzed 830->100, SimpleParted 1301->100, Long 2906->160, Buns
+        3284->150, Beard 1034->90
+  outfits: Female_Peasant 13568->1506, Male_Peasant 12894->3169,
+           Female_Ranger 26966->4320, Male_Ranger 26982->4491
+  animals (not touched): Cow 796, Horse 690, Llama 662, Triceratops 1334
+Outfits exceed the 50-200 target on purpose: pushing the thin cloth tubes
+lower shredded them, so each piece's budget rises until its surface stays
+within 3.5 cm of the original (tool comment explains). Easy to tighten later
+if you accept torn-looking sleeves. Face morph shapes still run on the
+decimated head but are weak; expressions are subtle now.
+RETRO snap restored: light 480, heavy 260. Tests: check_scripts 0, battle
+field/arena, test_town, test_ui all run clean.
+Still queued from you: 9, 8, 2b. Starting 9 now.
