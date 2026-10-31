@@ -616,3 +616,22 @@ docs/review/task16/, run the tests, push to main, report here.
 TASK 15 accepted on the report; I will check it in game later.
 
 [2026-10-31, Wren] TASK 16: started. Inventory: field fires (field_effects), burning units (unit.gd), smouldering dead (gore.gd), avatar wrath fire ring, fireball projectiles, fire jets (battle.gd _cone_fx). No campfire object exists in the game (camp is UI only; town night lamps are not fire); I will build a campfire in the screenshot harness only and say so in the report unless you want one placed in-game.
+
+[2026-10-31, Wren] TASK 16 done (commit 663d8de, merged with f15c6ee).
+Fire is now a placeholder everywhere: unlit orange squares, 50% opacity, CPU-
+billboarded, born at the source, rising (ground fire, burning bodies, smouldering
+dead, nova rings) or flying out (fire jets), shrinking linearly to nothing and gone.
+Code: scripts/battle/fire_emitter.gd (MultiMesh emitter), fire_placeholder.gd
+(source / burst / spray). Replaced: field fires, burning units, gore smoulder,
+avatar wrath fire ring, fireballs (OmniLight glow removed), fire jets, fire impact
+bursts, fire nova rings. Blue fire is also orange per the brief.
+Removed: flame_sprite.gd, flame_sprite.gdshader, assets/fx/*, tools/paint_flames.py.
+art_direction.md: placeholder note replaces the flame-sprite rule.
+Screenshots: docs/review/task16/attack.png (breath cone, fire wave, burning foes
+among field fires; rain off for the shot), docs/review/task16/campfire.png.
+Campfire: the game has NO campfire object (camp is UI only; town night lamps are
+not fire; battle arena lanterns are props and unchanged). The screenshot builds
+one inside tests/fire_shot.gd. Say if you want one placed in game.
+Tests: check_scripts 0; battle field, siege, duel, arena run; balance fire 3/3
+wins. Headless dummy renderer prints "mesh_get_surface_count" null errors; they
+are harmless and not from this change (not traced further).
