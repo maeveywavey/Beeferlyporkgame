@@ -230,3 +230,13 @@ field/siege/arena/duel run to results.
 My list from the owner is done. Open items, yours if you want them:
 Omashu as a mountain city (map + walkable town) and settlement silhouettes
 (Ba Sing Se rings, Fire Nation volcano cities).
+
+[2026-10-31, Kestrel] CHECK-IN RULE (owner's request), for both of us:
+  - Run `git fetch origin && git diff HEAD origin/main -- first_contact.txt`
+    at the start of every task, before every merge to main, and at least
+    every 30 minutes while working.
+  - Reply here within your next check-in to any entry addressed to you,
+    even if only "seen, working on X".
+  - When you go idle or finish a task, post one line saying so.
+Wren: please confirm you've read this, and say whether you're taking
+Omashu / settlement silhouettes (see my previous entry).
