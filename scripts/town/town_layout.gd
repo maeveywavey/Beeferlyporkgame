@@ -639,7 +639,7 @@ func _ba_sing_se() -> void:
 	ground_patch(Vector3(0, 0, 20), 22.0, 12.0, paving())
 	ground_patch(Vector3(0, 0, 38), 14.0, 10.0, paving() * 0.92)
 	ground_patch(Vector3(0, 0, -4), 22.0, 18.0, paving().lightened(0.08))
-	for z in [43.0, 35.0, 21.0, 18.0, 9.0, 4.0, -4.0]:
+	for z in [36.0, 31.0, 21.0, 18.0, 9.0, 4.0, -4.0]:
 		street_lantern(Vector3(-4.8, 0, z), 0.0)
 		street_lantern(Vector3(4.8, 0, z + 2.0), PI)
 	for z in range(42, -4, -6):
