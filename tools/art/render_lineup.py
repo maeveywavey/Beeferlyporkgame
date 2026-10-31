@@ -23,12 +23,22 @@ FIGS = [
     ("Brawny tall", {"Muscular": 1, "Heavy": 0.4, "Tall": 1}),
     ("Elder heavy woman", {"Elder": 1, "Feminine": 1, "Heavy": 0.6}),
     ("Thin teen girl", {"Teen": 1, "Feminine": 1, "Thin": 0.6}),
+    ("Heavy x2", {"Heavy": 1, "HeavyMore": 1}),
+    ("Curvy x2", {"Feminine": 1, "Curvy": 1, "CurvyMore": 1}),
+    ("Fem+Heavy x2", {"Feminine": 1, "FeminineMore": 1, "Heavy": 1, "HeavyMore": 1}),
+    ("Curvy x2 heavy", {"Feminine": 1, "Curvy": 1, "CurvyMore": 1, "Heavy": 1}),
 ]
 
+# optional: a subset by label, and a yaw: -- out.png "Base,Curvy x2" 35
+argv = sys.argv[sys.argv.index("--") + 1:]
+if len(argv) > 1 and argv[1]:
+    want = argv[1].split(",")
+    FIGS = [f for f in FIGS if f[0] in want]
+YAW = float(argv[2]) if len(argv) > 2 else -20.0
 for k in body.data.shape_keys.key_blocks:
     k.value = 0.0
 dg = bpy.context.evaluated_depsgraph_get()
-step = 0.75
+step = 0.75 if len(FIGS) > 8 else 1.1
 for i, (label, mix) in enumerate(FIGS):
     for k in body.data.shape_keys.key_blocks:
         k.value = mix.get(k.name, 0.0)
@@ -37,7 +47,7 @@ for i, (label, mix) in enumerate(FIGS):
     ob = bpy.data.objects.new("fig_" + label, m)
     bpy.context.scene.collection.objects.link(ob)
     ob.location.x = (i - (len(FIGS) - 1) / 2) * step
-    ob.rotation_euler.z = math.radians(-20)
+    ob.rotation_euler.z = math.radians(YAW)
     t = bpy.data.curves.new("t" + label, "FONT")
     t.body = label
     t.size = 0.09
@@ -55,7 +65,7 @@ sc.display.shading.color_type = "SINGLE"
 sc.display.shading.single_color = (0.78, 0.66, 0.56)
 sc.display.shading.show_object_outline = True
 sc.display.shading.show_cavity = True
-sc.render.resolution_x, sc.render.resolution_y = 3000, 700
+sc.render.resolution_x, sc.render.resolution_y = (3800, 700) if len(FIGS) > 8 else (int(len(FIGS) * 300), 600)
 cam = bpy.data.cameras.new("Cam")
 co = bpy.data.objects.new("Cam", cam)
 sc.collection.objects.link(co)

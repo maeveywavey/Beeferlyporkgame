@@ -9,7 +9,9 @@ import math
 from mathutils import Vector
 
 # Joint positions of the base mesh (A-pose). Arms are given for +X and
-# mirrored. Measured from the vertex layout of humanoid_base.blend.
+# mirrored. Measured from the vertex layout of humanoid_base.blend, then the
+# arm joints are swung up by raise_arm() (build_base.py does the same to the
+# arm's vertices).
 J = {
     "root": Vector((0, 0, 0)),
     "hips": Vector((0, 0.0, 0.93)),
@@ -28,6 +30,24 @@ J = {
     "ankle": Vector((0.16, 0.0, 0.08)),
     "toe": Vector((0.17, -0.17, 0.02)),
 }
+
+
+# The arms sit higher in the socket than in the source mesh: each arm is
+# swung up about the shoulder joint by ARM_RAISE_DEG.
+ARM_RAISE_DEG = 8.0
+SHOULDER_PIVOT = Vector((0.20, 0.01, 1.39))
+
+
+def raise_arm(v: Vector, amount: float = 1.0) -> Vector:
+    sgn = 1.0 if v.x >= 0 else -1.0
+    piv = Vector((SHOULDER_PIVOT.x * sgn, SHOULDER_PIVOT.y, SHOULDER_PIVOT.z))
+    a = math.radians(ARM_RAISE_DEG) * amount * sgn
+    d = v - piv
+    return piv + Vector((d.x * math.cos(a) - d.z * math.sin(a), d.y, d.x * math.sin(a) + d.z * math.cos(a)))
+
+
+for _k in ("elbow", "wrist", "hand_end"):
+    J[_k] = raise_arm(J[_k])
 
 
 def mirror(v: Vector) -> Vector:

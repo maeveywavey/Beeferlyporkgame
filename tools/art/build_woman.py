@@ -31,7 +31,7 @@ os.makedirs(work, exist_ok=True)
 body = bpy.data.objects["Body"]
 rig = bpy.data.objects["Rig"]
 REGIONS = ["head", "torso", "upperarm", "forearm", "hand", "thigh", "shin", "foot"]
-PRESET = {"Feminine": 1.0, "Curvy": 0.35}
+PRESET = {"Feminine": 1.0, "Curvy": 0.5}
 for k in body.data.shape_keys.key_blocks:
     k.value = PRESET.get(k.name, 0.0)
 
@@ -189,37 +189,176 @@ bpy.ops.object.mode_set(mode="OBJECT")
 for k in outfit.data.shape_keys.key_blocks:
     k.value = PRESET.get(k.name, 0.0)
 
-# --- hair: a cap over the crown and a bun at the back ---------------------
+# --- hair ------------------------------------------------------------------
+# A domed cap over the skull, thick in the middle and tapering to the skin at
+# the hairline so there is no visible rim, then the style:
+#   Hair_Bun:  a high bun on the crown.
+#   Hair_Long: shoulder-length hair worn down, with bangs that stop above the
+#              brows. The hanging part is one curtain split into five strips;
+#              each strip rides a chain of three bones (Hair.<k>.<0..2>) so the
+#              game can let it hang and swing limply, like a sheet of cloth.
+#              Neighbouring strips share their edge vertices half-and-half, so
+#              the curtain bends as one piece and never tears apart.
+HEADC = Vector((0, -0.01, 1.66))
+
+
+def head_faces():
+    out = []
+    for p in me.polygons:
+        if face_reg[p.index] == "head":
+            cs = [keys[0].data[i].co for i in p.vertices]
+            out.append((p, sum(cs, Vector()) / len(cs)))
+    return out
+
+
+def build_cap(hb, nape_z, side_z=1.675):
+    """Cap over crown, back and sides, down to nape_z at the back and side_z
+    over the temples."""
+    hv = {}
+    faces = []
+    for p, cen in head_faces():
+        if cen.z < nape_z or (cen.y < -0.045 and cen.z < 1.735) or (cen.y < 0.02 and cen.z < side_z):
+            continue
+        faces.append(p)
+    used = {}
+    for p in faces:
+        for e in p.edge_keys:
+            used[e] = used.get(e, 0) + 1
+    edge_v = {i for e, n in used.items() if n == 1 for i in e}
+    for p in faces:
+        vs = []
+        for i in p.vertices:
+            if i not in hv:
+                co = keys[0].data[i].co
+                nrm = (co - HEADC).normalized()
+                hv[i] = hb.verts.new(co + nrm * (0.004 if i in edge_v else 0.022))
+            vs.append(hv[i])
+        hb.faces.new(vs)
+
+
+from mathutils.bvhtree import BVHTree
+_hv = [keys[0].data[v.index].co.copy() for v in me.vertices]
+_hp = [list(p.vertices) for p in me.polygons if face_reg[p.index] == "head"]
+HEAD_BVH = BVHTree.FromPolygons(_hv, _hp)
+
+
+def head_surface(x, z, toward=None):
+    """Point on the head's surface at height z seen from direction (x, y):
+    a ray from outside toward the head's axis."""
+    d = Vector((x, toward if toward is not None else -1.0, 0)).normalized()
+    origin = Vector((0, -0.01, z)) + d * 0.5
+    hit = HEAD_BVH.ray_cast(origin, -d)
+    return hit[0] if hit[0] is not None else Vector((0, -0.01, z)) + d * 0.09
+
+
+def head_surface_y(x, z):
+    hit = HEAD_BVH.ray_cast(Vector((x, -0.5, z)), Vector((0, 1, 0)))
+    return hit[0].y if hit[0] is not None else -0.11
+
+
+def finish_hair(name, hm, weights):
+    ob = new_obj(name, hm)
+    for gname in {g for w in weights for g in w}:
+        ob.vertex_groups.new(name=gname)
+    for i, w in enumerate(weights):
+        for gname, wv in w.items():
+            ob.vertex_groups[gname].add([i], wv, "REPLACE")
+    hp = hm.attributes.new("part", "FLOAT_COLOR", "POINT")
+    for i in range(len(hm.vertices)):
+        hp.data[i].color = (0.8, 0, 0, 1)
+    return ob
+
+
+# bun -------------------------------------------------------------------------
 hb = bmesh.new()
-hv = {}
-for p in me.polygons:
-    if face_reg[p.index] != "head":
-        continue
-    cs = [keys[0].data[i].co for i in p.vertices]
-    cen = sum(cs, Vector()) / len(cs)
-    # crown, back and sides of the skull, leaving the face and ears clear
-    # crown and back of the skull only: nothing in front of the ears
-    if cen.z < 1.63 or (cen.y < -0.04 and cen.z < 1.735) or (cen.y < 0.02 and cen.z < 1.69):
-        continue
-    vs = []
-    for i in p.vertices:
-        if i not in hv:
-            v = me.vertices[i]
-            hv[i] = hb.verts.new(keys[0].data[i].co + v.normal * 0.008)
-        vs.append(hv[i])
-    hb.faces.new(vs)
-bun = bmesh.ops.create_uvsphere(hb, u_segments=8, v_segments=5, radius=0.06)
+build_cap(hb, 1.60, side_z=1.70)   # swept up off the ears and temples
+bun = bmesh.ops.create_uvsphere(hb, u_segments=8, v_segments=6, radius=0.062)
 for v in bun["verts"]:
-    v.co = Vector((v.co.x * 1.0, v.co.y * 0.85, v.co.z * 0.8)) + Vector((0, 0.095, 1.70))
-hm = bpy.data.meshes.new("Hair")
+    v.co = Vector((v.co.x, v.co.y * 0.95, v.co.z * 0.85)) + Vector((0, 0.012, 1.875))
+band = bmesh.ops.create_cone(hb, cap_ends=False, segments=8, radius1=0.042, radius2=0.048, depth=0.024)
+for v in band["verts"]:
+    v.co += Vector((0, 0.008, 1.822))
+hm = bpy.data.meshes.new("Hair_Bun")
 hb.to_mesh(hm)
 hb.free()
-hair = new_obj("Hair", hm)
-hg = hair.vertex_groups.new(name="Head")
-hg.add(list(range(len(hm.vertices))), 1.0, "REPLACE")
-hp = hm.attributes.new("part", "FLOAT_COLOR", "POINT")
-for i in range(len(hm.vertices)):
-    hp.data[i].color = (0.8, 0, 0, 1)
+hair_bun = finish_hair("Hair_Bun", hm, [{"Head": 1.0}] * len(hm.vertices))
+
+# long, with bangs and a five-strip curtain -----------------------------------
+STRIPS = 5
+COLS = STRIPS * 2 + 1
+ROWS = [  # z, half-width, depth, centre y; the top row lies on the cap
+    (1.73, 0.112, 0.118, 0.0),
+    (1.63, 0.120, 0.126, 0.01),
+    (1.545, 0.130, 0.136, 0.02),
+    (1.46, 0.140, 0.146, 0.03),
+]
+SPREAD = math.radians(118)   # from the back round to just behind the cheeks
+curtain_pts = []
+for r, (z, rx, ry, yc) in enumerate(ROWS):
+    for c in range(COLS):
+        a = -SPREAD + 2 * SPREAD * c / (COLS - 1)
+        p = Vector((math.sin(a) * rx, yc + math.cos(a) * ry, z))
+        if r == 0:
+            # the top row lies on the outside of the cap, so cap and curtain
+            # meet without a step
+            sx, sy = math.sin(a), math.cos(a)
+            surf = head_surface(sx, z, sy)
+            out = Vector((surf.x, surf.y + 0.01, 0)).normalized()
+            p = Vector((surf.x, surf.y, z)) + Vector((out.x, out.y, 0)) * 0.026
+        curtain_pts.append(p)
+
+bpy.ops.object.select_all(action="DESELECT")
+bpy.context.view_layer.objects.active = rig
+bpy.ops.object.mode_set(mode="EDIT")
+for k in range(STRIPS):
+    col = 2 * k + 1
+    prev = rig.data.edit_bones["Head"]
+    for b in range(3):
+        eb = rig.data.edit_bones.new(f"Hair.{k}.{b}")
+        eb.head = curtain_pts[b * COLS + col]
+        eb.tail = curtain_pts[(b + 1) * COLS + col]
+        eb.parent = prev
+        eb.use_connect = b > 0
+        prev = eb
+bpy.ops.object.mode_set(mode="OBJECT")
+
+hb = bmesh.new()
+build_cap(hb, 1.70, side_z=1.70)
+n_cap = len(hb.verts)
+cv = [hb.verts.new(p) for p in curtain_pts]
+for r in range(len(ROWS) - 1):
+    for c in range(COLS - 1):
+        hb.faces.new([cv[r * COLS + c], cv[r * COLS + c + 1], cv[(r + 1) * COLS + c + 1], cv[(r + 1) * COLS + c]])
+# bangs: a fringe from the hairline to just above the brows, jagged tips
+bx = [-0.072, -0.048, -0.024, 0.0, 0.024, 0.048, 0.072]
+top, bot = [], []
+for i, x in enumerate(bx):
+    zt = 1.742 - 0.012 * (abs(x) / 0.072) ** 2
+    zb = (1.708 if i % 2 == 0 else 1.719) + 0.012 * (abs(x) / 0.072) ** 2
+    # the fringe lies on the forehead, tucked under the cap's front edge
+    top.append(hb.verts.new(Vector((x, head_surface_y(x, zt + 0.006) - 0.012, zt + 0.006))))
+    bot.append(hb.verts.new(Vector((x, head_surface_y(x, zb) - 0.007, zb))))
+for i in range(len(bx) - 1):
+    hb.faces.new([top[i], top[i + 1], bot[i + 1], bot[i]])
+hm = bpy.data.meshes.new("Hair_Long")
+hb.to_mesh(hm)
+hb.free()
+weights = [{"Head": 1.0}] * n_cap
+for r in range(len(ROWS)):
+    for c in range(COLS):
+        if r == 0:
+            weights.append({"Head": 1.0})
+            continue
+        ks = [c // 2] if c % 2 == 1 else [k for k in (c // 2 - 1, c // 2) if 0 <= k < STRIPS]
+        w = {}
+        for k in ks:
+            w[f"Hair.{k}.{r - 1}"] = w.get(f"Hair.{k}.{r - 1}", 0) + 1.0 / len(ks)
+        weights.append(w)
+weights += [{"Head": 1.0}] * (len(bx) * 2)
+hair_long = finish_hair("Hair_Long", hm, weights)
+for ob in (hair_bun, hair_long):
+    ob.data.materials.clear()
+hair = hair_long
 
 # --- the visible body: everything the outfit does not cover -----------------
 vis = body.copy()
@@ -236,7 +375,7 @@ body.hide_render = True
 body.hide_set(True)
 
 # --- UVs for outfit and hair ---------------------------------------------------
-for ob in (outfit, hair):
+for ob in (outfit, hair_bun, hair_long):
     bpy.ops.object.select_all(action="DESELECT")
     ob.select_set(True)
     bpy.context.view_layer.objects.active = ob
@@ -254,7 +393,7 @@ sc.render.bake.margin = 4
 sc.world = sc.world or bpy.data.worlds.new("W")
 sc.world.use_nodes = True
 sc.world.node_tree.nodes["Background"].inputs[0].default_value = (1, 1, 1, 1)
-RES = {"Body": 512, "Outfit": 512, "Hair": 256}
+RES = {"Body": 512, "Outfit": 512, "Hair_Bun": 256, "Hair_Long": 256}
 
 
 def bake_maps(ob):
@@ -323,15 +462,18 @@ def bake_maps(ob):
 # baked with nothing hiding it.
 body.hide_render = False
 body.hide_set(False)
-for ob in (body, outfit, hair):
+for ob in (body, outfit, hair_bun, hair_long):
     for o in bpy.data.objects:
         if o.type == "MESH":
             o.hide_render = o is not ob and not (ob is body and False)
     bake_maps(ob)
-for o in (vis, outfit, hair):
+for o in (vis, outfit, hair_bun, hair_long):
     o.hide_render = False
 body.hide_render = True
 
 tri = lambda o: sum(len(p.vertices) - 2 for p in o.data.polygons)
-print("TRIS body_visible", tri(vis), "outfit", tri(outfit), "hair", tri(hair))
+print("TRIS body_visible", tri(vis), "outfit", tri(outfit), "hair_bun", tri(hair_bun), "hair_long", tri(hair_long))
+import json as _j
+with open(os.path.join(work, "joints.json"), "w") as f:
+    _j.dump({k: list(v) for k, v in C.J.items()}, f)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(work, "woman.blend"))
