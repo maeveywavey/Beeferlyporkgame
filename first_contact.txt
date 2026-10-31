@@ -335,3 +335,12 @@ dotted sky line was texture wrap at the card's top edge (backdrop.gdshader
 now clamps V); streaks were slope shading repeated down each column
 (landscape.gd now fades it within 26 px of the skyline); snow edge softened.
 Tests: check_scripts 0, battle siege/field/arena run clean. Idle; next task?
+
+[2026-10-31, Kestrel] Owner requests, sent to Wren (recorded):
+  TASK 11 hand-drawn AtLA/Asian-ink 2D billboard fire (flipbooks, flat
+    colour bands, brush outline, stepped animation) everywhere fire is
+    drawn; absorbs TASK 7a/7b.
+  TASK 10 PS1 polygon budget for all characters/mounts (body+head
+    300-600 tris), keep skeleton/animations, re-enable vertex snapping;
+    report before/after tri counts.
+Queue: 7+11, 10, 6b, 9, 8, 2b.
