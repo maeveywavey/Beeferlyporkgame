@@ -174,48 +174,63 @@ vec3 rock_colour(vec3 wp, vec3 n) {
 	return c;
 }
 
-vec3 layer_sample(sampler2D t, vec2 p, float n) {
-	vec3 a = texture(t, p / tile_m).rgb;
+// the texture is read at a coarser mip with distance, so fine speckle never
+// turns into static across the field
+vec3 layer_sample(sampler2D t, vec2 p, float n, float g_bias) {
+	vec3 a = texture(t, p / tile_m, g_bias).rgb;
 	// a second look at the same layer, rotated and scaled, where noise says so
 	vec2 q = mat2(vec2(0.80, -0.60), vec2(0.60, 0.80)) * p * 0.57 + vec2(17.3, 5.1);
-	vec3 b = texture(t, q / tile_m).rgb;
+	vec3 b = texture(t, q / tile_m, g_bias).rgb;
 	return mix(a, b, smoothstep(0.35, 0.65, n));
 }
 
-vec3 textured_ground(vec3 wp, float litter) {
+// coverage c (0..1) -> mask threshold for value noise centred near 0.5
+float cover(float c) {
+	return 0.74 - c * 0.9;
+}
+
+vec3 textured_ground(vec3 wp, float litter, float dist) {
 	vec2 p = ps1_snap_m(wp.xz);
-	float big = texture(noise_a, p / 90.0).r;
-	float mid = texture(noise_b, p / 31.0 + 0.21).r;
-	float small = texture(noise_a, p / 7.5 + 0.63).r;
-	float fine = texture(noise_b, p / 2.3).r;
+	float g_bias = clamp((dist - 22.0) / 55.0, 0.0, 1.0) * 3.5;
+	// the noise textures bend the domain of low-frequency blob noise, so masks
+	// form large irregular patches and never line up into streaks
+	vec2 warp = (vec2(texture(noise_a, p / 41.0).r, texture(noise_b, p / 53.0 + 0.3).r) - 0.5) * 34.0;
+	vec2 w = p + warp;
+	float big = fbm(vec3(w / 170.0, 3.1));
+	float mid = fbm(vec3(w / 42.0, 8.7));
+	float small = fbm(vec3(w / 12.0, 1.3));
 	float pick = texture(noise_a, p / 14.0 + 0.4).r;
-	vec3 c = layer_sample(tex_a, p, pick) * tint_a.rgb;
+	vec3 c = layer_sample(tex_a, p, pick, g_bias) * tint_a.rgb;
 	// a second ground (dry grass, say) in broad drifts
-	float wb = smoothstep(1.0 - mix_bcd.x - 0.1, 1.0 - mix_bcd.x + 0.08, big * 0.65 + mid * 0.35);
-	c = mix(c, layer_sample(tex_b, p, pick) * tint_b.rgb, wb);
-	// bare soil where the noise runs high, ragged by the fine noise
-	float wc = smoothstep(1.0 - mix_bcd.y - 0.04, 1.0 - mix_bcd.y + 0.05, mid * 0.6 + small * 0.4 + (fine - 0.5) * 0.12);
-	c = mix(c, layer_sample(tex_c, p, pick) * tint_c.rgb, wc);
+	float tb = cover(mix_bcd.x);
+	float wb = smoothstep(tb, tb + 0.08, big * 0.6 + mid * 0.4);
+	c = mix(c, layer_sample(tex_b, p, pick, g_bias) * tint_b.rgb, wb);
+	// bare soil only as large irregular blobs
+	float tc = cover(mix_bcd.y);
+	float wc = smoothstep(tc, tc + 0.07, mid * 0.65 + small * 0.35);
+	c = mix(c, layer_sample(tex_c, p, pick, g_bias) * tint_c.rgb, wc);
 	// gravel in small patches inside the bare soil
-	float wd = smoothstep(1.0 - mix_bcd.z - 0.03, 1.0 - mix_bcd.z + 0.04, small * 0.7 + fine * 0.3) * wc;
-	c = mix(c, layer_sample(tex_d, p, pick) * tint_d.rgb, wd);
-	// leaf litter under trees breaks the ground up into soil
-	if (litter > 0.0 && litter > fine * 0.8 + 0.1) {
-		c = mix(c, layer_sample(tex_c, p, pick) * tint_c.rgb * 0.8, 0.85);
+	float td = cover(mix_bcd.z);
+	float wd = smoothstep(td, td + 0.06, small) * wc;
+	c = mix(c, layer_sample(tex_d, p, pick, g_bias) * tint_d.rgb, wd);
+	// trampled or shaded ground (leaf litter, troop paths) breaks up into soil
+	if (litter > 0.0 && litter > fbm(vec3(p / 1.6, 5.0)) * 0.8 + 0.1) {
+		c = mix(c, layer_sample(tex_c, p, pick, g_bias) * tint_c.rgb * 0.8, 0.85);
 	}
 	// broad variation of brightness and warmth so large areas never look flat
-	c *= mix(0.8, 1.2, texture(noise_b, p / 140.0 + 0.5).r);
-	c = mix(c, c * warm.rgb, texture(noise_a, p / 75.0 + 0.8).r);
+	c *= mix(0.82, 1.18, fbm(vec3(p / 120.0, 12.0)));
+	c = mix(c, c * warm.rgb, fbm(vec3(p / 70.0, 15.0)));
 	return c;
 }
 
 // textured rock (mode 4): four stone textures, triplanar, in zones a few metres
 // across with noise-ragged borders, darkened in crevices and mossy on top.
-vec3 tri(sampler2D t, vec3 p, vec3 w) {
-	return texture(t, p.zy / tile_m).rgb * w.x + texture(t, p.xz / tile_m).rgb * w.y + texture(t, p.xy / tile_m).rgb * w.z;
+vec3 tri(sampler2D t, vec3 p, vec3 w, float g_bias) {
+	return texture(t, p.zy / tile_m, g_bias).rgb * w.x + texture(t, p.xz / tile_m, g_bias).rgb * w.y + texture(t, p.xy / tile_m, g_bias).rgb * w.z;
 }
 
-vec3 textured_rock(vec3 wp, vec3 n) {
+vec3 textured_rock(vec3 wp, vec3 n, float dist) {
+	float g_bias = clamp((dist - 22.0) / 55.0, 0.0, 1.0) * 3.0;
 	vec3 p = ps1_snap_m3(wp);
 	vec3 w = pow(abs(n), vec3(4.0));
 	w /= (w.x + w.y + w.z);
@@ -225,10 +240,10 @@ vec3 textured_rock(vec3 wp, vec3 n) {
 	float m1 = smoothstep(0.38, 0.5, z);
 	float m2 = smoothstep(0.55, 0.66, z + (texture(noise_a, p.xz / 5.0 + p.y / 4.0).r - 0.5) * 0.25);
 	float m3 = smoothstep(0.7, 0.8, texture(noise_a, p.xz / 11.0 + p.y / 7.0 + 0.3).r);
-	vec3 c = tri(tex_a, p, w) * tint_a.rgb;
-	c = mix(c, tri(tex_b, p, w) * tint_b.rgb, m1);
-	c = mix(c, tri(tex_c, p, w) * tint_c.rgb, m2);
-	c = mix(c, tri(tex_d, p, w) * tint_d.rgb, m3);
+	vec3 c = tri(tex_a, p, w, g_bias) * tint_a.rgb;
+	c = mix(c, tri(tex_b, p, w, g_bias) * tint_b.rgb, m1);
+	c = mix(c, tri(tex_c, p, w, g_bias) * tint_c.rgb, m2);
+	c = mix(c, tri(tex_d, p, w, g_bias) * tint_d.rgb, m3);
 	// broad light/dark drifts so no big face is one tone
 	c *= mix(0.78, 1.18, texture(noise_b, p.xz / 37.0 + p.y / 13.0).r);
 	// moss and lichen on faces that look up, in ragged patches
@@ -251,12 +266,12 @@ void fragment() {
 			c *= COLOR.rgb;
 		}
 	} else if (proj_mode == 3) {
-		c = textured_ground(world_pos, use_vertex_color ? COLOR.a : 0.0);
+		c = textured_ground(world_pos, use_vertex_color ? COLOR.a : 0.0, length(VERTEX));
 		if (use_vertex_color) {
 			c *= COLOR.rgb;
 		}
 	} else if (proj_mode == 4) {
-		c = textured_rock(world_pos, normalize(world_normal));
+		c = textured_rock(world_pos, normalize(world_normal), length(VERTEX));
 		if (use_vertex_color) {
 			c *= COLOR.rgb;
 		}

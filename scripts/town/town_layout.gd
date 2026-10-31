@@ -238,11 +238,28 @@ func building(pos: Vector3, w: float, d: float, floors: int, rot_y: float, opts:
 		var dd := (d if absf(sin(rot_y)) < 0.5 else w) + 1.0
 		block(pos, ww, dd)
 	add(n, pos)
+	_garden_wall(pos, w, d, rot_y)
 	var fwd := Basis(Vector3.UP, rot_y) * Vector3(0, 0, 1)
 	var depth := (minf(w, d) * 0.55 if ice else d * 0.5)
 	if ice:
 		depth = minf(w, d) * 0.55 * 1.3
 	return pos + fwd * (depth + 1.3)
+
+## A low plaster (or timber) wall running back from one side of a house, from
+## the owner's CC0 wall pack: yards and gardens that make a street look lived in.
+func _garden_wall(pos: Vector3, w: float, d: float, rot_y: float) -> void:
+	if ice or culture in ["swamp", "air"] or kind == "temple" or rng.randf() > 0.4:
+		return
+	var rel := "plaster_wall/plaster_wall_half"
+	if culture in ["fire", "hamakaze"]:
+		rel = "low_wooden_fence/wooden_fence_closed"
+	var bas := Basis(Vector3.UP, rot_y)
+	var side := 1.0 if rng.randf() < 0.5 else -1.0
+	var a: Vector3 = pos + bas * Vector3(side * (w * 0.5 + 1.1), 0, d * 0.5)
+	var b: Vector3 = pos + bas * Vector3(side * (w * 0.5 + 1.1), 0, -d * 0.5 - rng.randf_range(2.0, 4.0))
+	if not free_at(b, 1.0) or not free_at((a + b) * 0.5, 0.8):
+		return
+	fence_line(b, a, rel, 0.1)
 
 # ---------------------------------------------------------------------------
 # Plans
@@ -338,6 +355,9 @@ func _town() -> void:
 	var capital: bool = sid in ["ba_sing_se", "caldera", "omashu", "agna_qela", "southern_tribe"]
 	_walls(half, 4.0)
 	spawn = Vector3(0, 0, half - 5.0)
+	if sid == "gaoling":
+		# the Gaoling hills' quarry and jade mine, worked inside the walls
+		load("res://scripts/town/mine_site.gd").build(self, Vector3(-30, 0, -20))
 	# street and plaza
 	ground_patch(Vector3(0, 0, 9), 8.0, half * 2.0 - 18.0, paving() * 0.95)
 	ground_patch(Vector3(0, 0, 0), 28.0, 28.0, paving())
@@ -915,29 +935,13 @@ func _temple() -> void:
 
 ## Hills and far mountains so the settlement sits in a landscape, not a void.
 func _backdrop() -> void:
-	var b = Arch.Builder.new()
+	# the painted mountain silhouettes of the battlefield (landscape.gd), hazier
+	# with distance; a ring of trees outside the walls
+	var Land = load("res://scripts/battle/landscape.gd")
 	var biome: String = GS.sim.biome_at(Data.settlements[sid].pos)
-	var mcol := Color(0.5, 0.56, 0.48)
-	match biome:
-		"snow": mcol = Color(0.86, 0.9, 0.97)
-		"desert": mcol = Color(0.82, 0.68, 0.48)
-		"volcanic": mcol = Color(0.36, 0.3, 0.3)
-		"swamp": mcol = Color(0.3, 0.38, 0.26)
-		"highland", "mountain": mcol = Color(0.55, 0.55, 0.52)
-	for i in 22:
-		var a := TAU * i / 22.0 + rng.randf_range(-0.1, 0.1)
-		var r := rng.randf_range(120.0, 170.0)
-		var h := rng.randf_range(25.0, 60.0)
-		var c := Vector3(cos(a) * r, -2.0, sin(a) * r)
-		b.cyl(c, rng.randf_range(30.0, 50.0), rng.randf_range(2.0, 8.0), h, mcol * rng.randf_range(0.85, 1.05), 7)
-	var mi := MeshInstance3D.new()
-	mi.mesh = b.commit()
-	var m: ShaderMaterial = Arch.material(false).duplicate()
-	m.set_shader_parameter("brush_scale", 0.05)
-	m.set_shader_parameter("brush_strength", 0.15)
-	mi.material_override = m
-	add(mi, Vector3.ZERO)
-	# a ring of trees outside the walls
+	var daylight := clampf(sin((GS.hour_of_day() - 6.0) / 13.0 * PI), 0.0, 1.0)
+	var sky := Color(0.2, 0.2, 0.3).lerp(Color(0.75, 0.8, 0.9), daylight)
+	root.add_child(Land.backdrop(biome, sky))
 	for i in 40:
 		var a2 := rng.randf() * TAU
 		var r2 := rng.randf_range(bounds + 10.0, bounds + 40.0)

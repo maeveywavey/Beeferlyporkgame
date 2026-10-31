@@ -165,12 +165,22 @@ func _ground() -> void:
 		var p := Vector3(rng.randf_range(-60, 60), 0, rng.randf_range(-60, 60))
 		if absf(p.x) < 15.0 and absf(p.z) < 15.0:
 			continue
+		# the pack's grass tufts (0.2-0.5 m) for most; pebbles and the odd wildflower
+		var LandG = load("res://scripts/battle/landscape.gd")
+		var pnode: Node3D = null
+		if col.r <= 0.8 and rng.randf() < 0.75:
+			pnode = LandG.pack_prop("grass", String(GS.sim.biome_at(Data.settlements[sid].pos)), rng, Color(0.95, 0.95, 0.95))
+		if pnode != null:
+			pnode.position = p
+			add_child(pnode)
+			continue
 		var n: String = tufts[rng.randi() % tufts.size()]
 		var ps: PackedScene = load("res://assets/nature/%s.gltf" % n)
 		var node: Node3D = ps.instantiate()
 		node.position = p
 		node.rotation.y = rng.randf() * TAU
-		node.scale = Vector3.ONE * rng.randf_range(0.8, 1.4)
+		# wildflowers and clover are small: 0.15-0.4 m, not taller than people
+		node.scale = Vector3.ONE * (rng.randf_range(0.8, 1.2) if n.begins_with("Pebble") else rng.randf_range(0.22, 0.4))
 		add_child(node)
 
 func _night_lights() -> void:

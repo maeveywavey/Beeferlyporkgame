@@ -50,10 +50,32 @@ const NOISE := TP + "sbs_noise_texture_pack/128x128/"
 ## The CC0 ground layers of a biome (foxtex), as [a, b, c, d] with tints, or
 ## empty where the procedural ground is still used.
 static func ground_layers(biome: String) -> Dictionary:
+	var gr := FX + "Foliage/OUTDOOR_foliage_grass_spots_5.png"
+	var dry := FX + "Foliage/OUTDOOR_foliage_grass_spots_6.png"
+	var hay := FX + "Foliage/OUTDOOR_foliage_bush_fence_5.png"
+	var soil := FX + "Soil/OUTDOOR_soil_5.png"
+	var peb := FX + "Gravel/OUTDOOR_gravel_pebbles_5.png"
+	var G := FX + "Gravel/OUTDOOR_gravel_"
+	var S := FX + "Sands/OUTDOOR_sand_"
 	match biome:
-		"grass", "forest", "highland", "plains", "":
-			return {"tex": [FX + "Foliage/OUTDOOR_foliage_grass_spots_5.png", FX + "Foliage/OUTDOOR_foliage_grass_spots_6.png", FX + "Soil/OUTDOOR_soil_5.png", FX + "Gravel/OUTDOOR_gravel_pebbles_5.png"],
-				"tint": [Color(0.92, 1.0, 0.8), Color(0.78, 0.88, 0.55), Color(0.95, 0.9, 0.78), Color(1.0, 0.98, 0.9)], "mix": Vector3(0.3, 0.17, 0.08)}
+		"grass", "plains", "":
+			return {"tex": [gr, dry, soil, peb], "tint": [Color(0.92, 1.0, 0.8), Color(0.78, 0.88, 0.55), Color(0.95, 0.9, 0.78), Color(1.0, 0.98, 0.9)], "mix": Vector3(0.3, 0.15, 0.06)}
+		"forest":
+			return {"tex": [gr, hay, FX + "Soil/OUTDOOR_soil_3.png", G + "mud_1.png"], "tint": [Color(0.68, 0.85, 0.58), Color(0.7, 0.8, 0.5), Color(0.7, 0.6, 0.5), Color(0.8, 0.75, 0.65)], "mix": Vector3(0.3, 0.2, 0.08)}
+		"highland":
+			return {"tex": [gr, hay, G + "pebbles_2.png", FX + "Soil/OUTDOOR_soil_1.png"], "tint": [Color(0.85, 0.95, 0.7), Color(0.85, 0.85, 0.6), Color(0.85, 0.85, 0.82), Color(0.8, 0.78, 0.72)], "mix": Vector3(0.35, 0.28, 0.1)}
+		"mountain":
+			return {"tex": [G + "pebbles_2.png", FX + "Soil/OUTDOOR_soil_1.png", gr, G + "stones_2.png"], "tint": [Color(0.85, 0.85, 0.82), Color(0.8, 0.78, 0.74), Color(0.8, 0.92, 0.65), Color(0.85, 0.83, 0.8)], "mix": Vector3(0.3, 0.22, 0.12)}
+		"swamp":
+			return {"tex": [gr, G + "mud_2.png", FX + "Soil/OUTDOOR_soil_2.png", hay], "tint": [Color(0.5, 0.65, 0.42), Color(0.75, 0.72, 0.62), Color(0.7, 0.68, 0.6), Color(0.6, 0.65, 0.45)], "mix": Vector3(0.4, 0.3, 0.2)}
+		"desert":
+			return {"tex": [S + "dune_big_1.png", S + "dune_small_1.png", FX + "Desert cells/OUTDOOR_desert_cell_1.png", FX + "Desert cells/OUTDOOR_desert_cell_pore_1.png"], "tint": [Color(1.0, 0.93, 0.74), Color(1.0, 0.9, 0.7), Color(0.95, 0.85, 0.68), Color(1.0, 0.92, 0.78)], "mix": Vector3(0.35, 0.2, 0.1)}
+		"beach":
+			return {"tex": [S + "dune_big_1.png", S + "dune_pores_1.png", G + "pebbles_2.png", S + "rocks_1.png"], "tint": [Color(1.05, 0.98, 0.82), Color(1.05, 1.0, 0.88), Color(0.9, 0.9, 0.88), Color(0.95, 0.9, 0.8)], "mix": Vector3(0.3, 0.18, 0.08)}
+		"snow":
+			return {"tex": [S + "dune_pores_1.png", S + "dune_cell_1.png", FX + "Hanging stones/OUTDOOR_hanging_stone_small_1.png", G + "pebbles_2.png"], "tint": [Color(1.2, 1.25, 1.35), Color(1.15, 1.2, 1.3), Color(0.85, 0.9, 1.0), Color(0.85, 0.9, 1.0)], "mix": Vector3(0.35, 0.1, 0.05)}
+		"volcanic":
+			return {"tex": [FX + "Melted/OUTDOOR_Melted_dense_1.png", FX + "Pointy/OUTDOOR_Pointy_dense_1.png", FX + "Melted/OUTDOOR_Melted_dense_4.png", FX + "Melted/OUTDOOR_Melted_lava_1.png"], "tint": [Color(0.85, 0.82, 0.8), Color(0.8, 0.75, 0.7), Color(0.9, 0.8, 0.72), Color(1.1, 0.9, 0.85)], "mix": Vector3(0.35, 0.2, 0.05)}
 	return {}
 
 # ---------------------------------------------------------------------------
@@ -109,7 +131,7 @@ static func pack_prop(kind: String, biome: String, rng: RandomNumberGenerator, l
 	match kind:
 		"tree":
 			var i := rng.randi_range(1, 8)
-			model = "trees/tree%02d%s" % [i, "_winter" if season == "winter" else ""]
+			model = "trees/tree%02d%s" % [i, "_winter" if season == "winter" and i <= 6 else ""]
 			tex = "trees/tree%02d_%s" % [i, season]
 			scale = rng.randf_range(1.5, 2.4)
 		"bush":
@@ -119,29 +141,34 @@ static func pack_prop(kind: String, biome: String, rng: RandomNumberGenerator, l
 			if season == "summer" and i2 in [2, 3, 4, 5, 6] and rng.randf() < 0.3:
 				tx = "bush%d_spring%d" % [i2, rng.randi_range(1, 6)]
 			tex = "bushes/" + tx
-			scale = rng.randf_range(1.1, 2.0)
+			scale = rng.randf_range(0.6, 1.5)
 		_:
 			var roll := rng.randf()
 			if roll < 0.15:
 				model = "grass/grass_patch"
 				tex = "grass/grass_patch_" + season
-				scale = rng.randf_range(0.9, 1.5)
+				scale = rng.randf_range(0.6, 1.0)
 			elif roll < 0.35:
 				model = "grass/grass_bush"
 				tex = "grass/grass_bush_" + season
-				scale = rng.randf_range(1.0, 1.7)
+				scale = rng.randf_range(0.7, 1.1)
 			else:
 				model = "grass/grass%02d" % rng.randi_range(1, 9)
 				tex = "grass/grass_" + season
-				scale = rng.randf_range(1.2, 2.2)
+				scale = rng.randf_range(0.5, 1.0)
 	var path := NATURE + "models/glTF/" + model + ".glb"
 	var tpath := NATURE + "textures/" + tex + ".png"
-	if not ResourceLoader.exists(path) or not ResourceLoader.exists(tpath):
+	# a winter model that is missing or fails to import falls back to the summer one
+	# (the season is mostly in the texture anyway)
+	if model.ends_with("_winter") and (not ResourceLoader.exists(path) or _pack_scene(path) == null):
+		path = NATURE + "models/glTF/" + model.trim_suffix("_winter") + ".glb"
+	if not ResourceLoader.exists(path) or not ResourceLoader.exists(tpath) or _pack_scene(path) == null:
 		return null
 	var root := Node3D.new()
 	var inst: Node3D = _pack_scene(path).instantiate()
 	root.add_child(inst)
 	_apply(inst, _pack_material(tpath, rng.randi() % TINTS.size(), light))
+	# real-world sizes: tufts 0.2-0.5 m, bushes 0.6-1.5 m, trees 7-11 m
 	root.scale = Vector3(scale, scale * rng.randf_range(0.9, 1.15), scale)
 	root.rotation.y = rng.randf() * TAU
 	return root
@@ -182,6 +209,24 @@ static func rock_layers(biome: String) -> Dictionary:
 		"volcanic":
 			return {"tex": [ST + "deep_3.png", ST + "subtle_3.png", ST + "deep_4.png", ST + "subtle_4.png"], "tint": [Color(0.85, 0.82, 0.8), Color(0.9, 0.85, 0.82), Color(0.85, 0.75, 0.7), Color(0.9, 0.8, 0.78)]}
 	return {"tex": [ST + "deep_1.png", ST + "deep_6.png", ST + "subtle_3.png", ST + "deep_5.png"], "tint": [Color(0.95, 0.95, 0.92), Color(0.85, 0.9, 0.78), Color(0.9, 0.9, 0.88), Color(0.95, 0.85, 0.75)]}
+
+const WD := TP + "foxtex/Wood/"
+
+## Timber textured like the rock: several different woods (planks, weathered
+## grey, orange, log) mixed in zones and blended by noise.
+static func wood_material() -> ShaderMaterial:
+	var wm := lit_material(null, 4, 0.5, 0.9)
+	var texs := [WD + "Planks/WOOD_planks_big_offset_1.png", WD + "Planks/WOOD_planks_big_offset_2.png", WD + "Planks/WOOD_planks_big_offset_5.png", WD + "Logs/WOOD_log_1.png"]
+	var tints := [Color(1, 1, 1), Color(0.95, 0.95, 0.95), Color(1, 0.95, 0.9), Color(0.95, 0.9, 0.85)]
+	for i in 4:
+		wm.set_shader_parameter("tex_" + "abcd"[i], load(texs[i]))
+		wm.set_shader_parameter("tint_" + "abcd"[i], tints[i])
+	wm.set_shader_parameter("noise_a", load(NOISE + "Perlin/Perlin_05-128x128.png"))
+	wm.set_shader_parameter("noise_b", load(NOISE + "Turbulence/Turbulence_01-128x128.png"))
+	wm.set_shader_parameter("tile_m", 1.3)
+	wm.set_shader_parameter("r_lichen", Color(0.4, 0.42, 0.3))
+	return wm
+
 
 static func rock_material(biome: String) -> ShaderMaterial:
 	var rl := rock_layers(biome)
