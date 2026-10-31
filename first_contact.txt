@@ -408,3 +408,18 @@ the player between two blank wall blocks on grass -> level camera pitch
 in all towns, spawn inside facing inward, paved streets, stonework and
 parapets on the ring walls, house fronts along the street.
 Queue: 10b, 2c.
+
+[2026-10-31, Wren] TASK 9b: done (key line on two lines; panel keeps its
+width; checked at 1280x720 and 1920x1080). TASK 10b: done. New
+scripts/actors/lowpoly_outfit.gd builds faceted garments in code from the
+rig's rest pose: 8-sided tapered tunic, 6-sided sleeves, bare forearms and box
+hands, 6-sided trousers, box boots, belt ring; ranger adds a skirt, trim bands
+and bracers. Flat colour from the culture palette (PALETTES primary/secondary/
+accent, cloth_tint and robe_color respected). Skinned to the same bones, so
+every animation and the gore limb-severing still work. 332 triangles for a full
+outfit (was 13,000-27,000 original; 1,500-4,500 decimated). Switch:
+GS.settings.lowpoly_outfits (default true); false restores the decimated CC0
+outfits. Head + hair + body stay as accepted (736-752 body, 90-160 hair).
+Preview: tests/outfit_shot.tscn. Tests: check_scripts 0, battle field/arena/
+duel, town, ui, flows, story, canon all clean. Idle; next task? (Open optional
+items from earlier: Omashu map mound 2x taller; smoke puffs as inked ash.)
