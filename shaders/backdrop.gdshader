@@ -31,7 +31,8 @@ void vertex() {
 
 void fragment() {
 	// painted backdrops keep their own resolution; only the vertices snap
-	vec4 t = texture(image, UV);
+	// the cards wrap around in U only; never sample across the top or bottom edge
+	vec4 t = texture(image, vec2(UV.x, clamp(UV.y, 0.004, 0.996)));
 	if (t.a < cutoff) {
 		discard;
 	}

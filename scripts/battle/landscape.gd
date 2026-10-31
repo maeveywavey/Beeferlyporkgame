@@ -376,12 +376,14 @@ static func _range_tex(biome: String, layer: int, col: Color, sky: Color) -> Ima
 			var rel := depth / float(h - top)
 			var blotch := rock.get_noise_2d(x * 1.0, y * 1.0) * 0.14
 			var gully := rock.get_noise_2d(x * 2.4 + y * 0.8, y * 0.5) * 0.08
-			var shade := 0.92 + blotch + gully + lit * (1.0 - rel * 0.6)
+			# the lit side of a slope shades only near the skyline; deeper down it
+			# would repeat the same value in every row and streak vertically
+			var shade := 0.92 + blotch + gully + lit * clampf(1.0 - depth / 26.0, 0.0, 1.0)
 			var cc := col * shade
 			if snowy and top < snow_line:
-				var snow_depth := (snow_line - top) * 0.55 + rock.get_noise_2d(x * 2.0, 31.0) * 6.0
-				if depth < snow_depth:
-					cc = Color(0.9, 0.92, 0.96) * (0.88 + shade * 0.14)
+				var snow_depth := (snow_line - top) * 0.55 + rock.get_noise_2d(x * 0.5, 31.0) * 5.0
+				var sn := clampf((snow_depth - depth) / 4.0, 0.0, 1.0)
+				cc = cc.lerp(Color(0.9, 0.92, 0.96) * (0.88 + shade * 0.14), sn)
 			# valley haze thickens toward the foot of each range
 			cc = cc.lerp(sky, clampf(haze + rel * 0.4, 0.0, 0.85))
 			cc.a = 1.0
