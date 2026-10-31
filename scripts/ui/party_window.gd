@@ -5,6 +5,7 @@ const Roster = preload("res://scripts/core/roster.gd")
 
 var map
 var selected := ""
+static var _prisoners_open := true
 
 func _init() -> void:
 	window_size = Vector2(1100, 680)
@@ -51,10 +52,12 @@ func build() -> void:
 	cols.add_child(left)
 	left.add_child(UI.label("Troops", 19, UI.BROWN))
 	var sc := UI.scroll(480)
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	left.add_child(sc)
 	var list := UI.vbox(4)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sc.add_child(list)
+	list.add_child(UI.label("Heroes", 15, UI.BROWN))
 	list.add_child(UI.label("%s (you) — HP %d/%d" % [GS.player.name, GS.player.hp, GS.max_hp()], 16, UI.BLUE))
 	for cid in GS.player.companions:
 		var row := UI.hbox()
@@ -63,9 +66,12 @@ func build() -> void:
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(l)
 		if not Data.companions[cid].get("story_only", false):
-			row.add_child(UI.button("Dismiss", _dismiss_companion.bind(cid)))
+			var dis := UI.button("Send away", _dismiss_companion.bind(cid))
+			dis.tooltip_text = "%s leaves your party." % Data.companions[cid].name
+			row.add_child(dis)
 		list.add_child(row)
 	Roster.sort_by_tier(pp.roster)
+	list.add_child(UI.label("Troops (%d, highest tier first)" % Roster.total(pp.roster), 15, UI.BROWN))
 	for s in pp.roster:
 		list.add_child(_troop_row(s))
 	# Right column: details + prisoners
@@ -77,7 +83,19 @@ func build() -> void:
 	det.custom_minimum_size = Vector2(320, 180)
 	right.add_child(det)
 	right.add_child(UI.sep())
-	right.add_child(UI.label("Prisoners (%d / %d)" % [Roster.total(pp.prisoners), GS.prisoner_limit()], 19, UI.BROWN))
+	var ph := UI.button("%s Prisoners (%d / %d)" % ["▼" if _prisoners_open else "▶", Roster.total(pp.prisoners), GS.prisoner_limit()], func():
+		_prisoners_open = not _prisoners_open
+		refresh(), 0)
+	ph.flat = true
+	ph.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	ph.tooltip_text = "Show or hide the prisoner list."
+	right.add_child(ph)
+	if not _prisoners_open:
+		var b0 := UI.hbox()
+		content.add_child(b0)
+		b0.add_child(UI.expand())
+		b0.add_child(UI.button("Done", close, 120))
+		return
 	var sc2 := UI.scroll(200)
 	right.add_child(sc2)
 	var plist := UI.vbox(3)
@@ -121,7 +139,7 @@ func _troop_row(s: Dictionary) -> Control:
 	var row := UI.hbox(6)
 	v.add_child(row)
 	var name_btn := Button.new()
-	name_btn.text = "%s  x%d%s" % [t.name, s.n, (" (%d wounded)" % s.w) if s.w > 0 else ""]
+	name_btn.text = "T%d  %s  x%d%s" % [t.tier, t.name, s.n, (" (%d wounded)" % s.w) if s.w > 0 else ""]
 	name_btn.flat = true
 	name_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	name_btn.add_theme_color_override("font_color", UI.INK)
@@ -136,19 +154,31 @@ func _troop_row(s: Dictionary) -> Control:
 	if not Data.troop_upgrades(s.id).is_empty():
 		var bar := UI.bar(float(s.xp) / maxf(1.0, need * s.n) * 100.0, 100.0, UI.GOLD, 90, 10)
 		bar.tooltip_text = "Experience: %d (needs %d per troop)" % [s.xp, need]
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(bar)
-	row.add_child(UI.button("-1", func():
+		row.add_child(UI.label("XP %d / %d" % [s.xp, need * s.n], 13, UI.INK))
+	var dis1 := UI.button("Dismiss 1", func():
 		Roster.remove(GS.player_party().roster, s.id, 1)
-		refresh(), 36))
+		refresh(), 0)
+	dis1.tooltip_text = "Release one %s from your service (no refund)." % t.name
+	row.add_child(dis1)
 	var can := Roster.upgradable_count(s)
 	if can > 0:
-		var urow := UI.hbox(6)
+		var urow := HFlowContainer.new()
+		urow.add_theme_constant_override("h_separation", 6)
+		urow.add_theme_constant_override("v_separation", 4)
+		urow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		v.add_child(urow)
 		urow.add_child(UI.label("   Ready to upgrade (%d):" % can, 14, UI.GREEN))
 		for u in Data.troop_upgrades(s.id):
 			var cost := Data.troop_upgrade_cost(u)
-			urow.add_child(UI.button("%s (%d g)" % [Data.troop(u).name, cost], _upgrade.bind(s.id, u, 1), 0, GS.player.gold >= cost))
-			urow.add_child(UI.button("All", _upgrade.bind(s.id, u, can), 0, GS.player.gold >= cost * can))
+			var ub := UI.button("→ %s (T%d, %d g)" % [Data.troop(u).name, Data.troop(u).tier, cost], _upgrade.bind(s.id, u, 1), 0, GS.player.gold >= cost)
+			ub.tooltip_text = "Upgrade one for %d gold." % cost
+			urow.add_child(ub)
+			if can > 1:
+				var ab := UI.button("All %d (%d g)" % [can, cost * can], _upgrade.bind(s.id, u, can), 0, GS.player.gold >= cost * can)
+				ab.tooltip_text = "Upgrade all %d that are ready." % can
+				urow.add_child(ab)
 	return v
 
 func _upgrade(id: String, target: String, n: int) -> void:
