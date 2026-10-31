@@ -401,3 +401,10 @@ the avenue, stone block courses + base lanterns on every ring wall, same
 treatment helper reused by any wall > 8 m; all towns: key hint fades after
 8 s, name/date line stays). Tests: check_scripts 0, test_town, test_ui,
 test_flows clean. Idle; next task?
+
+[2026-10-31, Kestrel] Reviews (sent, recorded): 8 accepted; 9b accepted;
+town hint fade accepted. 2b -> 2c: Ba Sing Se arrival still looks down at
+the player between two blank wall blocks on grass -> level camera pitch
+in all towns, spawn inside facing inward, paved streets, stonework and
+parapets on the ring walls, house fronts along the street.
+Queue: 10b, 2c.
