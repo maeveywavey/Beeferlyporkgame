@@ -19,6 +19,7 @@ import bpy
 import bmesh
 import json
 import math
+import numpy as np
 import sys
 import os
 from mathutils import Vector, Matrix
@@ -55,6 +56,25 @@ cut(0.70, legs)      # mid-thigh
 cut(0.28, legs)      # mid-shin
 cut(0.43, legs)      # below the knee (hem line for robes)
 cut(1.00, lambda co: abs(co.x) < 0.22 and 0.84 < co.z < 1.2)   # low waist
+# owner's review of v2: up to 30 more polygons from the waist down the
+# thighs (a loop over the widest part of the hips and buttocks, one high on
+# the thigh) and up to 20 for the chest (each face over the bust poked with a
+# centre vertex, which the shape keys round into a breast)
+def cut_across(z, pred):
+    """A loop at height z through the faces that span it and whose centre
+    satisfies pred."""
+    geom = [f for f in bm.faces if min(v.co.z for v in f.verts) < z < max(v.co.z for v in f.verts)
+            and pred(f.calc_center_median())]
+    edges = list({e for f in geom for e in f.edges})
+    verts = list({v for f in geom for v in f.verts})
+    bmesh.ops.bisect_plane(bm, geom=verts + edges + geom, plane_co=(0, 0, z), plane_no=(0, 0, 1))
+
+
+cut_across(0.90, lambda c: abs(c.x) < 0.26 and 0.78 < c.z < 1.0)
+cut_across(0.80, lambda c: c.z < 0.95)
+bust = [f for f in bm.faces if f.calc_center_median().y < -0.1 and 1.18 < f.calc_center_median().z < 1.32
+        and 0.02 < abs(f.calc_center_median().x) < 0.12]
+bmesh.ops.subdivide_edges(bm, edges=list({e for f in bust for e in f.edges}), cuts=1, use_grid_fill=True)
 bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 4])
 bm.to_mesh(body.data)
 bm.free()
@@ -94,7 +114,12 @@ for v in body.data.vertices:
         kx = 1.0 + 0.2 * (1 - 0.6 * C.smooth(1.25, 1.42, c.z))
         v.co = Vector((c.x * kx, c.y * 1.2, c.z))
     elif r == "head" and c.z < 1.53:
-        v.co = Vector((c.x * 1.1, c.y * 1.1, c.z))
+        # v2 review: the neck was too thick; slimmer than the source mesh
+        v.co = Vector((c.x * 0.9, c.y * 0.92, c.z))
+    elif r == "head":
+        # v2 review: the head slightly larger, from the jaw's underside up
+        v.co = C.HEAD_PIVOT + (c - C.HEAD_PIVOT) * C.HEAD_SCALE
+        v.co = C.sculpt_jaw(v.co)
 
 # --- regions -----------------------------------------------------------------
 regions = ["head", "torso", "upperarm", "forearm", "hand", "thigh", "shin", "foot"]
@@ -189,22 +214,39 @@ def k_muscular(p, reg):
     return arm_shift(q, reg, 0.03)
 
 
+def breast(p, amount):
+    """Forward and slightly downward fullness centred on each breast (the
+    poked centre vertex is the apex), rounded off toward the sternum, the
+    armpit and the ribs below, so it reads as a natural breast rather than a
+    shelf."""
+    if p.y > -0.03:
+        return Vector()
+    cx, cz = 0.065, 1.235
+    d2 = ((abs(p.x) - cx) / 0.055) ** 2 + ((p.z - cz) / 0.06) ** 2
+    w = math.exp(-1.6 * d2)
+    # the lower half is fuller than the upper
+    lower = 1.0 + 0.35 * C.smooth(cz + 0.03, cz - 0.03, p.z)
+    return Vector((0.12 * (p.x) * w * amount / 0.03, -amount * w * lower, -0.25 * amount * w))
+
+
 def k_curvy(p, reg):
     q = p.copy()
     if reg == "torso":
         hips = 1 - C.smooth(1.0, 1.08, p.z)
         waist = C.smooth(1.0, 1.08, p.z) * (1 - C.smooth(1.14, 1.2, p.z))
-        q.x *= 1.0 + 0.18 * hips - 0.10 * waist
-        bust = C.smooth(1.18, 1.25, p.z) * (1 - C.smooth(1.34, 1.40, p.z))
-        if p.y < -0.02:
-            q.y -= 0.05 * bust * C.smooth(0.0, 0.05, abs(p.x)) * (1 - C.smooth(0.12, 0.17, abs(p.x)))
+        q.x *= 1.0 + 0.13 * hips - 0.08 * waist
+        q += breast(p, 0.022)
         if p.y > 0.0:
-            q.y += 0.04 * hips
+            # buttocks: full and low, widest just above the fold
+            q.y += 0.045 * hips * np.exp(-((abs(p.x) - 0.075) / 0.07) ** 2)
+        if p.y < 0.0:
+            # a soft lower belly, as on real full figures
+            q.y -= 0.012 * C.smooth(0.88, 0.95, p.z) * (1 - C.smooth(1.0, 1.06, p.z))
     if reg == "thigh":
         c = limb_axis(p, reg)
-        q = c + (p - c) * (1.0 + 0.18 * C.smooth(0.5, 0.85, p.z))
+        q = c + (p - c) * (1.0 + 0.16 * C.smooth(0.35, 0.85, p.z))
         # the hip line runs on into the thigh: no ledge
-        q.x += (0.035 if p.x > 0 else -0.035) * C.smooth(0.55, 0.88, p.z)
+        q.x += (0.03 if p.x > 0 else -0.03) * C.smooth(0.42, 0.9, p.z)
         if p.y > c.y:
             q.y += 0.02 * C.smooth(0.65, 0.88, p.z)
     return q
@@ -227,9 +269,7 @@ def k_feminine(p, reg):
         hips = 1 - C.smooth(1.0, 1.08, p.z)
         waist = C.smooth(1.0, 1.08, p.z) * (1 - C.smooth(1.14, 1.2, p.z))
         q.x *= 1.0 - 0.10 * sh + 0.07 * hips - 0.06 * waist
-        bust = C.smooth(1.18, 1.25, p.z) * (1 - C.smooth(1.34, 1.40, p.z))
-        if p.y < -0.02:
-            q.y -= 0.025 * bust * C.smooth(0.0, 0.05, abs(p.x)) * (1 - C.smooth(0.12, 0.17, abs(p.x)))
+        q += breast(p, 0.05)
     elif reg in ("upperarm", "forearm", "hand"):
         q = radial(p, reg, 0.88, 1, 1)
         q = arm_shift(q, reg, -0.022)
