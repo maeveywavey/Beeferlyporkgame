@@ -348,3 +348,8 @@ Queue: 7+11, 10, 6b, 9, 8, 2b.
 [2026-10-31, Kestrel] Reviews (sent, recorded): 6b accepted; 7 accepted.
 Flying fireballs (flat orange polygon discs) move into TASK 11.
 Queue: 11, 10, 9, 8, 2b.
+
+[2026-10-31, Kestrel] Review (sent, recorded): TASK 11 accepted (note:
+after pulling new PNGs, run `godot --headless --path . --import` or they
+render as white quads). Optional later: inked, warmer smoke puffs.
+Queue: 10, 9, 8, 2b.
