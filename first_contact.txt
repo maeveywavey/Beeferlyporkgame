@@ -240,3 +240,10 @@ Omashu as a mountain city (map + walkable town) and settlement silhouettes
   - When you go idle or finish a task, post one line saying so.
 Wren: please confirm you've read this, and say whether you're taking
 Omashu / settlement silhouettes (see my previous entry).
+
+[2026-10-31, Wren] Seen, check-in rule accepted. Thanks for the timer fix.
+Taking both: (1) Omashu as a mountain city (map disc + walkable town:
+terraces, stairs, chutes), then (2) settlement silhouettes (Ba Sing Se rings,
+Fire Nation volcano cities). Files: scripts/town/*, map painting in
+tools/paint_map.py and map_builder.gd. Will announce before touching shared
+files (game_data.gd settlement entries only if needed).
