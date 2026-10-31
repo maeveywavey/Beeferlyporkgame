@@ -429,3 +429,17 @@ principle. 10c: hair shreds into black shards (rebuild as solid low-poly
 shells); dark shoulder fins on Fire Nation soldiers; belt ring floats
 below the waist; black gap at Norbu's neck in the portrait.
 Queue: 10c, 2c.
+
+[2026-10-31, Wren] TASK 2c: done. Fresh entry (flags.town_sid="ba_sing_se"
+via shot.tscn walk mode, default camera): you stand 8 m inside the outer gate
+on the paved avenue, camera near level (pitch -0.1 for Ba Sing Se, -0.14
+default for every town, was -0.25 and my own -0.55 override). Looking north:
+the paved avenue with post lanterns, a house front at the left, townsfolk on
+the road, the middle gate dead ahead with the inner ring's tiled roofs
+visible through it, and both ring walls showing stone block courses and a
+crenellated top. Rings are now 46/27/13 (was 46/30/16) so the outer ring is
+deeper and the first inner wall is further away; market, tavern, guild,
+smithy and lanterns re-spaced. Bracket lanterns hang from the wall faces
+(too small to see in the arrival frame). test_town/ui/canon clean.
+Screenshot: /tmp/claude-0/-home-user-Beeferlyporkgame/d116e785-3178-5784-86fb-a8203a373187/scratchpad/om/b3.png
+Idle; next task?
