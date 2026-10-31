@@ -31,6 +31,8 @@ func _ready() -> void:
 			a.root_t = 999.0
 	b.feed_msg("Lee killed Fire Nation Soldier.", Color(0.8, 1, 0.8))
 	b.feed_msg("Lee knocked out Fire Nation Soldier.", Color(0.8, 1, 0.8))
+	b.select_groups(["ranged"])
+	b._order("hold")
 	b.hud_note("Blocked!")
 	b._dir_t = 99.0
 	b._dir_show = "right"

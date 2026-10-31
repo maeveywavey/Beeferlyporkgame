@@ -708,6 +708,12 @@ func _spawn_entry(e: Dictionary, team: int, pos: Vector3, face: float):
 		cam_yaw = face
 	elif team == 0 and (e.kind in ["companion", "lord"] or e.id == "avatar"):
 		u.add_ally_marker()
+	if team == 0 and e.kind != "player":
+		# reinforcements take up the orders already given to their group
+		var gst := _gs(u.group())
+		if gst.order != "hold":
+			u.order = gst.order
+		u.hold_fire = gst.hold_fire
 	# Archers of the defending side start on the ramparts
 	if siege != "" and u.use_ranged:
 		var defending_team := 1 if GS.pending_battle.player_attacking else 0
@@ -1729,6 +1735,20 @@ func _unhandled_input(event: InputEvent) -> void:
 				_order("follow")
 			KEY_F3:
 				_order("charge")
+			KEY_F4:
+				_order_spacing()
+			KEY_F5:
+				_order_fire()
+			KEY_4:
+				select_groups([])
+			KEY_5:
+				select_groups(["infantry"], k.shift_pressed)
+			KEY_6:
+				select_groups(["ranged"], k.shift_pressed)
+			KEY_7:
+				select_groups(["cavalry"], k.shift_pressed)
+			KEY_8:
+				select_groups(["benders"], k.shift_pressed)
 	if paused or player_unit == null or not player_controlled or not player_unit.alive:
 		if event is InputEventMouseMotion and not paused:
 			cam_yaw -= event.relative.x * GS.settings.mouse_sens * 0.01
@@ -1834,23 +1854,127 @@ func _player_cast(slot: String) -> void:
 			return
 	pu.cast(slot, aim_point())
 
-func _order(o: String) -> void:
-	var i := 0
+## Who the next order goes to: "all", or any of the groups below.
+const GROUPS := ["infantry", "ranged", "cavalry", "benders"]
+const GROUP_NAMES := {"infantry": "Infantry", "ranged": "Ranged", "cavalry": "Cavalry", "benders": "Benders"}
+var sel_all := true
+var sel_groups: Array = []
+var group_state := {}   # group -> {"order": String, "tight": bool, "hold_fire": bool}
+
+func _gs(g: String) -> Dictionary:
+	if not group_state.has(g):
+		group_state[g] = {"order": "charge", "tight": false, "hold_fire": false}
+	return group_state[g]
+
+## Key 4 selects everyone; 5-8 select a group (Shift adds to the selection).
+func select_groups(names: Array, add: bool = false) -> void:
+	if names.is_empty():
+		sel_all = true
+		sel_groups.clear()
+	else:
+		if sel_all or not add:
+			sel_groups.clear()
+		sel_all = false
+		for n in names:
+			if n not in sel_groups:
+				sel_groups.append(n)
+	feed_msg("Ordering: " + selection_text(), Color(0.9, 0.9, 1))
+
+func selection_text() -> String:
+	if sel_all:
+		return "Everyone"
+	var parts := []
+	for g in sel_groups:
+		parts.append(GROUP_NAMES[g])
+	return ", ".join(parts)
+
+func _selected() -> Array:
+	var out := []
 	for u in team_units[0]:
-		if u.is_player:
+		if u.is_player or not u.alive:
 			continue
-		u.order = o
-		var row := int(i / 12)
-		var col := i % 12
-		var fwd := Vector3(sin(cam_yaw), 0, cos(cam_yaw))
-		var right := Vector3(-fwd.z, 0, fwd.x)
-		u.formation_offset = right * (col - 5.5) * 1.6 - fwd * (2.5 + row * 1.8)
-		if o == "hold" and player_unit != null:
-			u.hold_pos = player_unit.position + u.formation_offset
-		i += 1
+		if sel_all or u.group() in sel_groups:
+			out.append(u)
+	return out
+
+func _groups_in_selection() -> Array:
+	return GROUPS if sel_all else sel_groups
+
+## A line for the orders panel: the selection and its current orders.
+func orders_text() -> String:
+	var gs := _groups_in_selection()
+	var o := ""
+	var fire := ""
+	var tight := ""
+	for g in gs:
+		var st := _gs(g)
+		o = st.order if o == "" or o == st.order else "mixed"
+		fire = "hold fire" if st.hold_fire else "at will"
+		tight = "close" if st.tight else "spread"
+	var names := {"hold": "holding", "follow": "following", "charge": "charging", "mixed": "mixed orders"}
+	return "Ordering: %s · %s" % [selection_text(), names.get(o, o)]
+
+func _layout_group(units: Array, tight: bool) -> void:
+	var fwd := Vector3(sin(cam_yaw), 0, cos(cam_yaw))
+	var right := Vector3(-fwd.z, 0, fwd.x)
+	var sp := 0.95 if tight else 1.6
+	var per := 12
+	for i in units.size():
+		var row := int(i / per)
+		var col := i % per
+		units[i].formation_offset = right * (col - (per - 1) / 2.0) * sp - fwd * (2.5 + row * sp * 1.1)
+
+func _order(o: String) -> void:
+	var point := Vector3.ZERO
+	var have_point := false
+	if o == "hold" and player_unit != null:
+		point = player_unit.position
+		if cam != null and player_controlled and player_unit.alive and is_inside_tree():
+			var ap := aim_point()
+			if ap.distance_to(player_unit.position) > 3.0 and ap.distance_to(player_unit.position) < 70.0:
+				point = Vector3(ap.x, 0, ap.z)
+				have_point = true
+	var units := _selected()
+	for g in _groups_in_selection():
+		var gu := units.filter(func(u): return u.group() == g)
+		var st := _gs(g)
+		st.order = o
+		_layout_group(gu, st.tight)
+		for u in gu:
+			u.order = o
+			if o == "hold":
+				u.hold_pos = Vector3(point.x, ground_height(point.x, point.z), point.z) + u.formation_offset
 	var names := {"hold": "Hold this position!", "follow": "Follow me!", "charge": "Charge!"}
-	feed_msg("You order: " + names[o], Color(0.9, 0.9, 1))
+	if o == "hold" and have_point:
+		names.hold = "Hold that ground!"
+	feed_msg("%s: %s" % [selection_text(), names[o]], Color(0.9, 0.9, 1))
 	Sfx.play("horn", -14.0, 1.4)
+
+## F4: stand closer / spread out.
+func _order_spacing() -> void:
+	var units := _selected()
+	var tight := false
+	for g in _groups_in_selection():
+		var st := _gs(g)
+		st.tight = not st.tight
+		tight = st.tight
+		var gu := units.filter(func(u): return u.group() == g)
+		_layout_group(gu, st.tight)
+		for u in gu:
+			if u.order == "hold" and player_unit != null:
+				u.hold_pos = player_unit.position + u.formation_offset
+	feed_msg("%s: %s" % [selection_text(), "Stand closer!" if tight else "Spread out!"], Color(0.9, 0.9, 1))
+
+## F5: hold fire / fire at will, for ranged troops and benders.
+func _order_fire() -> void:
+	var hold := false
+	for g in _groups_in_selection():
+		var st := _gs(g)
+		st.hold_fire = not st.hold_fire
+		hold = st.hold_fire
+	for u in _selected():
+		u.hold_fire = _gs(u.group()).hold_fire
+	feed_msg("%s: %s" % [selection_text(), "Hold your fire!" if hold else "Fire at will!"], Color(0.9, 0.9, 1))
 
 func _update_camera(delta: float) -> void:
 	var focus = player_unit
@@ -2000,7 +2124,7 @@ func _build_pause_menu() -> void:
 	var v := UI.vbox(8)
 	p.add_child(v)
 	v.add_child(UI.title("Battle Paused"))
-	v.add_child(UI.rich("[b]Controls[/b]\nWASD move · Mouse look · LMB attack (direction follows your last mouse movement) · RMB block · Space jump · Shift walk\n1 melee · 2 ranged (hold LMB to draw, release to shoot)\nQ / E / R bending abilities · V camera distance\nF1 hold position · F2 follow me · F3 charge · Tab leave when the battle is over", 520))
+	v.add_child(UI.rich("[b]Controls[/b]\nWASD move · Mouse look · LMB attack (direction follows your last mouse movement) · RMB block · Space jump · Shift walk\n1 melee · 2 ranged (hold LMB to draw, release to shoot)\nQ / E / R bending abilities · V camera distance\n4 everyone · 5 infantry · 6 ranged · 7 cavalry · 8 benders (Shift adds)\nF1 hold the ground you aim at · F2 follow me · F3 charge · F4 close up / spread out · F5 hold fire / fire at will\nTab leave when the battle is over", 520))
 	v.add_child(UI.option("Resume", _toggle_pause))
 	v.add_child(UI.option("Settings", func():
 		var sw = SettingsWindow.new()
@@ -2105,4 +2229,4 @@ func _update_hud(delta: float) -> void:
 		crosshair.visible = pu.alive and not paused
 	var a0: int = team_units[0].size()
 	var a1: int = team_units[1].size()
-	count_label.text = "Your side: %d  (+%d reserves)\nEnemy: %d  (+%d reserves)\nF1 Hold · F2 Follow · F3 Charge · Esc menu" % [a0, reserves[0].size(), a1, reserves[1].size()]
+	count_label.text = "Your side: %d  (+%d reserves)\nEnemy: %d  (+%d reserves)\n%s\nF1 Hold · F2 Follow · F3 Charge · F4 Close · F5 Fire · Esc menu" % [a0, reserves[0].size(), a1, reserves[1].size(), orders_text()]

@@ -67,6 +67,9 @@ func _ready() -> void:
 			Tech.learn(id)
 		GS.player.companions = ["sayuri", "huan", "gao_ming", "yangzom"]
 	get_tree().change_scene_to_file("res://scenes/battle.tscn")
+	if mode == "orders":
+		await get_tree().create_timer(1.0).timeout
+		_orders()
 	if mode == "bend" or mode == "tech":
 		await get_tree().create_timer(0.5).timeout
 		await _drive()
@@ -131,3 +134,29 @@ func _drive() -> void:
 	await get_tree().process_frame
 	print("result: ", GS.last_battle_result.get("lines", []))
 	get_tree().quit()
+
+## Issues each order once to each group and checks it took.
+func _orders() -> void:
+	var b = get_tree().current_scene
+	var bad := 0
+	b.select_groups([])
+	for o in ["hold", "follow", "charge"]:
+		b._order(o)
+		for u in b.team_units[0]:
+			if not u.is_player and u.order != o:
+				bad += 1
+	for names in [["infantry"], ["ranged"], ["benders"], ["cavalry"], ["infantry", "ranged"]]:
+		b.select_groups(names, names.size() > 1)
+		b._order("hold")
+		b._order_spacing()
+		b._order_fire()
+		b._order_fire()
+		for u in b.team_units[0]:
+			if u.is_player:
+				continue
+			if (u.group() in names) and u.order != "hold":
+				bad += 1
+			if not (u.group() in names) and u.order == "hold" and u.group() != "":
+				pass
+	print("ORDERS text: ", b.orders_text(), " groups: ", b.group_state.keys())
+	print("ORDERS DONE, misapplied: ", bad)

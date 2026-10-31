@@ -109,6 +109,8 @@ var anim_t := 0.0
 var fall_t := 0.0
 var aim_point := Vector3.ZERO
 var formation_offset := Vector3.ZERO
+## Ranged troops and benders keep their fire while true; set by the F5 order.
+var hold_fire := false
 var last_attacker = null
 var engaged_by := 0
 var cast_anim := 0.0
@@ -280,6 +282,17 @@ func _finish_setup(look: Dictionary) -> void:
 		radius = 0.9
 	use_ranged = ranged_id != "" and not is_player
 	parts = UnitVisual.build(self, look)
+
+## The group a commander orders this fighter with: mounted troops are cavalry,
+## anyone with a bending is a bender, then archers, then everyone else.
+func group() -> String:
+	if mount_id != "":
+		return "cavalry"
+	if bend != "":
+		return "benders"
+	if ranged_id != "":
+		return "ranged"
+	return "infantry"
 
 func add_ally_marker() -> void:
 	var m := MeshInstance3D.new()
@@ -864,12 +877,12 @@ func _ai(delta: float) -> Vector3:
 			cast("e", hurt.position)
 			return Vector3.ZERO
 	# Bending
-	if bend != "" and bend_mult() > 0.01 and bend_block_t <= 0.0:
+	if bend != "" and bend_mult() > 0.01 and bend_block_t <= 0.0 and not hold_fire:
 		var bv := _ai_bend(dist)
 		if bv != Vector3.INF:
 			return bv
 	# Ranged weapons
-	if use_ranged and ranged_id != "" and ammo > 0 and dist > 5.0 and dist < 65.0:
+	if use_ranged and ranged_id != "" and ammo > 0 and dist > 5.0 and dist < 65.0 and not hold_fire:
 		if action == "aim":
 			if 99.0 - action_t > 1.3 - skill * 0.5:
 				release_aim(battle.lead_point(self, target, float(ranged.proj_speed)))
