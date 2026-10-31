@@ -159,7 +159,7 @@ func _ready() -> void:
 					mm.c_bend = "air"
 					mm.c_background = "air_nomad"
 				mm._build())
-		"world", "town", "party", "encounter", "char", "factions", "people", "wars", "council", "trade", "far", "inv", "quests", "society", "forms", "avatar", "techniques", "work", "settings", "talk":
+		"world", "town", "party", "encounter", "char", "factions", "people", "wars", "council", "trade", "far", "inv", "quests", "society", "forms", "avatar", "techniques", "work", "settings", "talk", "norbu":
 			var p := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))
 			GS.new_game(p)
 			GS.flags.seen_help = true
@@ -244,6 +244,10 @@ static func _open(mode: String) -> void:
 	match mode:
 		"settings":
 			map.open_window(load("res://scripts/ui/settings_window.gd").new())
+		"norbu":
+			var dn = map.open_dialogue("ms_prologue")
+			dn.node_id = "b"
+			dn.refresh()
 		"talk":
 			GS.player.companions = ["sayuri"]
 			var dw = map.open_dialogue("talk_sayuri")

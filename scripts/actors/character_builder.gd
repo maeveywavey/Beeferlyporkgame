@@ -300,6 +300,11 @@ static func build(look: Dictionary) -> Dictionary:
 	if look.get("beard", false) and sex == "m":
 		hair_list.append("Hair_Beard")
 	for h in hair_list:
+		if GS.settings.get("lowpoly_outfits", true) and parts.has("head"):
+			# solid hand-built hair (scripts/actors/lowpoly_outfit.gd) in one flat colour
+			var hb: AABB = (parts.head.mesh as Mesh).get_aabb()
+			parts.meshes.append_array(LowpolyOutfit.hair(skel, h, hair_c * 1.25 + Color(0.03, 0.03, 0.03), hb))
+			continue
 		for mi in _graft(HAIR_DIR + h + ".gltf", skel):
 			var hm := model_material(mi.mesh.surface_get_material(0), {"tint": hair_c * 2.4 + Color(0.04, 0.04, 0.04), "saturation": 1.0})
 			hm.set_shader_parameter("texture_desaturate", 1.0)

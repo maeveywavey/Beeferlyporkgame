@@ -24,11 +24,11 @@ func _ready() -> void:
 	var cams := Camera3D.new()
 	add_child(cams)
 	cams.position = Vector3(0, 1.2, 3.6)
-	var specs := [["m", "peasant", "earth"], ["f", "peasant", "fire"], ["m", "ranger", "water"], ["f", "ranger", "earth"], ["m", "peasant", "air"], ["f", "peasant", "omashu"]]
+	var specs := [["m", "peasant", "fire", "Hair_SimpleParted", "fn_armor"], ["f", "peasant", "fire", "Hair_Buns", ""], ["m", "ranger", "water", "Hair_Long", ""], ["f", "ranger", "earth", "Hair_Long", "ek_armor"], ["m", "peasant", "earth", "Hair_Buzzed", ""], ["m", "peasant", "omashu", "Hair_SimpleParted", "sash"]]
 	var i := 0
 	var tris := 0
 	for sp in specs:
-		var look := {"sex": sp[0], "outfit": sp[1], "culture": sp[2], "skin": 2, "hair": "Hair_Buzzed" if sp[0] == "m" else "Hair_Buns", "height": 1.0}
+		var look := {"sex": sp[0], "outfit": sp[1], "culture": sp[2], "skin": 2, "hair": sp[3], "kit": sp[4], "beard": i == 4, "hair_color": Color(0.1, 0.07, 0.05), "height": 1.0}
 		var a = Actor.new()
 		add_child(a)
 		a.setup(look)

@@ -221,7 +221,14 @@ static func dress_head(parts: Dictionary, style: String, sex: String, hair: Colo
 # ---------------------------------------------------------------------------
 # Body garments
 # ---------------------------------------------------------------------------
+## True while the hand-built low-poly outfits are in use: belts and shoulder
+## guards then come from lowpoly_outfit.gd, skinned to the rig.
+static func _lp() -> bool:
+	return GS.settings.get("lowpoly_outfits", true)
+
 static func dress_body(parts: Dictionary, kit: String, sex: String, palette: Dictionary) -> void:
+	if _lp() and kit in ["fn_armor", "fn_heavy", "ek_armor"]:
+		parts.meshes.append_array(load("res://scripts/actors/lowpoly_outfit.gd").pauldrons(parts.skeleton, kit, sex, palette))
 	var w := 1.0 if sex == "m" else 0.9
 	var hip_y := 0.97 if sex == "m" else 0.95
 	var primary: Color = palette.get("primary", Color(0.5, 0.5, 0.5))
@@ -230,7 +237,7 @@ static func dress_body(parts: Dictionary, kit: String, sex: String, palette: Dic
 	match kit:
 		"fn_armor", "fn_heavy":
 			# shoulder guards
-			for side in ["l", "r"]:
+			for side in ([] if _lp() else ["l", "r"]):
 				var sx := 1.0 if side == "l" else -1.0
 				var sh := panel(shell(0.075, 0.13, 200.0, 0.012, 12, 0.03), Color(0.18, 0.08, 0.08), at(Vector3(0.22 * sx * w, 1.5 if sex == "m" else 1.46, -0.06), Vector3(0, 0, -78 * sx)))
 				bind(parts, "upperarm_" + side, sh)
@@ -240,13 +247,13 @@ static func dress_body(parts: Dictionary, kit: String, sex: String, palette: Dic
 				var sx2 := 1.0 if side == "l" else -1.0
 				bind(parts, "thigh_" + side, panel(shell(0.11, 0.24, 120.0, 0.012, 10, 0.05), Color(0.2, 0.09, 0.08), at(Vector3(0.1 * sx2, hip_y + 0.02, 0.0))))
 				bind(parts, "thigh_" + side, panel(shell(0.11, 0.22, 100.0, 0.012, 10, 0.05), Color(0.2, 0.09, 0.08), at(Vector3(0.1 * sx2, hip_y + 0.02, 0.0), Vector3(0, 180, 0))))
-			bind(parts, "pelvis", torus(0.15 * w, 0.175 * w, accent, at(Vector3(0, hip_y + 0.04, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
+			if not _lp(): bind(parts, "pelvis", torus(0.15 * w, 0.175 * w, accent, at(Vector3(0, hip_y + 0.04, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
 		"ek_armor":
 			# tabard front and back, gold-trimmed belt, round shoulder plates
 			bind(parts, "spine_03", panel(shell(0.17 * w, 0.42, 70.0, 0.01, 10, 0.03), primary, at(Vector3(0, 1.44 if sex == "m" else 1.4, -0.03))))
 			bind(parts, "spine_03", panel(shell(0.17 * w, 0.42, 70.0, 0.01, 10, 0.03), primary, at(Vector3(0, 1.44 if sex == "m" else 1.4, -0.03), Vector3(0, 180, 0))))
-			bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, Color(0.35, 0.25, 0.15), at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
-			for side in ["l", "r"]:
+			if not _lp(): bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, Color(0.35, 0.25, 0.15), at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
+			for side in ([] if _lp() else ["l", "r"]):
 				var sx3 := 1.0 if side == "l" else -1.0
 				bind(parts, "upperarm_" + side, node(lathe([Vector2(0.0, 0.03), Vector2(0.07, 0.01), Vector2(0.08, -0.03)], 16), primary.darkened(0.15), at(Vector3(0.21 * sx3 * w, 1.5 if sex == "m" else 1.46, -0.06), Vector3(0, 0, -80 * sx3))))
 		"air_robes":
@@ -255,18 +262,18 @@ static func dress_body(parts: Dictionary, kit: String, sex: String, palette: Dic
 				var sx4 := 1.0 if side == "l" else -1.0
 				bind(parts, "thigh_" + side, panel(shell(0.14, 0.55, 160.0, 0.01, 12, 0.07), Color(0.95, 0.55, 0.12), at(Vector3(0.08 * sx4, hip_y + 0.03, 0.0))))
 				bind(parts, "thigh_" + side, panel(shell(0.14, 0.55, 160.0, 0.01, 12, 0.07), Color(0.95, 0.55, 0.12), at(Vector3(0.08 * sx4, hip_y + 0.03, 0.0), Vector3(0, 180, 0))))
-			bind(parts, "pelvis", torus(0.15 * w, 0.185 * w, Color(0.98, 0.82, 0.3), at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1.2, 0.8))))
+			if not _lp(): bind(parts, "pelvis", torus(0.15 * w, 0.185 * w, Color(0.98, 0.82, 0.3), at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1.2, 0.8))))
 			# yellow mantle worn as a diagonal sash across the chest
 			bind(parts, "spine_03", torus(0.15 * w, 0.2 * w, Color(0.98, 0.8, 0.28), at(Vector3(0.0, 1.36 if sex == "m" else 1.32, -0.02), Vector3(0, 0, 32), Vector3(1.0, 1.0, 0.72))))
 		"water_fur":
 			var fur := Color(0.95, 0.94, 0.9)
 			bind(parts, "spine_03", torus(0.12 * w, 0.17 * w, fur, at(Vector3(0, 1.5 if sex == "m" else 1.46, -0.03), Vector3.ZERO, Vector3(1.1, 1.3, 0.9))))
-			bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, primary.darkened(0.2), at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
+			if not _lp(): bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, primary.darkened(0.2), at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
 			for side in ["l", "r"]:
 				bind(parts, "lowerarm_" + side, torus(0.04, 0.065, fur, at(Vector3((0.66 if sex == "m" else 0.6) * (1.0 if side == "l" else -1.0), 1.45 if sex == "m" else 1.415, -0.06), Vector3(0, 0, 90))))
 		"tide_armor":
 			bind(parts, "spine_03", panel(shell(0.16 * w, 0.3, 140.0, 0.012, 14, 0.02), Color(0.16, 0.2, 0.36), at(Vector3(0, 1.45 if sex == "m" else 1.41, -0.02))))
-			bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, accent, at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
+			if not _lp(): bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, accent, at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
 			for side in ["l", "r"]:
 				var sx5 := 1.0 if side == "l" else -1.0
 				bind(parts, "thigh_" + side, panel(shell(0.12, 0.3, 150.0, 0.01, 10, 0.05), Color(0.16, 0.2, 0.36), at(Vector3(0.09 * sx5, hip_y + 0.02, 0.0))))
@@ -275,16 +282,16 @@ static func dress_body(parts: Dictionary, kit: String, sex: String, palette: Dic
 				var sx6 := 1.0 if side == "l" else -1.0
 				bind(parts, "thigh_" + side, panel(shell(0.15, 0.7, 170.0, 0.01, 12, 0.06), Color(0.24, 0.26, 0.28), at(Vector3(0.08 * sx6, hip_y + 0.04, 0.0))))
 				bind(parts, "thigh_" + side, panel(shell(0.15, 0.7, 170.0, 0.01, 12, 0.06), Color(0.24, 0.26, 0.28), at(Vector3(0.08 * sx6, hip_y + 0.04, 0.0), Vector3(0, 180, 0))))
-			bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, Color(0.75, 0.6, 0.2), at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
+			if not _lp(): bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, Color(0.75, 0.6, 0.2), at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1, 0.8))))
 		"sash":
-			bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, accent, at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1.1, 0.8))))
+			if not _lp(): bind(parts, "pelvis", torus(0.15 * w, 0.18 * w, accent, at(Vector3(0, hip_y + 0.05, -0.03), Vector3.ZERO, Vector3(1, 1.1, 0.8))))
 		"civ_robe":
 			# ankle-length civilian robe: wrap skirt, broad sash, crossed collar
 			for side in ["l", "r"]:
 				var sx7 := 1.0 if side == "l" else -1.0
 				bind(parts, "thigh_" + side, panel(shell(0.15, 0.8, 175.0, 0.01, 12, 0.08), primary, at(Vector3(0.08 * sx7, hip_y + 0.05, 0.0))))
 				bind(parts, "thigh_" + side, panel(shell(0.15, 0.8, 175.0, 0.01, 12, 0.08), primary, at(Vector3(0.08 * sx7, hip_y + 0.05, 0.0), Vector3(0, 180, 0))))
-			bind(parts, "pelvis", torus(0.14 * w, 0.19 * w, secondary, at(Vector3(0, hip_y + 0.07, -0.03), Vector3.ZERO, Vector3(1, 1.6, 0.8))))
+			if not _lp(): bind(parts, "pelvis", torus(0.14 * w, 0.19 * w, secondary, at(Vector3(0, hip_y + 0.07, -0.03), Vector3.ZERO, Vector3(1, 1.6, 0.8))))
 			bind(parts, "spine_03", torus(0.13 * w, 0.16 * w, accent, at(Vector3(0.0, 1.42 if sex == "m" else 1.38, -0.02), Vector3(0, 0, 28), Vector3(1.0, 1.0, 0.75))))
 
 ## Older helmet style names from the troop data map onto head + body kits.

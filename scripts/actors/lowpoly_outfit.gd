@@ -14,6 +14,7 @@ var skel: Skeleton3D
 var surfaces := {}   # name -> SurfaceTool
 var mats := {}       # name -> Material
 var tri_count := 0
+var mesh_name := "LowpolyOutfit"
 
 func _surface(name: String, mat: Material) -> SurfaceTool:
 	if not surfaces.has(name):
@@ -140,9 +141,12 @@ func _make(kind: String, sex: String, palette: Dictionary, skin: Color, tint: Co
 		_ring(Vector3(0, 1.14, zc), X, Z, 0.145 * (0.95 if fem else 1.0), 0.106, s1, s2, 0.5),
 		_ring(Vector3(0, 1.31, zc), X, Z, 0.185 * (0.9 if fem else 1.0), 0.118, s3),
 		_ring(Vector3(0, 1.44, zc - 0.01), X, Z, sh_w * 1.0, 0.1, s3, nk, 0.25),
-		_ring(Vector3(0, 1.505, zc - 0.02), X, Z, 0.062, 0.062, nk),
+		_ring(Vector3(0, 1.505, zc - 0.02), X, Z, 0.066, 0.066, nk),
+		_ring(Vector3(0, 1.545, zc - 0.02), X, Z, 0.062, 0.062, nk, _bone("Head"), 0.3),
 	]
 	tube("cloth", cloth, torso, 8)
+	# the neck, so there is never a gap between jaw and collar
+	tube("skin", skinm, [_ring(Vector3(0, 1.49, zc - 0.03), X, Z, 0.05, 0.05, nk), _ring(Vector3(0, 1.6, zc - 0.03), X, Z, 0.046, 0.046, _bone("Head"))], 6)
 	if ranger:
 		# the coat's skirt hangs from the hips, split by the thighs' bones
 		var skirt := [
@@ -151,9 +155,8 @@ func _make(kind: String, sex: String, palette: Dictionary, skin: Color, tint: Co
 			_ring(Vector3(0, 0.66, zc), X, Z, hip_w * 1.55, 0.19, _bone("thigh_l"), _bone("thigh_r"), 0.5),
 		]
 		tube("cloth", cloth, skirt, 8)
-		tube("trim", trim, [_ring(Vector3(0, 1.075, zc), X, Z, hip_w * 1.04, 0.124, pelvis, s1, 0.4), _ring(Vector3(0, 1.1, zc), X, Z, hip_w * 1.02, 0.122, s1)], 8)
-	else:
-		tube("trim", trim, [_ring(Vector3(0, 1.075, zc), X, Z, hip_w * 1.04, 0.124, pelvis, s1, 0.4), _ring(Vector3(0, 1.1, zc), X, Z, hip_w * 1.02, 0.122, s1)], 8)
+	# the belt hugs the tunic at the waist (between the tunic's rings at 1.0 and 1.14)
+	tube("trim", trim, [_ring(Vector3(0, 1.07, zc), X, Z, 0.158, 0.122, pelvis, s1, 0.7), _ring(Vector3(0, 1.115, zc), X, Z, 0.152, 0.118, s1)], 8)
 	for side in ["l", "r"]:
 		var sg := 1.0 if side == "l" else -1.0
 		var ua := _bone("upperarm_" + side)
@@ -208,6 +211,9 @@ func _make(kind: String, sex: String, palette: Dictionary, skin: Color, tint: Co
 func _commit() -> Array:
 	var mesh := ArrayMesh.new()
 	var order := ["cloth", "trim", "pants", "skin", "boots"]
+	for n in surfaces.keys():
+		if n not in order:
+			order.append(n)
 	var surf_names := []
 	for n in order:
 		if not surfaces.has(n):
@@ -220,8 +226,92 @@ func _commit() -> Array:
 		mesh.surface_set_material(i, mats[surf_names[i]])
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
-	mi.name = "LowpolyOutfit"
+	mi.name = mesh_name
 	skel.add_child(mi)
 	mi.skin = skel.create_skin_from_rest_transforms()
 	mi.skeleton = NodePath("..")
 	return [mi]
+
+## Small faceted shoulder plates on the upper arm, for armoured kits.
+static func pauldrons(skel_: Skeleton3D, kit: String, sex: String, palette: Dictionary) -> Array:
+	var o = load("res://scripts/actors/lowpoly_outfit.gd").new()
+	o.skel = skel_
+	o.mesh_name = "LowpolyPauldrons"
+	var col := Color(0.18, 0.08, 0.08) if kit.begins_with("fn_") else Color(palette.primary).darkened(0.2)
+	var mat: Material = Accessories.mat(col)
+	var X := Vector3.RIGHT
+	var Z := Vector3.BACK
+	for side in ["l", "r"]:
+		var sg := 1.0 if side == "l" else -1.0
+		var ua: int = o._bone("upperarm_" + side)
+		var p: Vector3 = o._rest("upperarm_" + side)
+		var wid := 0.082 * (0.92 if sex == "f" else 1.0)
+		# a flattened dome over the shoulder joint: three rings and a cap
+		var rings := [
+			o._ring(Vector3(sg * (absf(p.x) + 0.075), p.y - 0.045, p.z), Vector3.UP, Z, wid * 0.95, wid * 1.05, ua),
+			o._ring(Vector3(sg * (absf(p.x) + 0.04), p.y - 0.01, p.z), Vector3.UP, Z, wid, wid * 1.1, ua),
+			o._ring(Vector3(sg * (absf(p.x) + 0.0), p.y + 0.03, p.z), Vector3.UP, Z, wid * 0.8, wid * 0.95, ua),
+			o._ring(Vector3(sg * (absf(p.x) - 0.04), p.y + 0.055, p.z), Vector3.UP, Z, wid * 0.4, wid * 0.5, ua),
+		]
+		o.tube("plate", mat, rings, 6, true)
+	return o._commit()
+
+## Hand-built hair: a solid cap with a few faceted pieces (tails, buns, a
+## beard), 40-120 triangles, in one flat colour. `head` is the head mesh's
+## bounds in rig space.
+static func hair(skel_: Skeleton3D, style: String, colour: Color, head: AABB) -> Array:
+	var o = load("res://scripts/actors/lowpoly_outfit.gd").new()
+	o.skel = skel_
+	o.mesh_name = "LowpolyHair"
+	var mat: Material = Accessories.mat(colour)
+	var X := Vector3.RIGHT
+	var Z := Vector3.BACK
+	var Y := Vector3.UP
+	var hb: int = o._bone("Head")
+	var top: float = head.end.y
+	var cz: float = head.get_center().z - 0.004
+	var rx: float = minf(head.size.x * 0.5, 0.1) + 0.006
+	var rz: float = minf(head.size.z * 0.5, 0.12) + 0.004
+	var thick := 1.0 if style != "Hair_Beard" else 0.0
+	var cap_base := top - 0.085
+	if style == "Hair_Beard":
+		var chin := top - 0.245
+		o.tube("hair", mat, [
+			o._ring(Vector3(0, top - 0.15, cz + rz * 0.38), X, Z, rx * 0.72, rz * 0.5, hb),
+			o._ring(Vector3(0, top - 0.2, cz + rz * 0.52), X, Z, rx * 0.6, rz * 0.46, hb),
+			o._ring(Vector3(0, chin, cz + rz * 0.5), X, Z, rx * 0.28, rz * 0.3, hb),
+		], 6, true)
+		return o._commit()
+	var cap := [
+		o._ring(Vector3(0, cap_base, cz - 0.004), X, Z, rx * 1.0, rz * 1.0, hb),
+		o._ring(Vector3(0, top - 0.055, cz - 0.004), X, Z, rx * 1.02, rz * 1.02, hb),
+		o._ring(Vector3(0, top - 0.025, cz - 0.004), X, Z, rx * 0.9, rz * 0.92, hb),
+		o._ring(Vector3(0, top - 0.004, cz - 0.004), X, Z, rx * 0.6, rz * 0.62, hb),
+		o._ring(Vector3(0, top + 0.012, cz - 0.004), X, Z, rx * 0.25, rz * 0.27, hb),
+	]
+	o.tube("hair", mat, cap, 8, true)
+	match style:
+		"Hair_SimpleParted":
+			# side locks and a nape piece
+			for sg in [-1.0, 1.0]:
+				o.box("hair", mat, Vector3(sg * (rx - 0.004), top - 0.115, cz), Vector3(0.026, 0.07, rz * 1.5), hb)
+			o.box("hair", mat, Vector3(0, top - 0.115, cz - rz + 0.012), Vector3(rx * 1.7, 0.075, 0.03), hb)
+		"Hair_Long":
+			var back := cz - rz * 0.7
+			o.tube("hair", mat, [
+				o._ring(Vector3(0, top - 0.07, back), X, Z, rx * 0.95, 0.04, hb),
+				o._ring(Vector3(0, top - 0.17, back - 0.01), X, Z, rx * 1.0, 0.04, hb),
+				o._ring(Vector3(0, top - 0.3, back - 0.02), X, Z, rx * 0.9, 0.035, hb, o._bone("neck_01"), 0.5),
+				o._ring(Vector3(0, top - 0.43, back - 0.03), X, Z, rx * 0.7, 0.03, o._bone("neck_01"), o._bone("spine_03"), 0.6),
+			], 6)
+		"Hair_Buns":
+			for sg in [-1.0, 1.0]:
+				var bx: float = sg * rx * 0.7
+				o.tube("hair", mat, [
+					o._ring(Vector3(bx, top - 0.01, cz - 0.01), X, Z, 0.034, 0.034, hb),
+					o._ring(Vector3(bx, top + 0.022, cz - 0.01), X, Z, 0.046, 0.046, hb),
+					o._ring(Vector3(bx, top + 0.05, cz - 0.01), X, Z, 0.036, 0.036, hb),
+					o._ring(Vector3(bx, top + 0.068, cz - 0.01), X, Z, 0.012, 0.012, hb),
+				], 6, true)
+			o.box("hair", mat, Vector3(0, top - 0.105, cz - rz + 0.012), Vector3(rx * 1.7, 0.07, 0.03), hb)
+	return o._commit()
