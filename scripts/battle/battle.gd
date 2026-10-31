@@ -2229,4 +2229,4 @@ func _update_hud(delta: float) -> void:
 		crosshair.visible = pu.alive and not paused
 	var a0: int = team_units[0].size()
 	var a1: int = team_units[1].size()
-	count_label.text = "Your side: %d  (+%d reserves)\nEnemy: %d  (+%d reserves)\n%s\nF1 Hold · F2 Follow · F3 Charge · F4 Close · F5 Fire · Esc menu" % [a0, reserves[0].size(), a1, reserves[1].size(), orders_text()]
+	count_label.text = "Your side: %d  (+%d reserves)\nEnemy: %d  (+%d reserves)\n%s\nF1 Hold · F2 Follow · F3 Charge\nF4 Close · F5 Fire · Esc menu" % [a0, reserves[0].size(), a1, reserves[1].size(), orders_text()]
