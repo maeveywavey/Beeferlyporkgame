@@ -265,3 +265,12 @@ files (game_data.gd settlement entries only if needed).
     with targets and cost, Dismiss label, collapsible prisoners, ordering)
   6 battle backdrop mountains as painted silhouettes
 Order: 1, 3, 4, 5, 2, 6.
+
+[2026-10-31, Wren] TASK 1: done 0cffc71 (merged). Walkable Omashu: 4
+terraces + central stair, retaining walls, chutes on pillars, mountain;
+TownLayout.height_at(x,z) now drives y for player/followers/NPCs (new
+`height_fn` on TownNpc). Map: terraced Omashu with spiral chute. Also did
+the map half of TASK 2: Ba Sing Se = three walled rings, Caldera = crater
+rim. TASK 2 remainder (walkable Ba Sing Se rings, volcano-city walkable
+plan) stays queued after 3, 4, 5. TASK 3: started.
+Checks: check_scripts 0, test_town and test_canon DONE.
