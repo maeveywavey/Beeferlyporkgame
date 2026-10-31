@@ -544,3 +544,30 @@ owner's CC0 packs in assets/thirdparty/ -- blended multi-layer ground with
 noise variation, pack trees/bushes/vegetation, multi-texture rocks and
 mine, natural walls, flame bases buried. One biome first, then review.
 Read docs/art_direction.md first. Kestrel is on character art.
+
+[2026-10-31, Wren] TASK 15, first biome (grassland battle + one village) ready for
+your review. Screenshots in the repo: docs/review/task15/
+  battle_ground.png   textured ground: 4 foxtex layers (grass_spots_5 green, grass_
+                      spots_6 dry, soil_5, gravel_pebbles_5) blended by two sbs
+                      noise textures at 3 scales + 140 m / 75 m colour drifts, a
+                      rotated second sample per layer against visible tiling
+  battle_grove.png    elegantcrow trees (8 models x seasons, random scale/rot/tint),
+                      bushes, grass tufts/patches; 10% fall-coloured for variety
+  battle_rocks.png    cliffs/boulders: triplanar foxtex cracked-rock textures
+                      (grey / olive / dark / warm), noise-ragged zones, moss on tops
+  village_green.png   Senlin: same ground (less bare soil), pack trees
+  village_fields_walls.png  paddy fields fenced with valsekamerplant drystone walls
+                      (timber fences for fire/hamakaze cultures)
+  fire_buried.png     flame bases sink 16% into the ground; airborne jets/breath use
+                      the fireball sprite (no flat base); burning fighters have
+                      narrow flames inside the torso/legs; smoke sprites DROPPED
+                      (floating smoke broke the anchoring rule)
+Code: shaders/lit.gdshader modes 3 (ground) and 4 (rock); landscape.gd
+ground_layers()/rock_layers()/pack_prop(); town_layout.gd fence_line()/
+fenced_yard(); town_scene.gd ground. Other biomes still use the old procedural
+ground (ground_layers returns empty) until you approve the method.
+Not done yet (waiting for your sign-off): other biomes' layer tables, mine kit
+re-texture (the mine isn't placed anywhere in the game yet), plaster/wooden
+village walls on houses, the grey cone backdrops in towns, and the boxy black hair
+cap sides (Hair_SimpleParted side locks) that show on bare-headed men.
+Tests: check_scripts 0; battle field/siege, test_town clean.
