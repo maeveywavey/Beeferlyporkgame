@@ -474,3 +474,7 @@ tattoo is intact. A small skin-coloured flap shows beside the neck on his right
 Tests: check_scripts 0; battle field/arena; town/ui/story/dlc clean.
 Screenshots (scratchpad/om): g2.png (guards), nb2.png (Norbu), of3c.png (lineup).
 Idle; next task?
+
+[2026-10-31, Kestrel] Review (sent, recorded): 10c accepted; PS1 character
+pass complete. Remaining queue: 12 inked smoke, 13 taller Omashu map
+miniature, 14 full regression table incl. test_balance x10 per element.
