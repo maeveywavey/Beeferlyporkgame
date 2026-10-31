@@ -13,6 +13,7 @@ extends RefCounted
 ## Severed and broken bones are applied after animation by a skeleton modifier.
 
 const CB = preload("res://scripts/actors/character_builder.gd")
+const FlameSprite = preload("res://scripts/battle/flame_sprite.gd")
 
 const LIMBS := {
 	"arm_l": ["upperarm_l", 0.55], "arm_r": ["upperarm_r", 0.55], "forearm_l": ["lowerarm_l", 0.4],
@@ -143,31 +144,16 @@ static func char_body(u, amount: float) -> void:
 
 ## Flames that keep licking a burned body for a while.
 static func smoulder(battle, u) -> void:
-	var p := CPUParticles3D.new()
-	p.amount = 24
-	p.lifetime = 0.8
-	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-	p.emission_box_extents = Vector3(0.3, 0.3, 0.8)
-	p.direction = Vector3.UP
-	p.spread = 15.0
-	p.initial_velocity_min = 1.0
-	p.initial_velocity_max = 2.4
-	p.gravity = Vector3(0, 1.2, 0)
-	var qm := QuadMesh.new()
-	qm.size = Vector2(0.4, 0.55)
-	var m: StandardMaterial3D = load("res://scripts/battle/field_effects.gd")._soft_material()
-	qm.material = m
-	p.mesh = qm
-	p.material_override = m
-	var g := Gradient.new()
-	g.set_color(0, Color(1.0, 0.8, 0.3, 0.95))
-	g.add_point(0.5, Color(1.0, 0.35, 0.06, 0.8))
-	g.set_color(g.get_point_count() - 1, Color(0.2, 0.18, 0.16, 0.0))
-	p.color_ramp = g
-	battle.add_child(p)
-	p.global_position = u.position + Vector3(0, 0.35, 0)
-	battle.get_tree().create_timer(7.0).timeout.connect(func(): if is_instance_valid(p): p.emitting = false)
-	battle.get_tree().create_timer(9.0).timeout.connect(p.queue_free)
+	# the dead burn on: a few small hand-inked flames and a thread of smoke
+	var at: Vector3 = u.position
+	for k in 3:
+		var sz := randf_range(0.7, 1.0)
+		var f := FlameSprite.puff(battle, at + Vector3(randf_range(-0.5, 0.5), 0.1, randf_range(-0.5, 0.5)), Vector2(sz, sz * 1.3), randf_range(5.0, 7.0))
+		f.global_position.y = battle.ground_height(f.global_position.x, f.global_position.z) + 0.1
+	var sm := FlameSprite.make("smoke", Vector2(1.0, 1.0), false, 1)
+	battle.add_child(sm)
+	sm.global_position = at + Vector3(0, 1.0, 0)
+	battle.get_tree().create_timer(7.0).timeout.connect(func(): if is_instance_valid(sm): sm.queue_free())
 
 ## A spray of blood and a pool, for wounds without a cut-off limb.
 static func bleed(battle, u, size: float) -> void:

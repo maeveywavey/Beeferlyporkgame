@@ -3,6 +3,7 @@ extends Node3D
 ## Movement and collision are handled manually against units, walls and terrain.
 
 const Bending = preload("res://scripts/battle/bending.gd")
+const FlameSprite = preload("res://scripts/battle/flame_sprite.gd")
 const MB = preload("res://scripts/world/map_builder.gd")
 
 var battle
@@ -65,6 +66,16 @@ func _build_visual() -> void:
 			sp.height = radius * 1.6
 			sp.radial_segments = 10
 			sp.rings = 5
+			if fx in ["fire", "blue_fire"]:
+				# a hand-inked fireball: round head, curling tail trailing behind
+				var fb := FlameSprite.make("fireball", Vector2(radius * 4.6, radius * 4.6), fx == "blue_fire", 3)
+				add_child(fb)
+				var light0 := OmniLight3D.new()
+				light0.light_color = c
+				light0.omni_range = 4.0
+				light0.light_energy = 1.5
+				add_child(light0)
+				return
 			var m5 := MeshInstance3D.new()
 			m5.mesh = sp
 			var unshaded := fx in ["fire", "blue_fire", "lightning"]

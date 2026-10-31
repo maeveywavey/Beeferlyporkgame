@@ -16,6 +16,7 @@ extends Node3D
 const MB = preload("res://scripts/world/map_builder.gd")
 
 const CELL := 2.0
+const FlameSprite = preload("res://scripts/battle/flame_sprite.gd")
 const MAX_FIRES := 36
 const MAX_ROCKS := 70
 const MAX_STRUCTURES := 24
@@ -123,53 +124,16 @@ func _light(i: int, strength: float) -> bool:
 
 func _flame() -> Node3D:
 	var root := Node3D.new()
-	var p := CPUParticles3D.new()
-	p.amount = 9
-	p.lifetime = 0.6
-	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
-	p.emission_sphere_radius = 0.4
-	p.direction = Vector3.UP
-	p.spread = 15.0
-	p.initial_velocity_min = 1.2
-	p.initial_velocity_max = 2.6
-	p.gravity = Vector3(wind.x * 1.5, 1.5, wind.y * 1.5)
-	var qm := QuadMesh.new()
-	qm.size = Vector2(0.38, 0.5)
-	var m := _soft_material()
-	qm.material = m
-	p.mesh = qm
-	p.material_override = m
-	var g := Gradient.new()
-	g.set_color(0, Color(1.0, 0.85, 0.35, 0.95))
-	g.add_point(0.45, Color(1.0, 0.4, 0.08, 0.85))
-	g.set_color(g.get_point_count() - 1, Color(0.25, 0.22, 0.2, 0.0))
-	p.color_ramp = g
-	var sc := Curve.new()
-	sc.add_point(Vector2(0, 0.6))
-	sc.add_point(Vector2(0.4, 1.0))
-	sc.add_point(Vector2(1, 0.3))
-	p.scale_amount_curve = sc
-	root.add_child(p)
-	# smoke
-	var s := CPUParticles3D.new()
-	s.amount = 3
-	s.lifetime = 1.6
-	s.direction = Vector3.UP
-	s.spread = 20.0
-	s.initial_velocity_min = 1.0
-	s.initial_velocity_max = 1.8
-	s.gravity = Vector3(wind.x * 2.0, 0.6, wind.y * 2.0)
-	var sq := QuadMesh.new()
-	sq.size = Vector2(0.8, 0.8)
-	sq.material = m
-	s.mesh = sq
-	s.material_override = m
-	var sg := Gradient.new()
-	sg.set_color(0, Color(0.55, 0.53, 0.5, 0.16))
-	sg.set_color(1, Color(0.7, 0.7, 0.7, 0.0))
-	s.color_ramp = sg
-	s.position.y = 1.0
-	root.add_child(s)
+	# two or three hand-inked tongues side by side, and a puff of inked smoke above
+	for k in 3:
+		var sz := randf_range(0.95, 1.25)
+		var f := FlameSprite.make("flame", Vector2(sz, sz * 1.25), false, 1)
+		f.position = Vector3(randf_range(-0.35, 0.35), 0, randf_range(-0.35, 0.35))
+		root.add_child(f)
+	if randf() < 0.3:
+		var sm := FlameSprite.make("smoke", Vector2(0.8, 0.8), false, 1)
+		sm.position.y = 1.7
+		root.add_child(sm)
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.55, 0.2)
 	light.light_energy = 0.6
@@ -223,10 +187,9 @@ func _put_out(i: int, burnt: bool) -> void:
 	if _fire_nodes.has(i):
 		var fl: Node3D = _fire_nodes[i]
 		_fire_nodes.erase(i)
-		var p := fl.get_child(0) as CPUParticles3D
-		if p:
-			p.emitting = false
-		get_tree().create_timer(2.5).timeout.connect(fl.queue_free)
+		var tw := fl.create_tween()
+		tw.tween_property(fl, "scale", Vector3(0.05, 0.05, 0.05), 0.6)
+		tw.tween_callback(fl.queue_free)
 	if burnt and scorched[i] == 0:
 		scorched[i] = 1
 		fuel[i] = 0.0

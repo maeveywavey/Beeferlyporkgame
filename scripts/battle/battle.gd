@@ -6,6 +6,7 @@ const Unit = preload("res://scripts/battle/unit.gd")
 const Projectile = preload("res://scripts/battle/projectile.gd")
 const Bending = preload("res://scripts/battle/bending.gd")
 const UI = preload("res://scripts/ui/ui.gd")
+const FlameSprite = preload("res://scripts/battle/flame_sprite.gd")
 const MB = preload("res://scripts/world/map_builder.gd")
 const Roster = preload("res://scripts/core/roster.gd")
 const SettingsWindow = preload("res://scripts/ui/settings_window.gd")
@@ -1450,6 +1451,9 @@ func crumble_structure(rec: Dictionary) -> void:
 		tw.tween_callback(n.queue_free)
 
 func _cone_fx(caster, a: Dictionary) -> void:
+	if a.fx in ["fire", "blue_fire"]:
+		FlameSprite.jet(self, caster.chest(), caster.facing, a.range, a.angle, a.fx == "blue_fire", 26 if a.get("breath", false) else 14, 0.8 if a.get("breath", false) else 0.55)
+		return
 	var p := CPUParticles3D.new()
 	p.one_shot = true
 	p.emitting = true

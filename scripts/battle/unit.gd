@@ -9,6 +9,7 @@ const Looks = preload("res://scripts/actors/looks.gd")
 const Bending = preload("res://scripts/battle/bending.gd")
 const AvatarSys = preload("res://scripts/core/avatar.gd")
 const Techniques = preload("res://scripts/battle/techniques.gd")
+const FlameSprite = preload("res://scripts/battle/flame_sprite.gd")
 const Gore = preload("res://scripts/battle/gore.gd")
 
 const DIRS := ["left", "right", "overhead", "thrust"]
@@ -89,6 +90,7 @@ var order := "charge"
 var hold_pos := Vector3.ZERO
 var slow_t := 0.0
 var burn_t := 0.0
+var _burn_fx: Node3D
 var burn_dps := 0.0
 ## Soaked by water or rain: burns briefly, conducts lightning.
 var wet_t := 0.0
@@ -396,7 +398,18 @@ func tick(delta: float) -> void:
 	wet_t = maxf(0.0, wet_t - delta)
 	if battle.field != null and battle.field.rain:
 		wet_t = maxf(wet_t, 1.0)
+	if burn_t <= 0.0 and _burn_fx != null:
+		_burn_fx.queue_free()
+		_burn_fx = null
 	if burn_t > 0.0:
+		if _burn_fx == null:
+			# hand-inked flames cling to a burning fighter
+			_burn_fx = Node3D.new()
+			for k in 3:
+				var f = FlameSprite.make("flame", Vector2(0.9, 1.2), false, 1)
+				f.position = Vector3(randf_range(-0.25, 0.25), 0.2 + k * 0.45, randf_range(-0.2, 0.2))
+				_burn_fx.add_child(f)
+			add_child(_burn_fx)
 		if wet_t > 0.0:
 			burn_t = minf(burn_t, 0.4)
 		burn_t -= delta
@@ -765,6 +778,9 @@ func die(killer, dtype: String) -> void:
 	alive = false
 	hp = 0.0
 	action = "dead"
+	if _burn_fx != null:
+		_burn_fx.queue_free()
+		_burn_fx = null
 	fall_t = 0.0
 	if ally_marker:
 		ally_marker.visible = false
