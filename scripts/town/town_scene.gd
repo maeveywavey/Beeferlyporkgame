@@ -195,7 +195,7 @@ func _spawn_player() -> void:
 		fa.name = "Actor"
 		f.add_child(fa)
 		fa.setup(Looks.companion_look(cid))
-		f.position = layout.spawn + Vector3((i - 1) * 1.4, 0, 2.0)
+		f.position = layout.spawn + Vector3((i - 1) * 1.6, 0, -0.6)
 		f.rotation.y = PI
 		f.set_meta("cid", cid)
 		f.set_meta("slot", Vector3((i - 1) * 1.3, 0, 1.8 + (i % 2) * 0.6))
@@ -252,6 +252,9 @@ func _spawn_people() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(sid) + 11
 	for sp in layout.spots:
+		# nobody stands on the arrival point
+		if Vector2(sp.pos.x - layout.spawn.x, sp.pos.z - layout.spawn.z).length() < 4.0:
+			continue
 		var role: Dictionary = sp.role
 		var n = TownNpc.new()
 		n.position = sp.pos
@@ -273,6 +276,10 @@ func _spawn_people() -> void:
 	for i in count:
 		var n2 = TownNpc.new()
 		n2.position = layout.waypoints[rng.randi() % layout.waypoints.size()]
+		for tries in 6:
+			if Vector2(n2.position.x - layout.spawn.x, n2.position.z - layout.spawn.z).length() >= 4.5:
+				break
+			n2.position = layout.waypoints[rng.randi() % layout.waypoints.size()]
 		add_child(n2)
 		var lk2 := "soldier" if Data.settlements[sid].type == "castle" else ("monk" if Data.settlements[sid].type == "temple" else "")
 		n2.setup(_role_look(lk2, rng), "", "", "wander", layout.waypoints)
@@ -321,6 +328,13 @@ func _process(delta: float) -> void:
 		a.speed = 0.0
 	_follow(delta)
 	_update_camera(delta)
+	# a townsperson passing right by the lens is hidden rather than filling the screen
+	for n in npcs:
+		if is_instance_valid(n):
+			n.visible = n.global_position.distance_to(cam.global_position) > 2.9
+	for f in followers:
+		if is_instance_valid(f):
+			f.visible = f.global_position.distance_to(cam.global_position) > 1.7
 	_update_prompt()
 	_check_story()
 
