@@ -381,10 +381,30 @@ func _omashu() -> void:
 			b.box(Vector3(sgn * (OM_STAIR + pl), base + OM_STEP + 0.4, e - 0.5), Vector3(half - OM_STAIR, 0.8, 1.0), stone * 0.82)
 			b.box(Vector3(sgn * (OM_STAIR + 0.1), base + OM_STEP * 0.5 + 0.5, e), Vector3(0.3, OM_STEP + 0.9, 6.4), stone * 0.8, 0.0)
 			block(Vector3(sgn * (OM_STAIR + pl), 0, e), half - OM_STAIR, 2.0)
+	# stonework: courses of blocks on every retaining face, and lanterns along the parapet
+	var srng := RandomNumberGenerator.new()
+	srng.seed = 77
+	for i in OM_EDGES.size():
+		var e: float = OM_EDGES[i]
+		var base: float = OM_STEP * i
+		for sgn in [-1.0, 1.0]:
+			for c in 6:
+				var cy: float = base + 0.3 + c * (OM_STEP + 0.2) / 6.0
+				var x := OM_STAIR + 0.4 + (0.9 if c % 2 == 1 else 0.0)
+				while x < half - 0.5:
+					var bw: float = srng.randf_range(1.5, 2.4)
+					b.box(Vector3(sgn * (x + bw * 0.5), cy, e + 0.02), Vector3(bw - 0.08, (OM_STEP + 0.2) / 6.0 - 0.07, 0.22), stone * srng.randf_range(0.82, 1.16))
+					x += bw
 	var mi := MeshInstance3D.new()
 	mi.mesh = b.commit()
 	mi.material_override = Arch.material(false)
 	root.add_child(mi)
+	for i in OM_EDGES.size():
+		var e2: float = OM_EDGES[i]
+		for lx in [-36.0, -26.0, -16.0, -8.0, 8.0, 16.0, 26.0, 36.0]:
+			var lp := Vector3(lx, OM_STEP * i + OM_STEP + 0.8, e2 - 0.5)
+			root.add_child(_lantern_at(lp))
+			lights.append(lp + Vector3(0, 2.3, 0))
 	# walls: each tier's stretch at its own height, the gate in the south
 	for i in 4:
 		var len: float = highs[i] - lows[i]
@@ -449,14 +469,14 @@ func _omashu() -> void:
 	interact(guild_door, "Ask the guild master for work", "work", "guildmaster", PI * 0.5)
 	# houses climb the flanks, tier by tier, facing the street
 	for i in 4:
-		var z0: float = lows[i] + 6.0
-		var z1: float = highs[i] - 6.0
+		var z0: float = lows[i] + 8.0
+		var z1: float = highs[i] - 8.0
 		var gz := z0
 		while gz <= z1:
 			for sgn in [-1.0, 1.0]:
-				for gx2 in [16.0, 27.0, 37.0]:
+				for gx2 in [12.0, 20.0, 28.0, 37.0]:
 					var p := Vector3(sgn * (gx2 + rng.randf_range(-1.2, 1.2)), 0, gz + rng.randf_range(-1.0, 1.0))
-					if absf(p.z - 33.0) < 8.0 and i == 0:
+					if absf(p.z - 33.0) < 8.0 and i == 0 or (absf(p.x) < 9.0):
 						continue
 					if i == 3 and absf(p.x) < 14.0:
 						continue
@@ -483,6 +503,11 @@ func _omashu() -> void:
 
 ## The Courier Guild's delivery chutes: open stone troughs on pillars that run
 ## from the palace down both flanks to the gate.
+func _lantern_at(p: Vector3) -> Node3D:
+	var n: Node3D = Arch.lantern(Color(0.95, 0.25, 0.15))
+	n.position = p
+	return n
+
 func _chutes(half: float) -> void:
 	var col := Color(0.5, 0.46, 0.4)
 	var pb = Arch.Builder.new()
