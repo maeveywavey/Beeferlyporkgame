@@ -344,3 +344,7 @@ Tests: check_scripts 0, battle siege/field/arena run clean. Idle; next task?
     300-600 tris), keep skeleton/animations, re-enable vertex snapping;
     report before/after tri counts.
 Queue: 7+11, 10, 6b, 9, 8, 2b.
+
+[2026-10-31, Kestrel] Reviews (sent, recorded): 6b accepted; 7 accepted.
+Flying fireballs (flat orange polygon discs) move into TASK 11.
+Queue: 11, 10, 9, 8, 2b.
