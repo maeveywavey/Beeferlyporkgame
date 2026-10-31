@@ -111,6 +111,24 @@ overrides an earlier one.
   legs. Hair: domed cap that tapers to the skin at the hairline; styles
   Hair_Bun (high bun) and Hair_Long (shoulder length, bangs).
 
+- 2026-10-31 (review of earth_woman_v2):
+  - **Face:** the painted jaw shading reads as stubble. Keep the face light
+    and clean; define the jaw in the mesh, not in paint.
+  - **Neck** slimmer; **head** slightly larger.
+  - **Hair:** the top is a sculpted cap piece with volume (never greased
+    onto the scalp), a slight central indent for a middle part, meeting the
+    bangs and the long hair with no seam.
+  - **Polygons:** up to 30 more for waist to thighs, up to 20 more for the
+    chest. Feminine bodies have breasts.
+  - **Curvy** means natural, respectful, full "child-bearing" proportions,
+    checked against real thick bodies; never cartoonish.
+  - **Style target: Fear Effect** (1999): PS1 geometry with clean, drawn,
+    animation-like faces (flat skin, crisp painted eyes, brows and lips, few
+    gradients), bulky, chunky hair masses, natural adult female proportions.
+    It bridges PS1 and the look of the show.
+  - **Fire:** scrapped; placeholder of 50%-opacity orange squares that shrink
+    to nothing as they rise.
+
 ### Hair physics (method)
 Long hair is one curtain in five strips, each on a chain of three bones
 (Hair.<strip>.<0..2>); neighbouring strips share their edge vertices, so the

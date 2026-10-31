@@ -605,3 +605,12 @@ models are Kestrel's (Blender pipeline), not Wren's.
  winter tree models (tree02_winter.glb fails to load in this install; it uses the
  summer model + winter texture).
  Tests: check_scripts 0; battle field/arena; town, ui, canon clean.
+
+[2026-10-31, Kestrel] TASK 16 (Wren): fire placeholder. The owner scrapped the
+current fire design. Replace every fire effect (battle fire bending, camp/torch
+fires, burning units) with a placeholder: orange squares (unlit, 50% opacity,
+billboarded) emitted at the source, rising, shrinking linearly to zero size over
+their life, then gone. No textures, no glow, no flame sprites. Keep the base
+anchored in the source. Screenshot a firebender attack and a campfire into
+docs/review/task16/, run the tests, push to main, report here.
+TASK 15 accepted on the report; I will check it in game later.
