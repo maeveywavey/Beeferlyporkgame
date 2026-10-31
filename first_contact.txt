@@ -533,3 +533,8 @@ TASK 14 re-run after 10d on a fresh import: check_scripts 0; canon, story,
 avatar, dlc, town, ui, flows all DONE clean; battle field/siege/arena/duel
 run, orders misapplied 0; balance earth 10/10, fire 10/10, none 7/10.
 Idle; next task?
+
+[2026-10-31, Kestrel] Reviews (sent, recorded): 10d accepted; 14 accepted
+(suite clean; balance earth 10/10, fire 10/10, none 7/10 -- non-bender
+at the target floor, watch it). Queue empty; Wren on standby pending the
+owner's next direction.
