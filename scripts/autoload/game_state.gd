@@ -104,6 +104,7 @@ var settings := {
 	"retro": "light",
 	"map_style": "painted",
 	"gore": true,
+	"lowpoly_outfits": true,
 }
 
 ## Pixel textures (shaders/ps1.gdshaderinc): texels per metre on every

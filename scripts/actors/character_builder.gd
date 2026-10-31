@@ -9,6 +9,7 @@ const MODEL := preload("res://shaders/model.gdshader")
 const MODEL_DOUBLE := preload("res://shaders/model_double.gdshader")
 const Accessories = preload("res://scripts/actors/accessories.gd")
 const FaceRig = preload("res://scripts/actors/face_rig.gd")
+const LowpolyOutfit = preload("res://scripts/actors/lowpoly_outfit.gd")
 
 const BASE := {
 	"m": "res://assets/characters/base/Superhero_Male_FullBody.gltf",
@@ -264,7 +265,15 @@ static func build(look: Dictionary) -> Dictionary:
 	var culture: String = look.get("culture", "earth")
 	var keep_hood: bool = look.get("hood", false) or look.get("accessory", "") in ["parka", "wt_helm", "sand_wrap"]
 	var keep_pauldrons: bool = look.get("pauldrons", false)
-	var outfit_meshes := _graft(OUTFITS["%s_%s" % [sex, outfit]], skel, func(n):
+	var palette0: Dictionary = PALETTES.get(culture, PALETTES.earth)
+	if look.has("robe_color"):
+		palette0 = palette0.duplicate()
+		palette0.primary = look.robe_color
+	if GS.settings.get("lowpoly_outfits", true):
+		# hand-built PS1 garments (scripts/actors/lowpoly_outfit.gd); the
+		# decimated CC0 outfits stay available behind the setting
+		parts.meshes.append_array(LowpolyOutfit.build(skel, outfit, sex, palette0, skin_c, look.get("cloth_tint", Color.WHITE)))
+	var outfit_meshes := [] if GS.settings.get("lowpoly_outfits", true) else _graft(OUTFITS["%s_%s" % [sex, outfit]], skel, func(n):
 		if n.find("Hood") >= 0:
 			return keep_hood
 		if n.find("Pauldron") >= 0:
