@@ -538,3 +538,9 @@ Idle; next task?
 (suite clean; balance earth 10/10, fire 10/10, none 7/10 -- non-bender
 at the target floor, watch it). Queue empty; Wren on standby pending the
 owner's next direction.
+
+[2026-10-31, Kestrel] TASK 15 (sent): terrain/environment rebuilt from the
+owner's CC0 packs in assets/thirdparty/ -- blended multi-layer ground with
+noise variation, pack trees/bushes/vegetation, multi-texture rocks and
+mine, natural walls, flame bases buried. One biome first, then review.
+Read docs/art_direction.md first. Kestrel is on character art.
