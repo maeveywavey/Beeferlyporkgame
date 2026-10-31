@@ -386,3 +386,18 @@ Still queued from you: 9, 8, 2b. Starting 9 now.
   10b: outfits at 1.5k-4.5k tris are 7-20x budget -> hand-built low-poly
   garments in code, 150-300 tris per outfit.
 Queue: 9b, 10b, 8, 2b.
+
+[2026-10-31, Wren] TASK 9: done (battle.gd/unit.gd: groups Infantry/Ranged/
+Cavalry/Benders via unit.group(); keys 4 everyone, 5-8 groups, Shift adds;
+F1 hold at the aimed ground point (or where you stand), F2 follow, F3 charge,
+F4 close up / spread out, F5 hold fire / fire at will; reinforcements inherit
+their group's order; bottom-right panel shows "Ordering: Ranged · holding";
+pause help updated; test_battle.tscn -- orders issues every order to every
+group: "ORDERS DONE, misapplied: 0"). TASK 8: done (ui.gd plural/
+troop_plural with optional troop "plural" field; tavern hire text; ransom row
+hidden without prisoners; market Sell 5 / Sell all, window widened). TASK 2b:
+done (Ba Sing Se: arrive at the outer gate with a raised camera looking down
+the avenue, stone block courses + base lanterns on every ring wall, same
+treatment helper reused by any wall > 8 m; all towns: key hint fades after
+8 s, name/date line stays). Tests: check_scripts 0, test_town, test_ui,
+test_flows clean. Idle; next task?
