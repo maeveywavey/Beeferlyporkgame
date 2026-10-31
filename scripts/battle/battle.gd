@@ -448,11 +448,11 @@ func _build_weather() -> void:
 			weather.initial_velocity_min = 1.0
 			weather.initial_velocity_max = 2.0
 		"rain":
-			mesh.size = Vector3(0.015, 0.5, 0.015)
+			mesh.size = Vector3(0.012, 0.2, 0.012)
 			weather.gravity = Vector3(0, -25, 0)
 			weather.initial_velocity_min = 10.0
 			weather.initial_velocity_max = 14.0
-			col = Color(0.7, 0.75, 0.85, 0.6)
+			col = Color(0.55, 0.6, 0.72, 0.28)
 		"dust":
 			mesh.size = Vector3(0.12, 0.12, 0.12)
 			weather.direction = Vector3(1, 0, 0)
@@ -705,7 +705,7 @@ func _spawn_entry(e: Dictionary, team: int, pos: Vector3, face: float):
 	if e.kind == "player":
 		player_unit = u
 		cam_yaw = face
-	elif team == 0:
+	elif team == 0 and (e.kind in ["companion", "lord"] or e.id == "avatar"):
 		u.add_ally_marker()
 	# Archers of the defending side start on the ramparts
 	if siege != "" and u.use_ranged:
@@ -2017,12 +2017,15 @@ func feed_msg(text: String, c: Color = Color(1, 1, 1)) -> void:
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	l.add_theme_constant_override("outline_size", 4)
 	feed.add_child(l)
-	while feed.get_child_count() > 5:
+	# older lines are dimmer and go sooner
+	for i in feed.get_child_count():
+		(feed.get_child(i) as Control).modulate.a = lerpf(0.4, 1.0, float(i + 1) / feed.get_child_count())
+	while feed.get_child_count() > 4:
 		var o := feed.get_child(0)
 		feed.remove_child(o)
 		o.queue_free()
 	var tw := l.create_tween()
-	tw.tween_interval(6.0)
+	tw.tween_interval(4.5)
 	tw.tween_property(l, "modulate:a", 0.0, 1.0)
 	tw.tween_callback(func():
 		if is_instance_valid(l):

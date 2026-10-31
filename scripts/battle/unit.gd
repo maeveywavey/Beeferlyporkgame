@@ -282,11 +282,12 @@ func _finish_setup(look: Dictionary) -> void:
 func add_ally_marker() -> void:
 	var m := MeshInstance3D.new()
 	var pm := PrismMesh.new()
-	pm.size = Vector3(0.16, 0.16, 0.04)
+	pm.size = Vector3(0.1, 0.1, 0.03)
 	m.mesh = pm
 	m.rotation_degrees.z = 180
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.3, 0.9, 0.4)
+	mat.albedo_color = Color(0.3, 0.9, 0.4, 0.5)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	m.material_override = mat

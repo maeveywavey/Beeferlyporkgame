@@ -118,6 +118,11 @@ func _physics_process(delta: float) -> void:
 			rotate_object_local(Vector3.UP, PI)
 	if spin:
 		rotate_object_local(Vector3.UP, delta * 20.0)
+	# a bolt or ball passing the camera shrinks away instead of filling the screen
+	if fx not in ["arrow", "boomerang", "knife", "rock", "ice"]:
+		var cam: Camera3D = battle.cam if battle != null else null
+		if cam != null:
+			scale = Vector3.ONE * clampf((global_position.distance_to(cam.global_position) - 1.5) / 2.0, 0.0, 1.0)
 	# Terrain
 	var gh: float = battle.ground_height(position.x, position.z)
 	if position.y < gh:

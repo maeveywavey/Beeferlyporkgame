@@ -16,7 +16,7 @@ extends Node3D
 const MB = preload("res://scripts/world/map_builder.gd")
 
 const CELL := 2.0
-const MAX_FIRES := 90
+const MAX_FIRES := 36
 const MAX_ROCKS := 70
 const MAX_STRUCTURES := 24
 
@@ -114,7 +114,7 @@ func _light(i: int, strength: float) -> bool:
 		return false
 	if _fire_nodes.size() >= MAX_FIRES:
 		return false
-	fire[i] = randf_range(5.0, 9.0) * (0.6 + fuel[i] * 0.6)
+	fire[i] = randf_range(3.5, 6.0) * (0.7 + fuel[i] * 0.4)
 	var fl := _flame()
 	add_child(fl)
 	fl.position = _center(i) + Vector3(randf_range(-0.5, 0.5), 0.0, randf_range(-0.5, 0.5))
@@ -124,17 +124,17 @@ func _light(i: int, strength: float) -> bool:
 func _flame() -> Node3D:
 	var root := Node3D.new()
 	var p := CPUParticles3D.new()
-	p.amount = 14
-	p.lifetime = 0.7
+	p.amount = 9
+	p.lifetime = 0.6
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
-	p.emission_sphere_radius = 0.7
+	p.emission_sphere_radius = 0.4
 	p.direction = Vector3.UP
 	p.spread = 15.0
 	p.initial_velocity_min = 1.2
 	p.initial_velocity_max = 2.6
 	p.gravity = Vector3(wind.x * 1.5, 1.5, wind.y * 1.5)
 	var qm := QuadMesh.new()
-	qm.size = Vector2(0.55, 0.75)
+	qm.size = Vector2(0.38, 0.5)
 	var m := _soft_material()
 	qm.material = m
 	p.mesh = qm
@@ -152,20 +152,20 @@ func _flame() -> Node3D:
 	root.add_child(p)
 	# smoke
 	var s := CPUParticles3D.new()
-	s.amount = 5
-	s.lifetime = 2.2
+	s.amount = 3
+	s.lifetime = 1.6
 	s.direction = Vector3.UP
 	s.spread = 20.0
 	s.initial_velocity_min = 1.0
 	s.initial_velocity_max = 1.8
 	s.gravity = Vector3(wind.x * 2.0, 0.6, wind.y * 2.0)
 	var sq := QuadMesh.new()
-	sq.size = Vector2(1.1, 1.1)
+	sq.size = Vector2(0.8, 0.8)
 	sq.material = m
 	s.mesh = sq
 	s.material_override = m
 	var sg := Gradient.new()
-	sg.set_color(0, Color(0.55, 0.53, 0.5, 0.28))
+	sg.set_color(0, Color(0.55, 0.53, 0.5, 0.16))
 	sg.set_color(1, Color(0.7, 0.7, 0.7, 0.0))
 	s.color_ramp = sg
 	s.position.y = 1.0
@@ -197,6 +197,10 @@ static func _soft_material() -> StandardMaterial3D:
 	gt.height = 32
 	_soft = StandardMaterial3D.new()
 	_soft.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	# sprites fade out as the camera passes through them
+	_soft.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
+	_soft.distance_fade_min_distance = 1.0
+	_soft.distance_fade_max_distance = 3.2
 	_soft.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	_soft.vertex_color_use_as_albedo = true
 	_soft.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -325,6 +329,10 @@ func _process(delta: float) -> void:
 	_tick = 0.0
 	for i in _fire_nodes.keys():
 		fire[i] -= dt * (2.0 if rain else 1.0)
+		# flames shrink away over their last seconds
+		var fnode: Node3D = _fire_nodes[i]
+		if is_instance_valid(fnode):
+			fnode.scale = Vector3.ONE * clampf(fire[i] / 1.5, 0.2, 1.0)
 		if fire[i] <= 0.0:
 			_put_out(i, true)
 			continue
