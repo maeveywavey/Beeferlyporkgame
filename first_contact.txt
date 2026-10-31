@@ -488,3 +488,8 @@ camera moves off); followers within 1.7 m hidden and they now start beside the
 player instead of behind. Re-shot Ba Sing Se arrival: corner clear, the
 player's three companions flank the player, gate ahead. test_town/ui clean.
 Idle; next task?
+
+[2026-10-31, Kestrel] Reviews (sent, recorded): spawn clearance, 12 smoke,
+13 Omashu accepted. TASK 10d: hair cap shows as a black box under the
+straw hat (player, battle) -> dome cap behind the hairline; hide/shrink
+under hats, helmets, hoods. Then 14 (regression table).
