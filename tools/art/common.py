@@ -50,6 +50,43 @@ for _k in ("elbow", "wrist", "hand_end"):
     J[_k] = raise_arm(J[_k])
 
 
+# The head is 7% larger than the source mesh, about the jaw's underside.
+HEAD_SCALE = 1.07
+HEAD_PIVOT = Vector((0, -0.01, 1.53))
+
+
+def hz(z: float) -> float:
+    """A height on the source head, on the enlarged head."""
+    return HEAD_PIVOT.z + (z - HEAD_PIVOT.z) * HEAD_SCALE
+
+
+def unscale_head(p: Vector) -> Vector:
+    return HEAD_PIVOT + (p - HEAD_PIVOT) / HEAD_SCALE if p.z > HEAD_PIVOT.z else p
+
+
+# Jaw defined in the mesh, not painted (v2 review): the chin a little narrower
+# and forward, the angle of the jaw under the ear wider and higher, the
+# underside of the jaw tucked up so its line stands off the neck. Positions
+# are of the enlarged head; moves apply to the vertex nearest each key point.
+JAW_MOVES = [
+    # (source point |x|, y, z on the enlarged head) -> offset (outward x, y, z)
+    ((0.031, -0.104, 1.583), (-0.006, -0.006, 0.0)),    # chin
+    ((0.040, -0.062, 1.582), (-0.003, 0.0, 0.006)),     # under the jaw
+    ((0.059, -0.022, 1.594), (0.004, 0.004, 0.008)),    # angle of the jaw
+    ((0.052, 0.028, 1.595), (0.0, 0.0, 0.006)),         # behind the jaw angle
+    ((0.052, -0.123, 1.646), (-0.002, 0.0, 0.0)),       # cheek above the mouth
+]
+
+
+def sculpt_jaw(p: Vector) -> Vector:
+    ax = abs(p.x)
+    sgn = 1.0 if p.x >= 0 else -1.0
+    for (kx, ky, kz), (dx, dy, dz) in JAW_MOVES:
+        if (ax - kx) ** 2 + (p.y - ky) ** 2 + (p.z - kz) ** 2 < 0.007 ** 2:
+            return Vector((p.x + dx * sgn, p.y + dy, p.z + dz))
+    return p
+
+
 def mirror(v: Vector) -> Vector:
     return Vector((-v.x, v.y, v.z))
 

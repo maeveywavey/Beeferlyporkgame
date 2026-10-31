@@ -34,6 +34,13 @@ def load(name):
     nrm = nrm / np.maximum(ln, 1e-6)
     ao = np.load(os.path.join(work, f"{name}_ao.npy"))[..., 0]
     pid = np.round(np.load(os.path.join(work, f"{name}_id.npy"))[..., 0] * 10).astype(int)
+    if name != "Outfit":
+        # the head is enlarged about the jaw's underside (common.HEAD_SCALE);
+        # the face is drawn in the source head's coordinates
+        piv = np.array([0, -0.01, 1.53], np.float32)
+        hd = pos[..., 2] > 1.53
+        pos = pos.copy()
+        pos[hd] = piv + (pos[hd] - piv) / 1.07
     return pos, nrm, ao, pid
 
 
@@ -103,11 +110,14 @@ FILL /= np.linalg.norm(FILL)
 
 
 def light(nrm, ao, warm=True):
-    d = np.clip((nrm * KEY).sum(-1), 0, 1)
+    """Fear Effect's look (owner, v2 review): shading in a few clean flat
+    tones, as an animation cel is painted, not a soft airbrushed gradient.
+    Three tones (shadow, base, light) with narrow edges, and occlusion only
+    deep in the folds."""
+    d = (nrm * KEY).sum(-1)
     f = np.clip((nrm * FILL).sum(-1), 0, 1)
-    top = np.clip(nrm[..., 2], 0, 1)
-    lum = 0.50 + 0.52 * d + 0.12 * f + 0.10 * top
-    occ = 0.55 + 0.45 * np.clip(ao, 0, 1)
+    lum = 0.74 + 0.24 * smooth(-0.05, 0.05, d) + 0.10 * smooth(0.72, 0.8, d) + 0.04 * f
+    occ = 0.75 + 0.25 * smooth(0.35, 0.6, np.clip(ao, 0, 1))
     lum = lum * occ
     # shadows lean cool, lights lean warm
     tint = mix(col(0.86, 0.90, 1.04), col(1.06, 1.0, 0.92), smooth(0.55, 1.05, lum))
@@ -134,25 +144,25 @@ def paint_body():
     ax = np.abs(x)
     skin = col(0.86, 0.65, 0.49)
     c = np.broadcast_to(skin, pos.shape).copy()
-    c *= (0.95 + 0.1 * fbm(pos, 40))[..., None]
+    # skin is one clean tone; the face is drawn, not airbrushed
     head = z > 1.47
     front = (nrm[..., 1] < -0.35) & (y < -0.06) & head
     # warmth: cheeks, nose, ears, knuckles
-    blush = np.exp(-(((ax - 0.05) / 0.022) ** 2 + ((z - 1.635) / 0.02) ** 2)) * front
-    c = mix(c, col(0.86, 0.52, 0.44), 0.35 * blush)
+    blush = np.exp(-(((ax - 0.05) / 0.018) ** 2 + ((z - 1.637) / 0.012) ** 2)) * front
+    c = mix(c, col(0.90, 0.58, 0.50), 0.22 * blush)
     # eye sockets and the shadow under the brow
     for s in (1, -1):
         ex, ez = 0.034 * s, 1.675
         sock = np.exp(-(((x - ex) / 0.026) ** 2 + ((z - ez - 0.004) / 0.014) ** 2)) * front
-        c = mix(c, col(0.62, 0.44, 0.36), 0.35 * sock)
+        c = mix(c, col(0.74, 0.54, 0.44), 0.25 * sock)
     # nose: shade on the side away from the light, shadow and nostrils below
     nose_side = band(x, -0.012, 0.004, 0.004) * band(z, 1.656, 0.02, 0.006) * front
-    c = mix(c, col(0.66, 0.46, 0.36), 0.45 * nose_side)
+    c = mix(c, col(0.72, 0.52, 0.41), 0.4 * nose_side)
     under_nose = band(z, 1.632, 0.004, 0.003) * band(x, 0, 0.016, 0.004) * front
-    c = mix(c, col(0.60, 0.40, 0.32), 0.55 * under_nose)
+    c = mix(c, col(0.66, 0.46, 0.37), 0.5 * under_nose)
     for s in (1, -1):
         nos = np.exp(-(((x - 0.008 * s) / 0.004) ** 2 + ((z - 1.636) / 0.0022) ** 2)) * front
-        c = mix(c, col(0.30, 0.17, 0.14), 0.8 * nos)
+        c = mix(c, col(0.42, 0.26, 0.21), 0.6 * nos)
     # mouth
     mw = 0.018
     lips_u = band(z, 1.6105, 0.0035, 0.0015) * band(x, 0, mw * (1 - 0.25 * smooth(0, mw, ax)), 0.003) * front
@@ -161,8 +171,7 @@ def paint_body():
     c = mix(c, col(0.76, 0.47, 0.42), 0.8 * lips_l)
     c = mix(c, col(0.90, 0.66, 0.60), 0.5 * lips_l * band(z, 1.601, 0.0012, 0.0012) * band(x, 0.003, 0.006, 0.003))
     c = mix(c, col(0.32, 0.16, 0.14), 0.95 * band(z, 1.607, 0.0011, 0.0009) * band(x, 0, mw, 0.002) * front)
-    chin = band(z, 1.585, 0.007, 0.006) * band(x, 0, 0.012, 0.01) * front
-    c = mix(c, col(0.72, 0.52, 0.40), 0.3 * chin)
+    # (no chin or jaw shading: it read as stubble; the jaw is in the mesh)
     # eyes
     for s in (1, -1):
         ex, ez = 0.034 * s, 1.676
@@ -193,12 +202,8 @@ def paint_body():
     # jaw contour: the plane of the jaw turning away, shade along the line of
     # the mandible from the chin to below the ear, and a hollow under the
     # cheekbone
-    side = front | ((z > 1.56) & (z < 1.70) & head & (y < 0.02))
-    jz = 1.588 + 0.05 * np.clip((ax - 0.012) / 0.07, 0, 1) ** 1.6
-    jaw = band(z - jz, 0.007, 0.006, 0.005) * smooth(0.02, 0.04, ax) * side
-    c = mix(c, col(0.60, 0.42, 0.33), 0.45 * jaw)
-    hollow = np.exp(-(((ax - 0.056) / 0.012) ** 2 + ((z - 1.622) / 0.012) ** 2)) * side
-    c = mix(c, col(0.66, 0.47, 0.37), 0.35 * hollow)
+    # (the jaw contour is modelled now, not painted: painted jaw shade read
+    # as a five o'clock shadow)
     # highlights where the key light catches: brow ridge and forehead, nose
     # bridge and tip, cheekbones, chin, the upper lip's edge
     hi = col(0.99, 0.84, 0.70)
@@ -207,7 +212,7 @@ def paint_body():
     tip = np.exp(-((x / 0.006) ** 2 + ((z - 1.642) / 0.005) ** 2)) * front
     cheek = np.exp(-(((ax - 0.047) / 0.012) ** 2 + ((z - 1.647) / 0.007) ** 2)) * front
     chin_hi = np.exp(-((x / 0.01) ** 2 + ((z - 1.589) / 0.006) ** 2)) * front
-    hi_amt = np.clip(0.35 * forehead + 0.55 * bridge + 0.5 * tip + 0.2 * cheek + 0.35 * chin_hi, 0, 0.7)
+    hi_amt = np.clip(0.2 * forehead + 0.35 * bridge + 0.3 * tip + 0.15 * cheek + 0.15 * chin_hi, 0, 0.5)
 
     # hairline painted on the skin, under the hair cap's edge
     hair_col = col(0.13, 0.09, 0.07)
@@ -215,9 +220,7 @@ def paint_body():
     temples = smooth(0.062, 0.07, ax) * smooth(1.66, 1.675, z) * head
     neck_back = smooth(0.0, 0.03, y) * smooth(1.6, 1.62, z) * head
     c = mix(c, hair_col, np.clip(hl_front + temples + neck_back, 0, 1))
-    # jaw shadow on the neck
-    neck = (z > 1.45) & (z < 1.58)
-    c = mix(c, col(0.62, 0.45, 0.35), 0.4 * smooth(1.585, 1.56, z) * smooth(1.5, 1.545, z) * neck)
+    # no painted shadow under the jaw: the cel light shades the neck
     # hands: knuckle warmth and finger separations along the hand
     hand = (ax > 0.645) & (z > 0.95) & (z < 1.16)
     along = ax - 0.65
@@ -251,8 +254,9 @@ def paint_outfit():
     x, y, z = pos[..., 0], pos[..., 1], pos[..., 2]
     ax = np.abs(x)
     c = np.zeros(pos.shape, np.float32)
-    cloth = 0.93 + 0.12 * fbm(pos, 55, 2)
-    weave = 0.97 + 0.06 * (np.sin(x * 900) * np.sin(z * 900) > 0)
+    # cloth: clean colour blocks (Fear Effect) with a faint weave, no mottle
+    cloth = 0.985 + 0.03 * fbm(pos, 55, 2)
+    weave = 0.985 + 0.03 * (np.sin(x * 900) * np.sin(z * 900) > 0)
     front = y < 0
 
     torso = pid == 1
@@ -285,8 +289,11 @@ def paint_outfit():
     c = mix(c, col(0.55, 0.44, 0.26), (knot & (np.abs(x) > 0.024)).astype(np.float32))
     # creases from the bust to the sash, and under the arms
     crease = torso & (z > 1.12) & (z < 1.26) & front
-    cr = 0.5 + 0.5 * np.sin((x * 70) + (z * 30) + fbm(pos, 30) * 4)
-    c[crease] *= (0.9 + 0.1 * cr[crease])[..., None]
+    # a few drawn fold lines from under the bust toward the sash knot
+    cr = np.zeros_like(x)
+    for x0, k in ((0.05, -0.55), (0.10, -0.35), (-0.06, 0.5), (-0.11, 0.3)):
+        cr = np.maximum(cr, band(x - (x0 + k * (1.24 - z)), 0.0, 0.0022, 0.0015) * band(z, 1.18, 0.05, 0.01))
+    c = mix(c, G_DARK, 0.55 * cr * crease)
 
     # sleeves: upper arm in the robe green with a dark band at the elbow;
     # the bell sleeve below in light olive with a dark cuff
@@ -343,9 +350,11 @@ def paint_outfit():
     c[hem] = G_DARK
     c = mix(c, G_LIGHT, (sk & (np.abs(z - 0.49) < 0.004)).astype(np.float32))
     c = mix(c, G_LIGHT, (sk & (np.abs(z - 0.452) < 0.0025)).astype(np.float32))
-    pleat = 0.5 + 0.5 * np.cos(ang * 11 + fbm(pos, 12) * 2.5)
-    depth = smooth(0.95, 0.5, z)
-    c[sk] *= (1.0 - 0.22 * depth[sk] * (1 - pleat[sk]) + 0.06 * pleat[sk] * depth[sk])[..., None]
+    # pleats: clean drawn shadow bands that widen toward the hem
+    pleat = np.cos(ang * 11)
+    depth = smooth(0.95, 0.55, z)
+    shade = (pleat < -0.55 + 0.35 * depth) & sk
+    c[shade] *= 0.82
 
     c *= (cloth * weave)[..., None]
     c *= light(nrm, ao)
@@ -360,12 +369,18 @@ def paint_hair(name):
     # strands: dark grooves and lighter locks that run down the head, keyed to
     # the angle round it, so they flow from the crown and hang straight below
     ang = np.arctan2(x, y + 0.01)
+    # Fear Effect hair: a dark mass with a few clean, drawn highlight streaks
+    # running with the flow, not a noisy airbrush
     lock = fbm(np.stack([ang * 9, z * 0.4, ang * 9], -1), 3, 3)
     fine = 0.5 + 0.5 * np.sin(ang * 70 + fbm(pos, 25) * 6)
-    c *= (0.62 + 0.55 * lock + 0.12 * fine)[..., None]
-    # a sheen band where the light catches the curve of the head and the locks
-    sheen = np.clip((nrm * KEY).sum(-1), 0, 1) ** 4 * (0.6 + 0.4 * fine)
-    c = mix(c, col(0.40, 0.31, 0.26), 0.6 * sheen)
+    c *= (0.85 + 0.25 * (lock > 0.55))[..., None]
+    lit = (nrm * KEY).sum(-1)
+    streak = (lit > 0.55) & (np.sin(ang * 22 + fbm(pos, 9) * 3) > 0.35)
+    c = mix(c, col(0.42, 0.32, 0.27), 0.75 * streak)
+    # the middle part: a thin dark groove from the front hairline back over
+    # the crown, with a sliver of scalp tone at its front
+    part = band(x, 0, 0.0025, 0.0015) * smooth(1.70, 1.74, z) * (y < 0.04)
+    c = mix(c, col(0.05, 0.035, 0.03), 0.9 * part)
     # tips of the curtain and bangs break into darker points
     if name == "Hair_Long":
         c *= (1 - 0.35 * smooth(1.50, 1.46, z) * (fine < 0.5))[..., None]
