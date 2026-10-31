@@ -369,14 +369,11 @@ def paint_hair(name):
     # strands: dark grooves and lighter locks that run down the head, keyed to
     # the angle round it, so they flow from the crown and hang straight below
     ang = np.arctan2(x, y + 0.01)
-    # Fear Effect hair: a dark mass with a few clean, drawn highlight streaks
-    # running with the flow, not a noisy airbrush
+    # Fear Effect hair: a dark mass, shaded by the cel light only (owner:
+    # no light streaks)
     lock = fbm(np.stack([ang * 9, z * 0.4, ang * 9], -1), 3, 3)
     fine = 0.5 + 0.5 * np.sin(ang * 70 + fbm(pos, 25) * 6)
     c *= (0.85 + 0.25 * (lock > 0.55))[..., None]
-    lit = (nrm * KEY).sum(-1)
-    streak = (lit > 0.55) & (np.sin(ang * 22 + fbm(pos, 9) * 3) > 0.35)
-    c = mix(c, col(0.42, 0.32, 0.27), 0.75 * streak)
     # the middle part: a thin dark groove from the front hairline back over
     # the crown, with a sliver of scalp tone at its front
     part = band(x, 0, 0.0025, 0.0015) * smooth(1.70, 1.74, z) * (y < 0.04)

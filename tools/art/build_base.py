@@ -72,6 +72,11 @@ def cut_across(z, pred):
 
 cut_across(0.90, lambda c: abs(c.x) < 0.26 and 0.78 < c.z < 1.0)
 cut_across(0.80, lambda c: c.z < 0.95)
+# owner's review of v3 (up to 40 more): a loop under the breasts so they have
+# a defined underside, and one at the natural waist so the waist-to-hip curve
+# is a curve rather than one long slope
+cut_across(1.19, lambda c: abs(c.x) < 0.24 and 1.1 < c.z < 1.3)
+cut_across(1.06, lambda c: abs(c.x) < 0.26 and 0.98 < c.z < 1.16)
 bust = [f for f in bm.faces if f.calc_center_median().y < -0.1 and 1.18 < f.calc_center_median().z < 1.32
         and 0.02 < abs(f.calc_center_median().x) < 0.12]
 bmesh.ops.subdivide_edges(bm, edges=list({e for f in bust for e in f.edges}), cuts=1, use_grid_fill=True)
@@ -188,6 +193,11 @@ def k_heavy(p, reg):
             q.z -= 0.02 * belly
         else:
             q.y += 0.03 * C.smooth(0.84, 0.92, p.z) * (1 - C.smooth(1.0, 1.08, p.z))
+        # heavy figures (reference): large breasts that rest lower, on the
+        # upper belly
+        bq = breast(p, 0.03)
+        q += bq
+        q.z -= 0.6 * bq.length
     if reg == "thigh":
         # the upper thigh takes up the hip width, outside and inside
         q.x += (0.025 if p.x > 0 else -0.025) * C.smooth(0.6, 0.88, p.z)
@@ -215,18 +225,23 @@ def k_muscular(p, reg):
 
 
 def breast(p, amount):
-    """Forward and slightly downward fullness centred on each breast (the
-    poked centre vertex is the apex), rounded off toward the sternum, the
-    armpit and the ribs below, so it reads as a natural breast rather than a
-    shelf."""
+    """Owner's review of v3 and the reference figures: the breasts sit high
+    (apex about level with the middle of the upper arm), round, with a full
+    upper slope and a defined fold underneath; stylised a little toward Fear
+    Effect, never cartoonish. amount is the forward projection at the apex."""
     if p.y > -0.03:
         return Vector()
-    cx, cz = 0.065, 1.235
-    d2 = ((abs(p.x) - cx) / 0.055) ** 2 + ((p.z - cz) / 0.06) ** 2
-    w = math.exp(-1.6 * d2)
-    # the lower half is fuller than the upper
-    lower = 1.0 + 0.35 * C.smooth(cz + 0.03, cz - 0.03, p.z)
-    return Vector((0.12 * (p.x) * w * amount / 0.03, -amount * w * lower, -0.25 * amount * w))
+    cx, cz = 0.075, 1.285
+    dx = (abs(p.x) - cx) / 0.06
+    dz = (p.z - cz) / (0.07 if p.z > cz else 0.05)    # long upper slope, short underside
+    # flat-topped falloff: the ring of vertices round the apex comes forward
+    # nearly as far as the apex, so the breast is a rounded dome, not a cone
+    d2 = dx * dx + dz * dz
+    w = math.exp(-0.9 * d2 * d2)
+    q = Vector((0.15 * p.x * w * amount / 0.03, -amount * w, 0.0))
+    # the underside folds in to the ribs at the underbust loop
+    q.y += 0.35 * amount * C.smooth(1.21, 1.18, p.z) * C.smooth(1.15, 1.18, p.z) * math.exp(-dx * dx)
+    return q
 
 
 def k_curvy(p, reg):
@@ -234,11 +249,11 @@ def k_curvy(p, reg):
     if reg == "torso":
         hips = 1 - C.smooth(1.0, 1.08, p.z)
         waist = C.smooth(1.0, 1.08, p.z) * (1 - C.smooth(1.14, 1.2, p.z))
-        q.x *= 1.0 + 0.13 * hips - 0.08 * waist
-        q += breast(p, 0.022)
+        q.x *= 1.0 + 0.16 * hips - 0.12 * waist
+        q += breast(p, 0.03)
         if p.y > 0.0:
             # buttocks: full and low, widest just above the fold
-            q.y += 0.045 * hips * np.exp(-((abs(p.x) - 0.075) / 0.07) ** 2)
+            q.y += 0.06 * hips * np.exp(-((abs(p.x) - 0.075) / 0.07) ** 2) * C.smooth(0.84, 0.92, p.z)
         if p.y < 0.0:
             # a soft lower belly, as on real full figures
             q.y -= 0.012 * C.smooth(0.88, 0.95, p.z) * (1 - C.smooth(1.0, 1.06, p.z))
@@ -269,7 +284,7 @@ def k_feminine(p, reg):
         hips = 1 - C.smooth(1.0, 1.08, p.z)
         waist = C.smooth(1.0, 1.08, p.z) * (1 - C.smooth(1.14, 1.2, p.z))
         q.x *= 1.0 - 0.10 * sh + 0.07 * hips - 0.06 * waist
-        q += breast(p, 0.05)
+        q += breast(p, 0.042)
     elif reg in ("upperarm", "forearm", "hand"):
         q = radial(p, reg, 0.88, 1, 1)
         q = arm_shift(q, reg, -0.022)

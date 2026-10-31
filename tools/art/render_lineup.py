@@ -17,7 +17,7 @@ rig.hide_render = True
 
 FIGS = [
     ("Base", {}), ("Tall", {"Tall": 1}), ("Short", {"Short": 1}), ("Thin", {"Thin": 1}),
-    ("Heavy", {"Heavy": 1}), ("Muscular", {"Muscular": 1}), ("Feminine", {"Feminine": 1}),
+    ("Heavy", {"Heavy": 1}), ("Muscular", {"Muscular": 1}), ("Feminine", {"Feminine": 1}), ("Thin fem", {"Feminine": 1, "Thin": 1}), ("Heavy fem", {"Feminine": 1, "Heavy": 1}),
     ("Curvy", {"Feminine": 1, "Curvy": 1}), ("Flat", {"Feminine": 1, "Flat": 1}),
     ("Child", {"Child": 1}), ("Teen", {"Teen": 1}), ("Elder", {"Elder": 1}),
     ("Brawny tall", {"Muscular": 1, "Heavy": 0.4, "Tall": 1}),
