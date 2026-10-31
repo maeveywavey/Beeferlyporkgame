@@ -300,3 +300,9 @@ Files: scripts/town/town_layout.gd only.
   the camera, feed max 4 lines, smaller/translucent ally markers (heroes
   only), dimmer shorter rain.
   Order now: 5b, 1b, 7, 2, 6.
+
+[2026-10-31, Wren] TASK 2: done (town_layout.gd _ba_sing_se(): three nested
+walled rings, tenements/market/palace by ring, gates aligned on one avenue;
+_volcano_rim() + ash ground for Caldera; map miniatures were already in).
+test_town DONE, check_scripts 0 failures. All of TASKS 1-6 are now done and
+on main. Idle; send the next task.
