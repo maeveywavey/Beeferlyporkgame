@@ -142,34 +142,25 @@ def paint(tongues, pal, s, ball):
     return Image.fromarray(a)
 
 
+ASH = {"outer": (92, 80, 72), "mid": (136, 120, 104), "yellow": (172, 156, 136), "core": (196, 182, 160), "streak": (70, 58, 52)}
+
+
 def render_smoke(f):
+    """Curling wisps of ash in the same inked style as the flames: a brush
+    outline, three flat tones, tips that curl, drifting up and thinning out."""
     s = FS * SS
     frames = 6
     t = f / (frames - 1)
-    img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
-    mask = Image.new("L", (s, s), 0)
-    md = ImageDraw.Draw(mask)
-    puffs = [(0.5, 0.78, 0.17), (0.4, 0.66, 0.13), (0.58, 0.62, 0.12)]
-    cells = []
-    for i, (px, py, pr) in enumerate(puffs):
-        y = py - t * (0.18 + 0.05 * i)
-        r = pr * (0.8 + 0.7 * t)
-        x = px + math.sin(t * 3 + i) * 0.03
-        cells.append((x * s, y * s, r * s))
-        md.ellipse([(x - r) * s, (y - r) * s, (x + r) * s, (y + r) * s], fill=255)
-    outline = mask.filter(ImageFilter.MaxFilter(2 * (2 * SS // 2) + 1))
-    img.paste(Image.new("RGBA", (s, s), (40, 34, 32, 255)), mask=outline)
-    d = ImageDraw.Draw(img)
-    d.bitmap((0, 0), mask, fill=(108, 100, 96, 255))
-    for x, y, r in cells:
-        d.ellipse([x - r * 0.55, y - r * 0.6, x + r * 0.35, y + r * 0.3], fill=(150, 142, 136, 255))
-    out = img.resize((FS, FS), Image.NEAREST)
-    a = np.array(out)
-    a[..., 3] = np.where(a[..., 3] > 127, 255, 0)
-    # stepped fade: the last frames lose their lower half
-    if f >= frames - 2:
-        a[FS // 2 + (f - frames + 2) * 18:, :, 3] = 0
-    return Image.fromarray(a)
+    phase = 2 * math.pi * f / frames
+    base_y = s * 0.92
+    rise = 1.0 - 0.18 * t
+    tongues = [
+        dict(cx=s * 0.5, cy=base_y, ang=0.0, length=s * 0.8 * rise * (1.0 - 0.45 * max(0.0, t - 0.6) / 0.4), width=s * 0.11, sway=1.1, phase=phase, curl=0.55),
+        dict(cx=s * 0.44, cy=base_y, ang=-0.25, length=s * 0.55 * rise * (1.0 - 0.5 * max(0.0, t - 0.5) / 0.5), width=s * 0.08, sway=1.3, phase=phase + 2.0, curl=-0.6),
+        dict(cx=s * 0.57, cy=base_y, ang=0.3, length=s * 0.42 * rise * (1.0 - 0.6 * max(0.0, t - 0.5) / 0.5), width=s * 0.07, sway=1.3, phase=phase + 4.0, curl=0.6),
+    ]
+    img = paint(tongues, ASH, s, ball=None)
+    return img
 
 
 def sheet(frames, path):

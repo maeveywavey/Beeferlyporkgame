@@ -338,8 +338,8 @@ static func _wall_ring(Arch, culture: String, mini: Callable, k: float, r: float
 static func _omashu_model(root: Node3D, rng: RandomNumberGenerator, mini: Callable, house: Callable, Arch, culture: String, k: float) -> void:
 	# the city is built on the mountain: four terraces stepping up a rocky cone,
 	# the palace on the summit, a chute spiralling down the face
-	var radii := [9.0, 7.0, 5.0, 3.2]
-	var tops := [1.6, 3.3, 5.0, 6.7]
+	var radii := [9.0, 6.4, 4.2, 2.4]
+	var tops := [2.6, 5.6, 9.0, 12.6]
 	var stone := Color(0.5, 0.47, 0.42)
 	# a broken rock skirt around the foot and boulders along every terrace edge
 	root.add_child(cyl(radii[0] + 0.5, radii[0] + 2.4, 0.9, Color(0.44, 0.42, 0.38), Vector3(0, 0.45, 0), 16))
@@ -352,27 +352,27 @@ static func _omashu_model(root: Node3D, rng: RandomNumberGenerator, mini: Callab
 			var rh := rng.randf_range(0.8, 1.7)
 			root.add_child(cyl(rr * 0.35, rr, rh, Color(0.52, 0.5, 0.46) * rng.randf_range(0.8, 1.1), Vector3(cos(a) * (radii[i] + 0.6), tops[i] - rh * 0.4, sin(a) * (radii[i] + 0.6)), 6))
 	# the summit rock above the palace
-	root.add_child(cyl(1.2, 3.0, 2.4, Color(0.5, 0.48, 0.44), Vector3(0, tops[3] + 1.2, -2.4), 7))
+	root.add_child(cyl(1.0, 2.4, 2.6, Color(0.5, 0.48, 0.44), Vector3(0, tops[3] + 1.3, -1.8), 7))
 	_wall_ring(Arch, culture, mini, k, 8.7, 10, 6.0, tops[0])
 	for i in 4:
 		var n: int = 8 - i
 		for j in n:
 			var a2 := TAU * (j + 0.5) / n + i * 0.3
-			var rr2: float = radii[i] - 1.7
+			var rr2: float = radii[i] - 1.45
 			if i == 3:
-				rr2 = 1.4
-				if j > 3:
+				rr2 = 0.9
+				if j > 2:
 					continue
 			house.call(Vector3(cos(a2) * rr2, tops[i], sin(a2) * rr2), rng.randf_range(5.5, 7.5), 5.0, 1 + int(rng.randf() < 0.3), round(a2 / (PI * 0.5)) * PI * 0.5)
-	house.call(Vector3(0, tops[3], 0.4), 12.0, 9.0, 3, 0.0)
+	house.call(Vector3(0, tops[3], 0.3), 9.0, 7.0, 3, 0.0)
 	# the chutes, spiralling down the face of the mountain
 	for sgn in [0.0, PI]:
 		var prev := Vector3.ZERO
 		for j in 19:
 			var t: float = j / 18.0
 			var ang: float = sgn + 0.4 + t * 5.4
-			var rad: float = lerpf(3.4, 9.6, t)
-			var pt := Vector3(cos(ang) * rad, lerpf(7.4, 1.9, t), sin(ang) * rad)
+			var rad: float = lerpf(2.8, 9.6, t)
+			var pt := Vector3(cos(ang) * rad, lerpf(13.4, 2.9, t), sin(ang) * rad)
 			if j > 0:
 				var seg := box(Vector3(0.6, 0.22, prev.distance_to(pt) + 0.05), Color(0.66, 0.54, 0.4), (prev + pt) * 0.5)
 				seg.basis = Basis.looking_at(pt - prev, Vector3.UP)
