@@ -23,7 +23,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 work = sys.argv[1]
-OUT = {"Body": 256, "Outfit": 256, "Hair": 128}
+OUT = {"Body": 256, "Outfit": 256, "Hair_Bun": 128, "Hair_Long": 128}
+J = json.load(open(os.path.join(work, "joints.json")))
 
 
 def load(name):
@@ -189,6 +190,25 @@ def paint_body():
         bz = 1.6935 + 0.006 * np.sin(np.clip(t, 0, 1) * np.pi * 0.9)
         brow = band(z, bz, 0.0022 * (1.2 - 0.6 * np.clip(t, 0, 1)), 0.0012) * (t > 0) * (t < 1.02) * front
         c = mix(c, col(0.15, 0.10, 0.08), 0.95 * brow)
+    # jaw contour: the plane of the jaw turning away, shade along the line of
+    # the mandible from the chin to below the ear, and a hollow under the
+    # cheekbone
+    side = front | ((z > 1.56) & (z < 1.70) & head & (y < 0.02))
+    jz = 1.588 + 0.05 * np.clip((ax - 0.012) / 0.07, 0, 1) ** 1.6
+    jaw = band(z - jz, 0.007, 0.006, 0.005) * smooth(0.02, 0.04, ax) * side
+    c = mix(c, col(0.60, 0.42, 0.33), 0.45 * jaw)
+    hollow = np.exp(-(((ax - 0.056) / 0.012) ** 2 + ((z - 1.622) / 0.012) ** 2)) * side
+    c = mix(c, col(0.66, 0.47, 0.37), 0.35 * hollow)
+    # highlights where the key light catches: brow ridge and forehead, nose
+    # bridge and tip, cheekbones, chin, the upper lip's edge
+    hi = col(0.99, 0.84, 0.70)
+    forehead = band(ax, 0, 0.035, 0.02) * band(z, 1.715, 0.014, 0.01) * front
+    bridge = 0.65 * band(x, 0.002, 0.0045, 0.003) * band(z, 1.662, 0.017, 0.006) * front
+    tip = np.exp(-((x / 0.006) ** 2 + ((z - 1.642) / 0.005) ** 2)) * front
+    cheek = np.exp(-(((ax - 0.047) / 0.012) ** 2 + ((z - 1.647) / 0.007) ** 2)) * front
+    chin_hi = np.exp(-((x / 0.01) ** 2 + ((z - 1.589) / 0.006) ** 2)) * front
+    hi_amt = np.clip(0.35 * forehead + 0.55 * bridge + 0.5 * tip + 0.2 * cheek + 0.35 * chin_hi, 0, 0.7)
+
     # hairline painted on the skin, under the hair cap's edge
     hair_col = col(0.13, 0.09, 0.07)
     hl_front = smooth(1.728, 1.738, z + 0.003 * np.sin(x * 260)) * head
@@ -211,6 +231,8 @@ def paint_body():
     under = col(0.84, 0.80, 0.68)
     c[wrap_top | wrap_low] = under
     c *= light(nrm, ao)
+    # highlights go on after the light, warm, so they read as light on skin
+    c = mix(c, hi * 1.02, hi_amt)
     return c
 
 
@@ -276,11 +298,11 @@ def paint_outfit():
         bx_ = np.stack([seg_b[0] * sgn, np.full_like(x, seg_b[1]), np.full_like(x, seg_b[2])], -1)
         ab = bx_ - ax_
         return ((pos - ax_) * ab).sum(-1) / (ab * ab).sum(-1)
-    tu = arm_t((0.20, 0.01, 1.39), (0.43, 0.02, 1.27))
+    tu = arm_t(J["shoulder"], J["elbow"])
     c[upper & (tu > 0.86)] = G_DARK
     c = mix(c, G_LIGHT, (upper & (np.abs(tu - 0.85) < 0.02)).astype(np.float32))
     lower = pid == 3
-    tl = arm_t((0.43, 0.02, 1.27), (0.65, 0.01, 1.12))
+    tl = arm_t(J["elbow"], J["wrist"])
     c[lower] = G_LIGHT
     c[lower & (tl > 0.80)] = G_DARK
     c = mix(c, CREAM, (lower & (tl > 0.96)).astype(np.float32))
@@ -330,28 +352,36 @@ def paint_outfit():
     return c
 
 
-def paint_hair():
-    pos, nrm, ao, _ = load("Hair")
+def paint_hair(name):
+    pos, nrm, ao, _ = load(name)
     x, y, z = pos[..., 0], pos[..., 1], pos[..., 2]
-    base = col(0.14, 0.10, 0.08)
+    base = col(0.13, 0.09, 0.07)
     c = np.broadcast_to(base, pos.shape).copy()
-    # strands sweep from the hairline back to the bun
-    a = np.arctan2(x, (z - 1.62))
-    strands = fbm(np.stack([a * 6, y * 3, a * 6], -1), 6, 2)
-    c *= (0.75 + 0.5 * strands)[..., None]
-    bun = (y > 0.04) & (np.hypot(x, (z - 1.70)) < 0.07)
-    sp = np.sin(np.arctan2(x, z - 1.70) * 3 + np.hypot(x, z - 1.70) * 120)
-    c[bun] *= (0.8 + 0.3 * (sp[bun] > 0))[..., None]
-    sheen = np.clip((nrm * KEY).sum(-1), 0, 1) ** 6
-    c = mix(c, col(0.42, 0.34, 0.30), 0.55 * sheen)
-    # a sand hair tie at the base of the bun
-    tie = (y > 0.03) & band(np.hypot(x, z - 1.70), 0.052, 0.006, 0.002).astype(bool) & (y < 0.07)
-    c[tie] = SAND * 0.9
+    # strands: dark grooves and lighter locks that run down the head, keyed to
+    # the angle round it, so they flow from the crown and hang straight below
+    ang = np.arctan2(x, y + 0.01)
+    lock = fbm(np.stack([ang * 9, z * 0.4, ang * 9], -1), 3, 3)
+    fine = 0.5 + 0.5 * np.sin(ang * 70 + fbm(pos, 25) * 6)
+    c *= (0.62 + 0.55 * lock + 0.12 * fine)[..., None]
+    # a sheen band where the light catches the curve of the head and the locks
+    sheen = np.clip((nrm * KEY).sum(-1), 0, 1) ** 4 * (0.6 + 0.4 * fine)
+    c = mix(c, col(0.40, 0.31, 0.26), 0.6 * sheen)
+    # tips of the curtain and bangs break into darker points
+    if name == "Hair_Long":
+        c *= (1 - 0.35 * smooth(1.50, 1.46, z) * (fine < 0.5))[..., None]
+    else:
+        bun = (z > 1.79) & (y > -0.04)
+        sp = np.sin(np.arctan2(x, y - 0.03) * 3 + np.hypot(x, z - 1.835) * 140)
+        c[bun] *= (0.75 + 0.35 * (sp[bun] > 0))[..., None]
+        # the tie is the upright band round the base of the bun
+        tie = band(z, 1.822, 0.012, 0.002) * (np.abs(nrm[..., 2]) < 0.5) * (np.hypot(x, y - 0.008) < 0.056)
+        c = mix(c, SAND * 0.85, tie)
     c *= light(nrm, ao)
     return c
 
 
-for name, painter in (("Body", paint_body), ("Outfit", paint_outfit), ("Hair", paint_hair)):
+for name, painter in (("Body", paint_body), ("Outfit", paint_outfit),
+                      ("Hair_Bun", lambda: paint_hair("Hair_Bun")), ("Hair_Long", lambda: paint_hair("Hair_Long"))):
     rgb = painter()
     cov = coverage(name, rgb.shape[0])
     finish(name, rgb, OUT[name], cov)

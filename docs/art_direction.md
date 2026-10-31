@@ -103,3 +103,20 @@ overrides an earlier one.
     noise for blending textures and varying colour and contrast on ground,
     rock, buildings and everything else, so surfaces look natural and lived
     in, not clean drafts).
+- 2026-10-31 (earth_woman_v2, built): arms swung up 8 degrees about the
+  shoulder and the shoulder line sloped (no pads, child included); 1.2x girth
+  with fuller inner thighs (Thin keeps the old girth); Heavy, Feminine and
+  Curvy each have a second half (HeavyMore, FeminineMore, CurvyMore) for
+  slider values 1..2, limited to hips, waist, buttocks, belly, breasts and
+  legs. Hair: domed cap that tapers to the skin at the hairline; styles
+  Hair_Bun (high bun) and Hair_Long (shoulder length, bangs).
+
+### Hair physics (method)
+Long hair is one curtain in five strips, each on a chain of three bones
+(Hair.<strip>.<0..2>); neighbouring strips share their edge vertices, so the
+curtain bends like one sheet and cannot tear. In game each chain is a damped
+spring per bone: it is pulled toward its rest angle and by gravity, lags behind
+the head's motion, and is clamped (about 35 degrees per bone, less sideways
+toward the face) so it never crosses the face. The head, neck and shoulders are
+spheres the chain tips are pushed out of, so the hair rests on the shoulders
+rather than passing through them. No cloth simulation.

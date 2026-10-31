@@ -17,7 +17,8 @@ work = sys.argv[sys.argv.index("--") + 1]
 shots = os.path.join(work, "shots")
 os.makedirs(shots, exist_ok=True)
 rig = bpy.data.objects["Rig"]
-PAGES = {"BodyVisible": "Body", "Outfit": "Outfit", "Hair": "Hair"}
+PAGES = {"BodyVisible": "Body", "Outfit": "Outfit", "Hair_Bun": "Hair_Bun", "Hair_Long": "Hair_Long"}
+STYLE = sys.argv[sys.argv.index("--") + 2] if len(sys.argv) > sys.argv.index("--") + 2 else "Hair_Long"
 
 for oname, page in PAGES.items():
     ob = bpy.data.objects[oname]
@@ -38,8 +39,9 @@ for oname, page in PAGES.items():
     ob.data.materials.append(mat)
     ob.hide_render = False
 for o in bpy.data.objects:
-    if o.type == "MESH" and o.name not in PAGES:
+    if o.type == "MESH" and (o.name not in PAGES or (o.name.startswith("Hair_") and o.name != STYLE)):
         o.hide_render = True
+TAG = STYLE.split("_")[1].lower()
 
 sc = bpy.context.scene
 sc.render.engine = "BLENDER_WORKBENCH"
@@ -78,20 +80,28 @@ def pose(rots):
 REST = {}
 pose(REST)
 for i, yaw in enumerate((0, 35, 90, 180, 215)):
-    shoot(f"turn_{i}", yaw, (0, 0, 0.92), 2.0, (700, 1100))
-shoot("head_front", 0, (0, -0.02, 1.64), 0.36, (700, 700))
-shoot("head_q", 35, (0, -0.02, 1.64), 0.36, (700, 700))
-shoot("head_back", 160, (0, 0.0, 1.66), 0.36, (700, 700))
+    shoot(f"{TAG}_turn_{i}", yaw, (0, 0, 0.92), 2.0, (700, 1100))
+shoot(f"{TAG}_head_front", 0, (0, -0.02, 1.68), 0.44, (700, 700))
+shoot(f"{TAG}_head_q", 35, (0, -0.02, 1.68), 0.44, (700, 700))
+shoot(f"{TAG}_head_back", 160, (0, 0.0, 1.68), 0.44, (700, 700))
 
 STRIDE = {"UpperLeg.L": (-38, 0, 0), "LowerLeg.L": (12, 0, 0), "UpperLeg.R": (28, 0, 0), "LowerLeg.R": (48, 0, 0),
           "Foot.R": (-20, 0, 0), "UpperArm.L": (0, 0, -40), "UpperArm.R": (0, 0, 40), "Hips": (0, 6, 0)}
 pose(STRIDE)
-shoot("stride_q", 35, (0, 0, 0.8), 1.8, (900, 1100))
-shoot("stride_side", 90, (0, 0, 0.8), 1.8, (900, 1100))
-shoot("stride_front", 0, (0, 0, 0.8), 1.8, (900, 1100))
+shoot(f"{TAG}_stride_q", 35, (0, 0, 0.8), 1.8, (900, 1100))
+shoot(f"{TAG}_stride_side", 90, (0, 0, 0.8), 1.8, (900, 1100))
+shoot(f"{TAG}_stride_front", 0, (0, 0, 0.8), 1.8, (900, 1100))
 
-REACH = {"UpperArm.L": (0, 0, 70), "LowerArm.L": (0, 0, 30), "UpperArm.R": (0, 0, 45), "LowerArm.R": (-40, 0, 0)}
-pose(REACH)
-shoot("reach_front", 0, (0, 0, 1.2), 1.5, (1100, 1000))
-shoot("reach_back", 180, (0, 0, 1.2), 1.5, (1100, 1000))
+# The hair chains hanging and swinging: the head turns and tilts and each
+# chain lags behind, more toward its tip, as the game's spring will make it.
+if STYLE == "Hair_Long":
+    for lag, nm in ((1.0, "sway_a"), (-1.0, "sway_b")):
+        rots = {"Head": (8, 0, 25 * lag), "Neck": (0, 0, 8 * lag)}
+        for k in range(5):
+            for b in range(3):
+                rots[f"Hair.{k}.{b}"] = (-3 - 2 * b, 0, -5 * lag * (b + 1) / 2)
+        pose(rots)
+        shoot(f"{TAG}_{nm}_q", 140, (0, 0.0, 1.58), 0.6, (800, 800))
+        shoot(f"{TAG}_{nm}_side", 90, (0, 0.0, 1.58), 0.6, (800, 800))
+    pose({})
 print("RENDERED")
