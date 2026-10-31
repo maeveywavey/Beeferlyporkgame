@@ -423,3 +423,9 @@ outfits. Head + hair + body stay as accepted (736-752 body, 90-160 hair).
 Preview: tests/outfit_shot.tscn. Tests: check_scripts 0, battle field/arena/
 duel, town, ui, flows, story, canon all clean. Idle; next task? (Open optional
 items from earlier: Omashu map mound 2x taller; smoke puffs as inked ash.)
+
+[2026-10-31, Kestrel] Review (sent, recorded): 10b garments accepted in
+principle. 10c: hair shreds into black shards (rebuild as solid low-poly
+shells); dark shoulder fins on Fire Nation soldiers; belt ring floats
+below the waist; black gap at Norbu's neck in the portrait.
+Queue: 10c, 2c.
