@@ -183,46 +183,83 @@ static func _flesh_mat(c: Color) -> StandardMaterial3D:
 
 static func _limb_mesh(length: float, col: Color, head: bool) -> Node3D:
 	var root := Node3D.new()
-	var mi := MeshInstance3D.new()
+	var skin := Color(0.74, 0.55, 0.42)
 	if head:
 		var sm := SphereMesh.new()
 		sm.radius = 0.12
 		sm.height = 0.26
+		var mi := MeshInstance3D.new()
 		mi.mesh = sm
+		mi.material_override = _flesh_mat(skin)
+		root.add_child(mi)
+		# the neck, torn
+		_disc(root, Vector3(0, -0.12, 0), 0.07, Vector3.ZERO, true)
+		return root
+	var r0 := 0.062 if length < 0.6 else 0.085
+	var r1 := r0 * 0.78
+	# limbs lie along X: the cut end at +X, the hand or foot at -X
+	if length < 0.6:
+		_seg(root, -length * 0.5, -length * 0.15, r1 * 0.9, r1, skin)
+		_seg(root, -length * 0.15, length * 0.5, r1, r0, col)
+		var hand := SphereMesh.new()
+		hand.radius = 0.06
+		hand.height = 0.1
+		var hm := MeshInstance3D.new()
+		hm.mesh = hand
+		hm.material_override = _flesh_mat(skin)
+		hm.position = Vector3(-length * 0.5 - 0.03, 0, 0)
+		root.add_child(hm)
 	else:
-		var cm := CapsuleMesh.new()
-		cm.radius = 0.065 if length < 0.6 else 0.085
-		cm.height = length
-		mi.mesh = cm
-		mi.rotation_degrees.z = 90.0
-	mi.material_override = _flesh_mat(col)
-	root.add_child(mi)
-	if not head:
-		# a hand or a boot at the far end
-		var end := MeshInstance3D.new()
-		if length < 0.6:
-			var hand := SphereMesh.new()
-			hand.radius = 0.06
-			hand.height = 0.1
-			end.mesh = hand
-			end.material_override = _flesh_mat(Color(0.74, 0.55, 0.42))
-		else:
-			var boot := BoxMesh.new()
-			boot.size = Vector3(0.1, 0.12, 0.24)
-			end.mesh = boot
-			end.material_override = _flesh_mat(Color(0.18, 0.13, 0.1))
-		end.position = Vector3(-length * 0.5 - 0.04, 0, 0)
-		root.add_child(end)
-	# the raw end
-	var cap := MeshInstance3D.new()
-	var cs := SphereMesh.new()
-	cs.radius = 0.07
-	cs.height = 0.08
-	cap.mesh = cs
-	cap.material_override = _flesh_mat(BLOOD)
-	cap.position = Vector3(length * 0.5 if not head else 0.0, -0.1 if head else 0.0, 0)
-	root.add_child(cap)
+		_seg(root, -length * 0.5, length * 0.5, r1, r0, col)
+		var boot := BoxMesh.new()
+		boot.size = Vector3(0.24, 0.12, 0.11)
+		var bm := MeshInstance3D.new()
+		bm.mesh = boot
+		bm.material_override = _flesh_mat(Color(0.18, 0.13, 0.1))
+		bm.position = Vector3(-length * 0.5 - 0.06, -0.02, 0)
+		root.add_child(bm)
+	_disc(root, Vector3(length * 0.5, 0, 0), r0, Vector3(0, 0, 90), true)
 	return root
+
+## A tapered segment of a limb along X from x0 to x1.
+static func _seg(parent: Node3D, x0: float, x1: float, ra: float, rb: float, col: Color) -> void:
+	var cm := CylinderMesh.new()
+	cm.top_radius = rb
+	cm.bottom_radius = ra
+	cm.height = x1 - x0
+	cm.radial_segments = 8
+	var mi := MeshInstance3D.new()
+	mi.mesh = cm
+	mi.rotation_degrees.z = -90.0
+	mi.position = Vector3((x0 + x1) * 0.5, 0, 0)
+	mi.material_override = _flesh_mat(col)
+	parent.add_child(mi)
+
+## A cut face: red flesh with a pale bone end.
+static func _disc(parent: Node3D, at: Vector3, r: float, rot_deg: Vector3, bone: bool) -> void:
+	var cm := CylinderMesh.new()
+	cm.top_radius = r * 0.96
+	cm.bottom_radius = r * 0.96
+	cm.height = 0.02
+	cm.radial_segments = 8
+	var mi := MeshInstance3D.new()
+	mi.mesh = cm
+	mi.position = at
+	mi.rotation_degrees = rot_deg
+	mi.material_override = _flesh_mat(Color(0.5, 0.05, 0.05))
+	parent.add_child(mi)
+	if bone:
+		var bm := CylinderMesh.new()
+		bm.top_radius = r * 0.3
+		bm.bottom_radius = r * 0.3
+		bm.height = 0.05
+		bm.radial_segments = 6
+		var bi := MeshInstance3D.new()
+		bi.mesh = bm
+		bi.position = at
+		bi.rotation_degrees = rot_deg
+		bi.material_override = _flesh_mat(Color(0.88, 0.84, 0.74))
+		parent.add_child(bi)
 
 ## Throw a piece: it arcs, tumbles and lies where it lands.
 static func _fly(battle, n: Node3D, vel: Vector3) -> void:
@@ -273,26 +310,36 @@ static func _spurt(battle, at: Vector3, size: float) -> void:
 	p.global_position = at
 	battle.get_tree().create_timer(2.0).timeout.connect(p.queue_free)
 
-## A pool of blood that spreads over a few seconds and stays.
+## A pool of blood: an irregular spread of overlapping puddles that widens
+## over a few seconds, then darkens as it dries.
 static func _pool(battle, at: Vector3, r: float) -> void:
-	var mi := MeshInstance3D.new()
-	var cm := CylinderMesh.new()
-	cm.top_radius = r
-	cm.bottom_radius = r
-	cm.height = 0.015
-	cm.radial_segments = 20
-	mi.mesh = cm
+	var root := Node3D.new()
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.3, 0.02, 0.02, 0.92)
+	m.albedo_color = Color(0.27, 0.015, 0.015, 0.94)
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.roughness = 0.75
-	m.metallic_specular = 0.2
-	mi.material_override = m
-	battle.add_child(mi)
-	mi.global_position = Vector3(at.x, battle.ground_height(at.x, at.z) + 0.03, at.z)
-	mi.scale = Vector3(0.2, 1.0, 0.2 * randf_range(0.6, 1.0))
-	mi.rotation.y = randf() * TAU
-	mi.create_tween().tween_property(mi, "scale", Vector3(1.0, 1.0, randf_range(0.6, 1.0)), 3.0)
+	m.roughness = 0.8
+	m.metallic_specular = 0.15
+	battle.add_child(root)
+	root.global_position = Vector3(at.x, 0, at.z)
+	for i in 5:
+		var off := Vector2.from_angle(randf() * TAU) * r * randf_range(0.0, 0.6)
+		var pr := r * randf_range(0.45, 0.8)
+		var mi := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = pr
+		cm.bottom_radius = pr
+		cm.height = 0.012
+		cm.radial_segments = 14
+		mi.mesh = cm
+		mi.material_override = m
+		root.add_child(mi)
+		mi.global_position = Vector3(at.x + off.x, battle.ground_height(at.x + off.x, at.z + off.y) + 0.03 + i * 0.002, at.z + off.y)
+		mi.scale = Vector3(0.15, 1.0, 0.15 * randf_range(0.6, 1.0))
+		mi.rotation.y = randf() * TAU
+		mi.create_tween().tween_property(mi, "scale", Vector3(1.0, 1.0, randf_range(0.6, 1.0)), randf_range(2.0, 4.0))
+	var tw: Tween = root.create_tween()
+	tw.tween_interval(4.0)
+	tw.tween_property(m, "albedo_color", Color(0.15, 0.025, 0.02, 0.9), 25.0)
 
 ## Applies severed (collapsed) and broken (bent) bones after animation.
 class GoreMod extends SkeletonModifier3D:
