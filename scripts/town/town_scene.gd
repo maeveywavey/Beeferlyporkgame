@@ -127,6 +127,8 @@ func _ground() -> void:
 		"volcanic": col = Color(0.38, 0.34, 0.3)
 		"swamp": col = Color(0.3, 0.38, 0.22)
 		"highland", "mountain": col = Color(0.52, 0.58, 0.44)
+	if sid == "caldera":
+		col = Color(0.34, 0.3, 0.27)   # ash
 	if Data.settlements[sid].culture in ["north", "south"]:
 		col = Color(0.9, 0.94, 0.99)
 	var b = Arch.Builder.new()

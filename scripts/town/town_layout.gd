@@ -52,13 +52,19 @@ func _make() -> void:
 	if GS.settlements.get(sid, {}).get("looted_until", -1.0) > GS.hours:
 		wealth = 0
 	match kind:
-		"town": _omashu() if sid == "omashu" else _town()
+		"town":
+			match sid:
+				"omashu": _omashu()
+				"ba_sing_se": _ba_sing_se()
+				_: _town()
 		"castle": _castle()
 		"village": _village()
 		"temple": _temple()
 		_: _village()
 	_wealth_dressing()
 	_backdrop()
+	if sid == "caldera":
+		_volcano_rim()
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -524,6 +530,109 @@ func _mountain() -> void:
 	m.set_shader_parameter("brush_strength", 0.15)
 	mi.material_override = m
 	root.add_child(mi)
+
+## Ba Sing Se: three walled rings, one inside the next, each gate opening onto
+## the same avenue. The outer ring is crowded with refugees and tenements, the
+## middle ring is shops, market and guilds, the inner ring is the palace and
+## its gardens.
+func _ba_sing_se() -> void:
+	var half := 46.0
+	bounds = half - 2.0
+	_walls(half, 4.0)
+	_walls(30.0, 4.0)
+	_walls(16.0, 4.0)
+	spawn = Vector3(0, 0, half - 5.0)
+	# the avenue, gate to gate, and a plaza before each inner gate
+	ground_patch(Vector3(0, 0, 21), 8.0, 50.0, paving() * 0.95)
+	ground_patch(Vector3(0, 0, 0), 8.0, 20.0, paving() * 0.95)
+	ground_patch(Vector3(0, 0, 24), 22.0, 12.0, paving())
+	ground_patch(Vector3(0, 0, 38), 14.0, 10.0, paving() * 0.92)
+	ground_patch(Vector3(0, 0, -4), 26.0, 18.0, paving().lightened(0.08))
+	for z in [41.0, 33.0, 25.0, 19.0, 11.0, 3.0, -5.0]:
+		street_lantern(Vector3(-4.8, 0, z), 0.0)
+		street_lantern(Vector3(4.8, 0, z + 2.0), PI)
+	for z in range(42, -4, -6):
+		waypoints.append(Vector3(rng.randf_range(-2.0, 2.0), 0, z))
+	# the palace and its guards
+	var palace_door := building(Vector3(0, 0, -7), 20.0, 10.0, 3, 0.0, {"floor_h": 3.2})
+	interact(palace_door + Vector3(1.6, 0, 0.4), "Speak with the steward of the hall", "hall", "steward", PI)
+	npc_spot(palace_door + Vector3(-2.2, 0, 0.0), 0.0, "folded", "", {"look": "guard"})
+	npc_spot(palace_door + Vector3(3.8, 0, 0.0), 0.0, "folded", "", {"look": "guard"})
+	interact(Vector3(6, 0, 5), "Approach the ring gates", "main", "guard", 0.0, "folded")
+	# gate guards at each of the three gates
+	for gz in [half, 30.0, 16.0]:
+		npc_spot(Vector3(-2.6, 0, gz - 3.0), PI, "folded", "", {"look": "guard"})
+		npc_spot(Vector3(2.6, 0, gz - 3.0), PI, "folded", "", {"look": "guard"})
+	interact(Vector3(-4.0, 0, half - 6.0), "Talk to the gatekeeper (settlement menu)", "main", "guard", PI * 0.5, "folded")
+	# middle ring: market, tavern, guild and smithy
+	var stalls := [Vector3(-10, 0, 22), Vector3(-10, 0, 27), Vector3(10, 0, 22), Vector3(10, 0, 27)]
+	for i in stalls.size():
+		var sp: Vector3 = stalls[i]
+		if wealth == 0 and i % 2 == 1:
+			continue
+		prop("Stall_Empty" if i % 2 == 0 else "Stall_Cart_Empty", sp, PI * 0.5 if sp.x < 0 else -PI * 0.5, 1.0, 1.4)
+		var goods := ["FarmCrate_Apple", "FarmCrate_Carrot", "Barrel_Apples", "Vase_2", "Pot_1"]
+		for k in [0, 1, 2][wealth]:
+			prop(goods[(i + k) % goods.size()], sp + Vector3(signf(-sp.x) * 1.3, 0, 1.1 - k * 1.1), rng.randf() * TAU, 0.8, 0.4)
+	interact(Vector3(-8.2, 0, 22), "Browse the market", "trade", "merchant", PI * 0.5, "talk")
+	npc_spot(Vector3(8.2, 0, 27), -PI * 0.5, "talk")
+	prop("Anvil", Vector3(24.5, 0, -4), 0.0, 1.0, 0.6)
+	prop("WeaponStand", Vector3(26.0, 0, -5.6), -PI * 0.5, 1.0, 0.6)
+	interact(Vector3(23.0, 0, -3.7), "Visit the weaponsmith", "shop", "smith", -PI * 0.5, "work")
+	var tav_door := building(Vector3(-22, 0, 22), 10.0, 8.0, 2, PI * 0.5)
+	interact(tav_door + Vector3(0, 0, 1.6), "Enter the tavern", "tavern", "innkeeper", -PI * 0.5)
+	for k in 2:
+		add(Arch.lantern(Color(0.95, 0.3, 0.15)), tav_door + Vector3(0.2, 0, -1.8 + k * 3.6), PI)
+		lights.append(tav_door + Vector3(0.6, 2.3, -1.8 + k * 3.6))
+	var guild_door := building(Vector3(22, 0, 22), 10.0, 8.0, 1, -PI * 0.5)
+	interact(guild_door, "Ask the guild master for work", "work", "guildmaster", PI * 0.5)
+	# houses: tenements crowd the outer ring, tidy rows the middle, gardens inside
+	for gx in range(-42, 43, 8):
+		for gz in range(-42, 43, 8):
+			var m := maxf(absf(gx), absf(gz))
+			var ring := 0 if m > 32.0 else (1 if m > 18.0 else 2)
+			if ring == 2:
+				continue
+			var p := Vector3(gx + rng.randf_range(-1.0, 1.0), 0, gz + rng.randf_range(-1.0, 1.0))
+			if absf(p.x) < 6.5 and p.z > -8.0:
+				continue
+			var pm := maxf(absf(p.x), absf(p.z))
+			if (ring == 0 and (pm < 33.5 or pm > 42.5)) or (ring == 1 and (pm < 19.5 or pm > 27.0)):
+				continue
+			if not free_at(p, 3.2):
+				continue
+			var w := rng.randf_range(5.5, 8.0) if ring == 0 else rng.randf_range(6.5, 8.5)
+			var dd := rng.randf_range(4.5, 6.0)
+			var face := (-PI * 0.5 if p.x > 0 else PI * 0.5) if absf(p.x) > absf(p.z) else (PI if p.z < 0 else 0.0)
+			if (wealth == 0 or ring == 0) and rng.randf() < (0.3 if wealth == 0 else 0.1):
+				_ruin(p, w, dd)
+				continue
+			var tall: float = [0.05, 0.2, 0.45][wealth] + (0.15 if ring == 1 else 0.0)
+			building(p, w, dd, 2 if rng.randf() < tall else 1, face)
+	# gardens in the inner ring
+	for i in 12:
+		tree(Vector3(rng.randf_range(-13, 13), 0, rng.randf_range(-13, 13)))
+	for i in 8:
+		var sp2: Vector3 = waypoints[rng.randi() % waypoints.size()]
+		npc_spot(sp2 + Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)), rng.randf() * TAU, "talk")
+
+## Caldera: the capital sits in the crater of a volcano; a ring of dark cones
+## rises around it.
+func _volcano_rim() -> void:
+	var b = Arch.Builder.new()
+	for i in 20:
+		var a := TAU * i / 20.0 + rng.randf_range(-0.08, 0.08)
+		var r := rng.randf_range(78.0, 92.0)
+		var h := rng.randf_range(26.0, 46.0)
+		var c := Vector3(cos(a) * r, -2.0, sin(a) * r)
+		b.cyl(c, rng.randf_range(20.0, 28.0), rng.randf_range(4.0, 9.0), h, Color(0.26, 0.22, 0.21) * rng.randf_range(0.8, 1.1), 7)
+	var mi := MeshInstance3D.new()
+	mi.mesh = b.commit()
+	var m: ShaderMaterial = Arch.material(false).duplicate()
+	m.set_shader_parameter("brush_scale", 0.05)
+	m.set_shader_parameter("brush_strength", 0.15)
+	mi.material_override = m
+	add(mi, Vector3.ZERO)
 
 func _castle() -> void:
 	var half := 30.0
