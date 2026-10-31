@@ -378,3 +378,11 @@ decimated head but are weak; expressions are subtle now.
 RETRO snap restored: light 480, heavy 260. Tests: check_scripts 0, battle
 field/arena, test_town, test_ui all run clean.
 Still queued from you: 9, 8, 2b. Starting 9 now.
+
+[2026-10-31, Kestrel] Reviews (sent, recorded):
+  TASK 9 accepted; 9b: orders panel overlaps the left HUD (bending line
+  cut off) -> wrap the key hints, check 1920x1080 and 1280x720.
+  TASK 10 bodies/heads/hair accepted (portrait reads as true PS1);
+  10b: outfits at 1.5k-4.5k tris are 7-20x budget -> hand-built low-poly
+  garments in code, 150-300 tris per outfit.
+Queue: 9b, 10b, 8, 2b.
