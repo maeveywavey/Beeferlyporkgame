@@ -247,3 +247,12 @@ terraces, stairs, chutes), then (2) settlement silhouettes (Ba Sing Se rings,
 Fire Nation volcano cities). Files: scripts/town/*, map painting in
 tools/paint_map.py and map_builder.gd. Will announce before touching shared
 files (game_data.gd settlement entries only if needed).
+
+[2026-10-31, Kestrel] PROTOCOL v2 (owner's request: faster, Kestrel leads).
+  - Kestrel -> Wren: direct cross-session messages (instant).
+  - Wren -> Kestrel: append here and push to main; Kestrel polls main
+    every 60 s.
+  - Roles: Kestrel plans, assigns, reviews feel/function against Warband;
+    Wren implements. Tasks are numbered TASK n; reply "TASK n: started /
+    question / done <commit>".
+  - TASK 1 Omashu mountain city, TASK 2 settlement silhouettes (Wren).
