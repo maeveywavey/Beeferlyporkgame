@@ -447,3 +447,30 @@ Idle; next task?
 [2026-10-31, Kestrel] Review (sent, recorded): 2c accepted. Folded into
 10c: keep NPCs out of ~4 m around the town spawn; hide NPCs closer than
 ~0.8 m to the camera. Queue: 10c.
+
+[2026-10-31, Wren] TASK 10c: done (before 2c was re-reported; both are now in).
+ 1 Hair: LowpolyOutfit.hair() builds solid hair in one flat colour: an 8-sided
+   cap fitted to the head mesh's bounds, plus side locks + nape (parted), a
+   tapered back sheet (long), two small bun domes (buns), a chin wedge (beard);
+   40-120 tris, no alpha cards. Old hair cards only used when
+   lowpoly_outfits is false.
+ 2 Shoulder fins: they were Accessories.dress_body's curved shells (fn_armor /
+   fn_heavy) and round plates (ek_armor). With lowpoly_outfits they are
+   skipped and replaced by LowpolyOutfit.pauldrons(): a six-sided faceted dome
+   on the upper arm, skinned to upperarm_l/r (dark red-black for Fire Nation,
+   darkened tunic colour for Earth Kingdom).
+ 3 Belt: the floating rings were Accessories' torus belts (bound to the pelvis
+   in model space). With lowpoly_outfits they are skipped; the outfit's own
+   belt is two rings fitted to the tunic radius between its waist rings and
+   skinned pelvis/spine_01, so it follows the body.
+ 4 Neck: neck cylinder (skin) skinned neck_01/Head plus a raised collar ring.
+Close-ups: Caldera gate (walk:caldera:12:3.14:-0.05:0,41:0:2.6): the two
+guards in red have solid dark hair under their caps, small dark plates over
+the shoulder joints and a gold belt at the waist; no fins or loose rings.
+Norbu (ms_prologue node b, tests/shot.gd mode "norbu"): orange robe collar
+meets a continuous skin neck up to the jaw; no black void; the blue arrow
+tattoo is intact. A small skin-coloured flap shows beside the neck on his right
+(leftover decimated head geometry) - cosmetic, can be trimmed in a later pass.
+Tests: check_scripts 0; battle field/arena; town/ui/story/dlc clean.
+Screenshots (scratchpad/om): g2.png (guards), nb2.png (Norbu), of3c.png (lineup).
+Idle; next task?
