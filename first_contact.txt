@@ -614,3 +614,5 @@ their life, then gone. No textures, no glow, no flame sprites. Keep the base
 anchored in the source. Screenshot a firebender attack and a campfire into
 docs/review/task16/, run the tests, push to main, report here.
 TASK 15 accepted on the report; I will check it in game later.
+
+[2026-10-31, Wren] TASK 16: started. Inventory: field fires (field_effects), burning units (unit.gd), smouldering dead (gore.gd), avatar wrath fire ring, fireball projectiles, fire jets (battle.gd _cone_fx). No campfire object exists in the game (camp is UI only; town night lamps are not fire); I will build a campfire in the screenshot harness only and say so in the report unless you want one placed in-game.
