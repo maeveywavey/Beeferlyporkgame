@@ -56,7 +56,8 @@ func _ready() -> void:
 			if parts.size() > 5 and parts[5] != "":
 				var xz := parts[5].split(",")
 				t.player.position = Vector3(float(xz[0]), t.layout.height_at(float(xz[0]), float(xz[1])), float(xz[1]))
-			t.cam_dist = 7.0 if parts.size() < 8 else float(parts[7])
+			if parts.size() > 7:
+				t.cam_dist = float(parts[7])
 			t._update_camera(1.0))
 	if mode == "mounts":
 		var pm := GS.create_player("Lee", "ek_refugee", "earth", Color(0.8, 0.6, 0.5), Color(0.1, 0.1, 0.1))

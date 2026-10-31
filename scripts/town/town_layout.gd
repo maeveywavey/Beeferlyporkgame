@@ -22,6 +22,9 @@ var spots: Array = []          # {"pos", "rot", "stance", "loop"} places where s
 var lights: Array = []         # Vector3 positions for night lanterns
 var spawn := Vector3(0, 0, 30)
 var bounds := 50.0
+## The camera the player arrives with.
+var view_pitch := -0.25
+var view_dist := 5.0
 var ice := false
 ## 0 poor, 1 middling, 2 rich: from the settlement's prosperity. Poor places
 ## have empty stalls, gaps where houses fell, mud, debris and beggars; rich
@@ -258,6 +261,52 @@ func _walls(half: float, gate_gap: float) -> void:
 	add(Arch.gate(culture, wall_h), Vector3(0, 0, half))
 	for x in [-3.6, 3.6]:
 		block(Vector3(x, 0, half), 3.2, 3.2)
+	if wall_h > 8.0:
+		_wall_stonework(half, gate_gap, wall_h)
+
+## Courses of blocks on both faces of a tall ring wall, and lanterns along its
+## foot, so the wall reads as masonry and not as a blank slab.
+func _wall_stonework(half: float, gate_gap: float, h: float) -> void:
+	var b = Arch.Builder.new()
+	var srng := RandomNumberGenerator.new()
+	srng.seed = int(half) * 31
+	var stone := Color(0.55, 0.52, 0.46)
+	var courses := 8
+	var ch: float = h / courses
+	# [centre, along-axis unit, normal unit, length]
+	var runs := [
+		[Vector3(0, 0, -half), Vector3(1, 0, 0), Vector3(0, 0, 1), half * 2.0],
+		[Vector3(half, 0, 0), Vector3(0, 0, 1), Vector3(-1, 0, 0), half * 2.0],
+		[Vector3(-half, 0, 0), Vector3(0, 0, 1), Vector3(1, 0, 0), half * 2.0],
+	]
+	var lleft := half - gate_gap * 0.5 - 3.0
+	for sgn in [-1.0, 1.0]:
+		runs.append([Vector3(sgn * (gate_gap * 0.5 + 3.0 + lleft * 0.5), 0, half), Vector3(1, 0, 0), Vector3(0, 0, -1), lleft])
+	for r in runs:
+		var c: Vector3 = r[0]
+		var ax: Vector3 = r[1]
+		var nrm: Vector3 = r[2]
+		var len: float = r[3]
+		for side in [1.0, -1.0]:
+			for k in courses:
+				var x := -len * 0.5 + (0.8 if k % 2 == 1 else 0.0)
+				while x < len * 0.5 - 0.5:
+					var bw: float = srng.randf_range(1.6, 2.6)
+					bw = minf(bw, len * 0.5 - x)
+					var pos: Vector3 = c + ax * (x + bw * 0.5) + nrm * side * 0.84 + Vector3(0, ch * (k + 0.5), 0)
+					b.box(pos, (ax.abs() * (bw - 0.08)) + (nrm.abs() * 0.12) + Vector3(0, ch - 0.07, 0), stone * srng.randf_range(0.82, 1.14))
+					x += bw
+	var mi := MeshInstance3D.new()
+	mi.mesh = b.commit()
+	mi.material_override = Arch.material(false)
+	root.add_child(mi)
+	# lanterns along the foot of the wall on the street side
+	var step := 14.0
+	var lx := -half + 8.0
+	while lx < half - 6.0:
+		if absf(lx) > 7.0:
+			add(Arch.lantern(Color(0.95, 0.25, 0.15)), Vector3(lx, 0, half - 1.6), PI)
+		lx += step
 
 func _town() -> void:
 	var half := 46.0
@@ -566,7 +615,10 @@ func _ba_sing_se() -> void:
 	_walls(half, 4.0)
 	_walls(30.0, 4.0)
 	_walls(16.0, 4.0)
-	spawn = Vector3(0, 0, half - 5.0)
+	# arrive at the outer gate, looking down the avenue rather than at a wall
+	spawn = Vector3(0, 0, half - 2.0)
+	view_pitch = -0.55
+	view_dist = 9.0
 	# the avenue, gate to gate, and a plaza before each inner gate
 	ground_patch(Vector3(0, 0, 21), 8.0, 50.0, paving() * 0.95)
 	ground_patch(Vector3(0, 0, 0), 8.0, 20.0, paving() * 0.95)

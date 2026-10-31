@@ -27,6 +27,28 @@ static var _theme: Theme
 const TEXT_SCALE := 1.5
 const TEXT_BONUS := 4
 
+## English plural of a name: -man becomes -men, -s/-x/-ch/-sh take -es,
+## consonant+y becomes -ies, anything else takes -s.
+static func plural(name: String, n: int = 2) -> String:
+	if n == 1 or name == "":
+		return name
+	if name.ends_with("man"):
+		return name.substr(0, name.length() - 3) + "men"
+	for suf in ["s", "x", "ch", "sh"]:
+		if name.ends_with(suf):
+			return name + "es"
+	if name.ends_with("y") and name.length() > 1 and not name[name.length() - 2] in "aeiou":
+		return name.substr(0, name.length() - 1) + "ies"
+	return name + "s"
+
+## A troop's name for n of them; a "plural" field on the troop overrides the rule.
+static func troop_plural(id: String, n: int) -> String:
+	var t: Dictionary = Data.troop(id)
+	if n == 1:
+		return t.name
+	var over: String = t.get("plural", "")
+	return over if over != "" else plural(t.name, n)
+
 static func px(size: float) -> int:
 	return int(round(size * TEXT_SCALE)) + TEXT_BONUS
 

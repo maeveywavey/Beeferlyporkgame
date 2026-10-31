@@ -7,16 +7,16 @@ var sid := ""
 var map
 
 func _init() -> void:
-	window_size = Vector2(860, 620)
+	window_size = Vector2(1000, 620)
 
 func build() -> void:
 	set_title("Market of " + Data.settlements[sid].name)
 	content.add_child(UI.rich("Gold: [b]%d[/b]    Food: %.1f days    Goods carried: %d" % [GS.player.gold, GS.food_days(), GS.goods_count()], 800))
 	var sc := UI.scroll(440)
 	content.add_child(sc)
-	var g := UI.grid(7, 14, 6)
+	var g := UI.grid(9, 12, 6)
 	sc.add_child(g)
-	for h in ["Good", "Owned", "Buy", "Sell", "", "", ""]:
+	for h in ["Good", "Owned", "Buy", "Sell", "", "", "", "", ""]:
 		g.add_child(UI.label(h, 16, UI.BROWN))
 	var goods := Economy.market_goods(sid)
 	# Player may sell anything they carry, even if the market doesn't list it.
@@ -37,7 +37,8 @@ func build() -> void:
 		g.add_child(UI.button("Buy", _buy.bind(gid, 1), 60, GS.player.gold >= bp))
 		g.add_child(UI.button("Buy 5", _buy.bind(gid, 5), 70, GS.player.gold >= bp * 5))
 		g.add_child(UI.button("Sell", _sell.bind(gid, 1), 60, owned > 0))
-		# grid needs 7 columns: add the Sell all button on the next row only when owned
+		g.add_child(UI.button("Sell 5", _sell.bind(gid, 5), 70, owned > 0))
+		g.add_child(UI.button("Sell all", _sell.bind(gid, owned), 80, owned > 0))
 	content.add_child(UI.rich("[i]* produced locally (cheaper here). Food keeps your party fed: 1 unit feeds 10 men for a day. Variety raises morale.[/i]", 800))
 	var row := UI.hbox()
 	content.add_child(row)

@@ -65,6 +65,8 @@ func _ready() -> void:
 	_environment()
 	_ground()
 	layout = TownLayout.build(self, sid)
+	cam_pitch = layout.view_pitch
+	cam_dist = layout.view_dist
 	_spawn_player()
 	_spawn_people()
 	_night_lights()
@@ -459,9 +461,26 @@ func _build_ui() -> void:
 	hud.add_theme_constant_override("outline_size", 6)
 	hud.add_theme_color_override("font_outline_color", Color(0.1, 0.06, 0.04))
 	var d: Dictionary = Data.settlements[sid]
-	hud.text = UI.scale_bbcode("[font_size=26][b]%s[/b][/font_size]\n%s  ·  %s\n[font_size=14]WASD move · Shift walk · Mouse look · E talk · Tab or the gate: back to the map · Esc: free the mouse[/font_size]" % [
+	hud.text = UI.scale_bbcode("[font_size=26][b]%s[/b][/font_size]\n%s  ·  %s" % [
 		d.name, Data.factions.get(GS.settlements[sid].faction, Data.factions.neutral).name, GS.date_string()])
 	rootc.add_child(hud)
+	# the key hint covers the view, so it fades away after a few seconds
+	var hint := RichTextLabel.new()
+	hint.bbcode_enabled = true
+	hint.fit_content = true
+	hint.scroll_active = false
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint.position = Vector2(16, 12 + UI.px(26) * 1.3 + UI.px(15) * 1.5)
+	hint.size = Vector2(900, 40)
+	hint.add_theme_color_override("default_color", Color(1, 0.96, 0.88))
+	hint.add_theme_constant_override("outline_size", 6)
+	hint.add_theme_color_override("font_outline_color", Color(0.1, 0.06, 0.04))
+	hint.text = UI.scale_bbcode("[font_size=14]WASD move · Shift walk · Mouse look · E talk · Tab or the gate: back to the map · Esc: free the mouse[/font_size]")
+	rootc.add_child(hint)
+	var htw := hint.create_tween()
+	htw.tween_interval(8.0)
+	htw.tween_property(hint, "modulate:a", 0.0, 1.5)
+	htw.tween_callback(hint.queue_free)
 	prompt = Label.new()
 	prompt.add_theme_font_size_override("font_size", UI.px(22))
 	prompt.add_theme_color_override("font_color", Color(1, 0.92, 0.6))

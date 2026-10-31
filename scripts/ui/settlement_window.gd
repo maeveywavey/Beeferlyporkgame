@@ -582,7 +582,7 @@ func _build_tavern(o: VBoxContainer) -> void:
 		var cost := Economy.merc_cost(m.id)
 		var room := GS.party_limit() - GS.party_size()
 		var n := mini(m.n, room)
-		o.add_child(UI.option("Hire %d %s for %d gold each" % [m.n, Data.troop(m.id).name, cost], func():
+		o.add_child(UI.option("Hire %d %s for %d gold each" % [m.n, UI.troop_plural(m.id, m.n), cost], func():
 			var can := mini(n, int(GS.player.gold / cost))
 			if can <= 0:
 				note = UI.color_text("You can't afford them or have no room in your party.", UI.RED)
@@ -592,7 +592,7 @@ func _build_tavern(o: VBoxContainer) -> void:
 				m.n -= can
 				if m.n <= 0:
 					t.erase("merc")
-				note = UI.color_text("Hired %d %s." % [can, Data.troop(m.id).name], UI.GREEN)
+				note = UI.color_text("Hired %d %s." % [can, UI.troop_plural(m.id, can)], UI.GREEN)
 			refresh(), n > 0))
 	if t.has("companion"):
 		var cid: String = t.companion
@@ -610,7 +610,7 @@ func _build_tavern(o: VBoxContainer) -> void:
 				GS.log_msg("%s has joined your party." % cd.name, Color(0.6, 1, 0.6))
 				note = UI.color_text("%s joins you." % cd.name, UI.GREEN)
 			refresh()))
-	if t.get("ransom", false):
+	if t.get("ransom", false) and not GS.player_party().prisoners.is_empty():
 		var pr: Array = GS.player_party().prisoners
 		var value := 0
 		for st in pr:
