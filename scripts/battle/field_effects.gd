@@ -124,16 +124,12 @@ func _light(i: int, strength: float) -> bool:
 
 func _flame() -> Node3D:
 	var root := Node3D.new()
-	# two or three hand-inked tongues side by side, and a puff of inked smoke above
+	# two or three hand-inked tongues side by side, their bases buried in the ground
 	for k in 3:
 		var sz := randf_range(0.95, 1.25)
 		var f := FlameSprite.make("flame", Vector2(sz, sz * 1.25), false, 1)
 		f.position = Vector3(randf_range(-0.35, 0.35), 0, randf_range(-0.35, 0.35))
 		root.add_child(f)
-	if randf() < 0.3:
-		var sm := FlameSprite.make("smoke", Vector2(0.8, 0.8), false, 1)
-		sm.position.y = 1.7
-		root.add_child(sm)
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.55, 0.2)
 	light.light_energy = 0.6

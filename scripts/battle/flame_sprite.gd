@@ -11,6 +11,7 @@ const SHEETS := {
 	"smoke": ["res://assets/fx/smoke.png", "res://assets/fx/smoke.png", 6, 6.0],
 }
 static var _tex := {}
+const BURY := 0.16
 
 static func _texture(path: String) -> Texture2D:
 	if not _tex.has(path):
@@ -24,7 +25,9 @@ static func make(kind: String, size: Vector2, blue: bool = false, billboard: int
 	var qm := QuadMesh.new()
 	qm.size = size
 	if kind != "fireball":
-		qm.center_offset = Vector3(0, size.y * 0.5, 0)
+		# the bottom 16% of a flame sprite sinks below its anchor: buried in the
+		# ground (or the body that burns), so its lower edge is never seen
+		qm.center_offset = Vector3(0, size.y * 0.5 - size.y * BURY, 0)
 	var m := ShaderMaterial.new()
 	m.shader = SHADER
 	m.set_shader_parameter("sheet", _texture(spec[1] if blue else spec[0]))
@@ -58,9 +61,11 @@ static func jet(parent: Node, origin: Vector3, yaw: float, reach: float, spread_
 		var d := fwd.rotated(Vector3.UP, a)
 		var dist := reach * randf_range(0.45, 1.0)
 		var sz := randf_range(0.9, 1.5)
-		var s := make("flame", Vector2(sz, sz * 1.3), blue, 1)
+		# airborne flame is drawn as comet-like fireballs (no flat base to show)
+		var s := make("fireball", Vector2(sz * 1.6, sz * 1.6), blue, 3)
 		parent.add_child(s)
 		s.global_position = origin
+		s.basis = Basis.looking_at(-d, Vector3.UP)
 		s.scale = Vector3.ONE * 0.4
 		var lt := life * randf_range(0.7, 1.1)
 		var tw := s.create_tween()

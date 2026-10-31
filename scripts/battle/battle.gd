@@ -490,10 +490,10 @@ func _build_props() -> void:
 			"tree":
 				if dead:
 					node = Land.tree(biome, "dead", rng, light)
-				elif pines and (biome != "forest" or rng.randf() < 0.4):
-					node = Land.pine(biome, rng, light)
 				else:
-					node = Land.tree(biome, "broad", rng, light)
+					node = Land.pack_prop("tree", biome, rng, light)
+					if node == null:
+						node = Land.tree(biome, "broad", rng, light)
 				node.rotation.y = rng.randf() * TAU
 				var ob := {"p": p, "r": 0.5}
 				obstacles.append(ob)
@@ -501,12 +501,16 @@ func _build_props() -> void:
 			"bush":
 				if dead:
 					continue
-				node = Land.card(Land.leaf_card(biome, rng.randi_range(1, 3)), Vector2.ONE * rng.randf_range(1.2, 2.0), 2, light)
-				node.position.y -= 0.3
+				node = Land.pack_prop("bush", biome, rng, light)
+				if node == null:
+					node = Land.card(Land.leaf_card(biome, rng.randi_range(1, 3)), Vector2.ONE * rng.randf_range(1.2, 2.0), 2, light)
+					node.position.y -= 0.3
 			"grass":
 				if biome in ["snow", "volcanic"]:
 					continue
-				node = Land.card(Land.grass_card(biome), Vector2.ONE * rng.randf_range(0.6, 1.1), 1, light)
+				node = Land.pack_prop("grass", biome, rng, light)
+				if node == null:
+					node = Land.card(Land.grass_card(biome), Vector2.ONE * rng.randf_range(0.6, 1.1), 1, light)
 		if node == null:
 			continue
 		node.position += Vector3(p.x, h, p.y)

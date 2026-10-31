@@ -43,8 +43,121 @@ static func lit_material(tex: Texture2D, projection: int, uv_per_m: float = 0.5,
 	m.set_shader_parameter("use_vertex_color", vertex_color)
 	return m
 
+const TP := "res://assets/thirdparty/"
+const FX := TP + "foxtex/Outdoors/"
+const NOISE := TP + "sbs_noise_texture_pack/128x128/"
+
+## The CC0 ground layers of a biome (foxtex), as [a, b, c, d] with tints, or
+## empty where the procedural ground is still used.
+static func ground_layers(biome: String) -> Dictionary:
+	match biome:
+		"grass", "forest", "highland", "plains", "":
+			return {"tex": [FX + "Foliage/OUTDOOR_foliage_grass_spots_5.png", FX + "Foliage/OUTDOOR_foliage_grass_spots_6.png", FX + "Soil/OUTDOOR_soil_5.png", FX + "Gravel/OUTDOOR_gravel_pebbles_5.png"],
+				"tint": [Color(0.92, 1.0, 0.8), Color(0.78, 0.88, 0.55), Color(0.95, 0.9, 0.78), Color(1.0, 0.98, 0.9)], "mix": Vector3(0.3, 0.17, 0.08)}
+	return {}
+
+# ---------------------------------------------------------------------------
+# Trees, bushes and grass from the owner's CC0 pack (elegantcrow retro PSX
+# nature): glTF models with separate seasonal 128 px alpha-cut textures.
+# ---------------------------------------------------------------------------
+const NATURE := TP + "elegantcrow_psx_nature/retro_nature_pack/"
+static var _scenes := {}
+static var _pack_mats := {}
+const TINTS := [Color(1, 1, 1), Color(0.92, 1.0, 0.9), Color(1.06, 1.02, 0.88), Color(0.88, 0.96, 0.84), Color(1.08, 1.06, 0.96), Color(0.95, 0.92, 0.82)]
+
+static func _season(biome: String, rng: RandomNumberGenerator) -> String:
+	if biome == "snow":
+		return "winter"
+	if biome in ["desert", "beach", "volcanic"] or rng.randf() < 0.1:
+		return "fall"
+	return "summer"
+
+static func _pack_material(tex_path: String, variant: int, light: Color) -> StandardMaterial3D:
+	var key := "%s_%d_%s" % [tex_path, variant, light.to_html()]
+	if _pack_mats.has(key):
+		return _pack_mats[key]
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = load(tex_path)
+	m.albedo_color = Color(light * TINTS[variant % TINTS.size()], 1.0)
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	m.alpha_scissor_threshold = 0.5
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.roughness = 1.0
+	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	_pack_mats[key] = m
+	return m
+
+static func _pack_scene(path: String) -> PackedScene:
+	if not _scenes.has(path):
+		_scenes[path] = load(path)
+	return _scenes[path]
+
+static func _apply(n: Node, mat: Material) -> void:
+	if n is MeshInstance3D:
+		(n as MeshInstance3D).material_override = mat
+	for c in n.get_children():
+		_apply(c, mat)
+
+## A tree ("tree"), bush ("bush") or tuft of grass ("grass") from the pack,
+## with random model, season texture, scale, rotation and tint.
+static func pack_prop(kind: String, biome: String, rng: RandomNumberGenerator, light: Color) -> Node3D:
+	var season := _season(biome, rng)
+	var model := ""
+	var tex := ""
+	var scale := 1.0
+	match kind:
+		"tree":
+			var i := rng.randi_range(1, 8)
+			model = "trees/tree%02d%s" % [i, "_winter" if season == "winter" else ""]
+			tex = "trees/tree%02d_%s" % [i, season]
+			scale = rng.randf_range(1.5, 2.4)
+		"bush":
+			var i2 := rng.randi_range(1, 8)
+			model = "bushes/bush%02d%s" % [i2, "_winter" if season == "winter" and i2 <= 6 else ""]
+			var tx := "bush%d_%s" % [i2, season]
+			if season == "summer" and i2 in [2, 3, 4, 5, 6] and rng.randf() < 0.3:
+				tx = "bush%d_spring%d" % [i2, rng.randi_range(1, 6)]
+			tex = "bushes/" + tx
+			scale = rng.randf_range(1.1, 2.0)
+		_:
+			var roll := rng.randf()
+			if roll < 0.15:
+				model = "grass/grass_patch"
+				tex = "grass/grass_patch_" + season
+				scale = rng.randf_range(0.9, 1.5)
+			elif roll < 0.35:
+				model = "grass/grass_bush"
+				tex = "grass/grass_bush_" + season
+				scale = rng.randf_range(1.0, 1.7)
+			else:
+				model = "grass/grass%02d" % rng.randi_range(1, 9)
+				tex = "grass/grass_" + season
+				scale = rng.randf_range(1.2, 2.2)
+	var path := NATURE + "models/glTF/" + model + ".glb"
+	var tpath := NATURE + "textures/" + tex + ".png"
+	if not ResourceLoader.exists(path) or not ResourceLoader.exists(tpath):
+		return null
+	var root := Node3D.new()
+	var inst: Node3D = _pack_scene(path).instantiate()
+	root.add_child(inst)
+	_apply(inst, _pack_material(tpath, rng.randi() % TINTS.size(), light))
+	root.scale = Vector3(scale, scale * rng.randf_range(0.9, 1.15), scale)
+	root.rotation.y = rng.randf() * TAU
+	return root
+
 ## Ground computed in the shader from world position (shaders/lit.gdshader).
 static func ground_material(biome: String) -> ShaderMaterial:
+	var layers := ground_layers(biome)
+	if not layers.is_empty():
+		var tm := lit_material(null, 3, 0.5, 0.85)
+		for i in 4:
+			tm.set_shader_parameter("tex_" + "abcd"[i], load(layers.tex[i]))
+			tm.set_shader_parameter("tint_" + "abcd"[i], layers.tint[i])
+		tm.set_shader_parameter("noise_a", load(NOISE + "Perlin/Perlin_03-128x128.png"))
+		tm.set_shader_parameter("noise_b", load(NOISE + "Turbulence/Turbulence_02-128x128.png"))
+		tm.set_shader_parameter("mix_bcd", layers.mix)
+		return tm
 	var c := colours(biome)
 	var m := lit_material(null, 1, 0.5, 0.85)
 	var lush: Color = c.g1
@@ -57,7 +170,32 @@ static func ground_material(biome: String) -> ShaderMaterial:
 
 ## Rock computed in the shader: zones of different stone, bedding in some,
 ## joints in others, staining, varnish and lichen (shaders/lit.gdshader).
+const ST := TP + "foxtex/Stone/Cracked/STONE_cracked_rocks_"
+
+## Four stone textures per biome (foxtex), mixed in zones.
+static func rock_layers(biome: String) -> Dictionary:
+	match biome:
+		"desert", "beach":
+			return {"tex": [ST + "deep_5.png", ST + "subtle_6.png", ST + "deep_6.png", ST + "subtle_5.png"], "tint": [Color(1, 0.95, 0.85), Color(1, 0.95, 0.85), Color(0.95, 0.95, 0.8), Color(1, 0.9, 0.8)]}
+		"snow":
+			return {"tex": [ST + "deep_1.png", ST + "subtle_1.png", ST + "subtle_3.png", ST + "deep_7.png"], "tint": [Color(0.95, 1, 1.08), Color(1.05, 1.05, 1.1), Color(0.9, 0.95, 1.05), Color(0.8, 0.95, 1.0)]}
+		"volcanic":
+			return {"tex": [ST + "deep_3.png", ST + "subtle_3.png", ST + "deep_4.png", ST + "subtle_4.png"], "tint": [Color(0.85, 0.82, 0.8), Color(0.9, 0.85, 0.82), Color(0.85, 0.75, 0.7), Color(0.9, 0.8, 0.78)]}
+	return {"tex": [ST + "deep_1.png", ST + "deep_6.png", ST + "subtle_3.png", ST + "deep_5.png"], "tint": [Color(0.95, 0.95, 0.92), Color(0.85, 0.9, 0.78), Color(0.9, 0.9, 0.88), Color(0.95, 0.85, 0.75)]}
+
 static func rock_material(biome: String) -> ShaderMaterial:
+	var rl := rock_layers(biome)
+	var rm := lit_material(null, 4, 0.5, 0.85)
+	for i in 4:
+		rm.set_shader_parameter("tex_" + "abcd"[i], load(rl.tex[i]))
+		rm.set_shader_parameter("tint_" + "abcd"[i], rl.tint[i])
+	rm.set_shader_parameter("noise_a", load(NOISE + "Perlin/Perlin_05-128x128.png"))
+	rm.set_shader_parameter("noise_b", load(NOISE + "Turbulence_01-128x128.png".replace("Turbulence_", "Turbulence/Turbulence_")))
+	rm.set_shader_parameter("tile_m", 2.4)
+	rm.set_shader_parameter("r_lichen", Color(0.5, 0.58, 0.36) if biome != "desert" else Color(0.66, 0.58, 0.34))
+	return rm
+
+static func rock_material_procedural(biome: String) -> ShaderMaterial:
 	var base: Color = colours(biome).rock
 	var m := lit_material(null, 2, 0.5, 0.85)
 	m.set_shader_parameter("r_a", base)

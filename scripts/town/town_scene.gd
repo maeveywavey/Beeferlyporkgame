@@ -133,14 +133,27 @@ func _ground() -> void:
 		col = Color(0.34, 0.3, 0.27)   # ash
 	if Data.settlements[sid].culture in ["north", "south"]:
 		col = Color(0.9, 0.94, 0.99)
-	var b = Arch.Builder.new()
-	b.box(Vector3(0, -0.1, 0), Vector3(420, 0.2, 420), col)
+	var Land = load("res://scripts/battle/landscape.gd")
 	var mi := MeshInstance3D.new()
-	mi.mesh = b.commit()
-	var m: ShaderMaterial = Arch.material(false).duplicate()
-	m.set_shader_parameter("brush_scale", 0.12)
-	m.set_shader_parameter("brush_strength", 0.12)
-	mi.material_override = m
+	if not Land.ground_layers(biome).is_empty() and Data.settlements[sid].culture not in ["north", "south"]:
+		# the owner's CC0 ground textures, blended by noise (as on the battlefield)
+		var pm := PlaneMesh.new()
+		pm.size = Vector2(420, 420)
+		mi.mesh = pm
+		var gm: ShaderMaterial = Land.ground_material(biome)
+		# settlements keep to green, with less bare soil than the open field
+		gm.set_shader_parameter("mix_bcd", Vector3(0.22, 0.1, 0.05))
+		gm.set_shader_parameter("use_vertex_color", false)
+		mi.material_override = gm
+		mi.position.y = -0.02
+	else:
+		var b = Arch.Builder.new()
+		b.box(Vector3(0, -0.1, 0), Vector3(420, 0.2, 420), col)
+		mi.mesh = b.commit()
+		var m: ShaderMaterial = Arch.material(false).duplicate()
+		m.set_shader_parameter("brush_scale", 0.12)
+		m.set_shader_parameter("brush_strength", 0.12)
+		mi.material_override = m
 	add_child(mi)
 	# grass tufts and pebbles break up the ground near the paths
 	var rng := RandomNumberGenerator.new()

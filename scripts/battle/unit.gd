@@ -418,9 +418,11 @@ func tick(delta: float) -> void:
 		if _burn_fx == null:
 			# hand-inked flames cling to a burning fighter
 			_burn_fx = Node3D.new()
+			# flames rise from the body itself: narrow enough that each base sits
+			# inside the torso or legs, at the feet buried in the ground
 			for k in 3:
-				var f = FlameSprite.make("flame", Vector2(0.9, 1.2), false, 1)
-				f.position = Vector3(randf_range(-0.25, 0.25), 0.2 + k * 0.45, randf_range(-0.2, 0.2))
+				var f = FlameSprite.make("flame", Vector2(0.62, 0.9), false, 1)
+				f.position = Vector3(randf_range(-0.06, 0.06), 0.05 + k * 0.45, randf_range(-0.04, 0.04))
 				_burn_fx.add_child(f)
 			add_child(_burn_fx)
 		if wet_t > 0.0:

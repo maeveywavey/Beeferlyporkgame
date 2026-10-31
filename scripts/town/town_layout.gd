@@ -189,6 +189,16 @@ func tree(pos: Vector3) -> void:
 		return   # nothing grows inside a city of ice
 	# trees inside a settlement are tended garden trees, smaller than wild ones
 	var sc := rng.randf_range(0.55, 0.85) if inside else rng.randf_range(0.9, 1.3)
+	if not ice and culture != "swamp":
+		# the owner's CC0 retro-PSX trees, random model, season, tint and size
+		var Land = load("res://scripts/battle/landscape.gd")
+		var biome: String = GS.sim.biome_at(Data.settlements[sid].pos)
+		var pt: Node3D = Land.pack_prop("tree", biome, rng, Color(0.95, 0.95, 0.95))
+		if pt != null:
+			pt.scale *= sc * 0.85
+			add(pt, pos, rng.randf() * TAU)
+			circle(pos, 0.7 * sc)
+			return
 	prop(names[rng.randi() % names.size()], pos, rng.randf() * TAU, sc, 0.6 * sc)
 
 func street_lantern(pos: Vector3, rot: float) -> void:
@@ -755,6 +765,58 @@ func _castle() -> void:
 	npc_spot(Vector3(2.6, 0, half - 3.0), PI, "folded", "", {"look": "guard"})
 	interact(Vector3(-4.0, 0, half - 6.0), "Talk to the gatekeeper (settlement menu)", "main", "guard", PI * 0.5, "folded")
 
+
+## Fences and low walls from the owner's CC0 wall pack (valsekamerplant): drystone
+## or wooden segments laid along a line, a few missing or broken for a lived-in look.
+const FENCE_DIR := "res://assets/thirdparty/valsekamerplant_walls/Fences/"
+var _fence_cache := {}
+
+func _fence_model(rel: String) -> Dictionary:
+	if not _fence_cache.has(rel):
+		var ps: PackedScene = load(FENCE_DIR + rel + ".glb")
+		var probe: Node3D = ps.instantiate()
+		var bb := AABB()
+		var first := true
+		for mi in probe.find_children("*", "MeshInstance3D", true, false):
+			var a: AABB = (mi as MeshInstance3D).get_aabb()
+			bb = a if first else bb.merge(a)
+			first = false
+		probe.free()
+		_fence_cache[rel] = {"scene": ps, "len": maxf(0.4, bb.size.x), "start": bb.position.x}
+	return _fence_cache[rel]
+
+func fence_line(a: Vector3, b: Vector3, rel: String, gap_chance: float = 0.0) -> void:
+	var m: Dictionary = _fence_model(rel)
+	var d := b - a
+	d.y = 0.0
+	var total := d.length()
+	if total < 0.5:
+		return
+	d = d.normalized()
+	var rot := -atan2(d.z, d.x)
+	var n := int(total / float(m.len))
+	for i in n:
+		if rng.randf() < gap_chance:
+			continue
+		var node: Node3D = (m.scene as PackedScene).instantiate()
+		_apply_model_materials(node)
+		var at := a + d * (i * float(m.len) - float(m.start))
+		add(node, at, rot)
+		circle(at - d * float(m.len) * 0.5, float(m.len) * 0.5)
+
+## A fenced rectangle (a field or yard) centred on c, with the middle of its
+## south side left open as a gate.
+func fenced_yard(c: Vector3, w: float, d: float, rel: String) -> void:
+	var x0 := c.x - w * 0.5
+	var x1 := c.x + w * 0.5
+	var z0 := c.z - d * 0.5
+	var z1 := c.z + d * 0.5
+	fence_line(Vector3(x0, 0, z0), Vector3(x1, 0, z0), rel, 0.05)
+	fence_line(Vector3(x0, 0, z0), Vector3(x0, 0, z1), rel, 0.05)
+	fence_line(Vector3(x1, 0, z0), Vector3(x1, 0, z1), rel, 0.05)
+	fence_line(Vector3(x0, 0, z1), Vector3(c.x - 1.6, 0, z1), rel, 0.05)
+	fence_line(Vector3(c.x + 1.6, 0, z1), Vector3(x1, 0, z1), rel, 0.05)
+
 func _village() -> void:
 	bounds = 38.0
 	spawn = Vector3(0, 0, 28)
@@ -805,6 +867,8 @@ func _village() -> void:
 			var fp := Vector3(-24.0 + i * 13.0, 0, -26.0 + (i % 2) * 4.0)
 			add(Arch.paddy(10.0, 7.0, water), fp)
 			block(fp, 10.6, 7.6)
+			# fields are fenced in the local way: drystone where the land is stony, timber elsewhere
+			fenced_yard(fp, 11.4, 8.4, "drystone_wall/drystone_wall_half" if culture in ["earth", "omashu"] else "low_wooden_fence/wooden_fence_closed")
 			npc_spot(fp + Vector3(rng.randf_range(-3, 3), 0, 4.6), PI, "", "ual2/Farm_Harvest")
 	interact(Vector3(-2.6, 0, 3.0), "Buy supplies from the villagers", "trade", "farmer", PI * 0.3)
 	prop("FarmCrate_Carrot", Vector3(-3.6, 0, 3.6), 0.4, 1.0, 0.5)

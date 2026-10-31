@@ -15,7 +15,8 @@
 shader_type spatial;
 render_mode diffuse_lambert, specular_disabled, cull_disabled;
 
-// 0 = UV-mapped texture (bark), 1 = ground, 2 = rock
+// 0 = UV-mapped texture (bark), 1 = ground, 2 = rock, 3 = textured ground
+// (CC0 tiling textures blended by noise masks), 4 = textured rock
 uniform int proj_mode = 0;
 uniform sampler2D detail_tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform float uv_per_m = 0.5;
@@ -36,6 +37,24 @@ uniform vec4 r_c : source_color = vec4(0.42, 0.43, 0.45, 1.0);
 uniform vec4 r_stain : source_color = vec4(0.58, 0.34, 0.18, 1.0);
 uniform vec4 r_varnish : source_color = vec4(0.18, 0.15, 0.13, 1.0);
 uniform vec4 r_lichen : source_color = vec4(0.55, 0.58, 0.42, 1.0);
+
+// textured ground (mode 3): four tiling layers blended by noise masks, with
+// large-scale colour variation and a second, rotated sampling of every layer so
+// no repeat shows. Point sampled, 256 px layers at a PS1 texel density.
+uniform sampler2D tex_a : source_color, filter_nearest_mipmap, repeat_enable;
+uniform sampler2D tex_b : source_color, filter_nearest_mipmap, repeat_enable;
+uniform sampler2D tex_c : source_color, filter_nearest_mipmap, repeat_enable;
+uniform sampler2D tex_d : source_color, filter_nearest_mipmap, repeat_enable;
+uniform vec4 tint_a : source_color = vec4(1.0);
+uniform vec4 tint_b : source_color = vec4(1.0);
+uniform vec4 tint_c : source_color = vec4(1.0);
+uniform vec4 tint_d : source_color = vec4(1.0);
+uniform sampler2D noise_a : filter_linear, repeat_enable;
+uniform sampler2D noise_b : filter_linear, repeat_enable;
+uniform float tile_m = 3.2;
+// how much of the field each layer takes: B (second ground), C (bare soil), D (gravel)
+uniform vec3 mix_bcd = vec3(0.45, 0.3, 0.12);
+uniform vec4 warm : source_color = vec4(1.08, 1.0, 0.86, 1.0);
 
 #include "res://shaders/ps1.gdshaderinc"
 
@@ -155,6 +174,69 @@ vec3 rock_colour(vec3 wp, vec3 n) {
 	return c;
 }
 
+vec3 layer_sample(sampler2D t, vec2 p, float n) {
+	vec3 a = texture(t, p / tile_m).rgb;
+	// a second look at the same layer, rotated and scaled, where noise says so
+	vec2 q = mat2(vec2(0.80, -0.60), vec2(0.60, 0.80)) * p * 0.57 + vec2(17.3, 5.1);
+	vec3 b = texture(t, q / tile_m).rgb;
+	return mix(a, b, smoothstep(0.35, 0.65, n));
+}
+
+vec3 textured_ground(vec3 wp, float litter) {
+	vec2 p = ps1_snap_m(wp.xz);
+	float big = texture(noise_a, p / 90.0).r;
+	float mid = texture(noise_b, p / 31.0 + 0.21).r;
+	float small = texture(noise_a, p / 7.5 + 0.63).r;
+	float fine = texture(noise_b, p / 2.3).r;
+	float pick = texture(noise_a, p / 14.0 + 0.4).r;
+	vec3 c = layer_sample(tex_a, p, pick) * tint_a.rgb;
+	// a second ground (dry grass, say) in broad drifts
+	float wb = smoothstep(1.0 - mix_bcd.x - 0.1, 1.0 - mix_bcd.x + 0.08, big * 0.65 + mid * 0.35);
+	c = mix(c, layer_sample(tex_b, p, pick) * tint_b.rgb, wb);
+	// bare soil where the noise runs high, ragged by the fine noise
+	float wc = smoothstep(1.0 - mix_bcd.y - 0.04, 1.0 - mix_bcd.y + 0.05, mid * 0.6 + small * 0.4 + (fine - 0.5) * 0.12);
+	c = mix(c, layer_sample(tex_c, p, pick) * tint_c.rgb, wc);
+	// gravel in small patches inside the bare soil
+	float wd = smoothstep(1.0 - mix_bcd.z - 0.03, 1.0 - mix_bcd.z + 0.04, small * 0.7 + fine * 0.3) * wc;
+	c = mix(c, layer_sample(tex_d, p, pick) * tint_d.rgb, wd);
+	// leaf litter under trees breaks the ground up into soil
+	if (litter > 0.0 && litter > fine * 0.8 + 0.1) {
+		c = mix(c, layer_sample(tex_c, p, pick) * tint_c.rgb * 0.8, 0.85);
+	}
+	// broad variation of brightness and warmth so large areas never look flat
+	c *= mix(0.8, 1.2, texture(noise_b, p / 140.0 + 0.5).r);
+	c = mix(c, c * warm.rgb, texture(noise_a, p / 75.0 + 0.8).r);
+	return c;
+}
+
+// textured rock (mode 4): four stone textures, triplanar, in zones a few metres
+// across with noise-ragged borders, darkened in crevices and mossy on top.
+vec3 tri(sampler2D t, vec3 p, vec3 w) {
+	return texture(t, p.zy / tile_m).rgb * w.x + texture(t, p.xz / tile_m).rgb * w.y + texture(t, p.xy / tile_m).rgb * w.z;
+}
+
+vec3 textured_rock(vec3 wp, vec3 n) {
+	vec3 p = ps1_snap_m3(wp);
+	vec3 w = pow(abs(n), vec3(4.0));
+	w /= (w.x + w.y + w.z);
+	// zones of stone; the borders are bent by two scales of noise
+	vec2 zq = p.xz / 6.0 + p.y / 5.0 + vec2(texture(noise_a, p.xz / 23.0).r, texture(noise_b, p.zy / 19.0).r) * 1.4;
+	float z = texture(noise_b, zq / 3.0).r;
+	float m1 = smoothstep(0.38, 0.5, z);
+	float m2 = smoothstep(0.55, 0.66, z + (texture(noise_a, p.xz / 5.0 + p.y / 4.0).r - 0.5) * 0.25);
+	float m3 = smoothstep(0.7, 0.8, texture(noise_a, p.xz / 11.0 + p.y / 7.0 + 0.3).r);
+	vec3 c = tri(tex_a, p, w) * tint_a.rgb;
+	c = mix(c, tri(tex_b, p, w) * tint_b.rgb, m1);
+	c = mix(c, tri(tex_c, p, w) * tint_c.rgb, m2);
+	c = mix(c, tri(tex_d, p, w) * tint_d.rgb, m3);
+	// broad light/dark drifts so no big face is one tone
+	c *= mix(0.78, 1.18, texture(noise_b, p.xz / 37.0 + p.y / 13.0).r);
+	// moss and lichen on faces that look up, in ragged patches
+	float moss = smoothstep(0.55, 0.7, texture(noise_a, p.xz / 3.1).r) * smoothstep(0.35, 0.8, n.y);
+	c = mix(c, r_lichen.rgb * 0.8, moss * 0.55);
+	return c;
+}
+
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
@@ -165,6 +247,16 @@ void fragment() {
 	vec3 c;
 	if (proj_mode == 1) {
 		c = ground_colour(world_pos, use_vertex_color ? COLOR.a : 0.0);
+		if (use_vertex_color) {
+			c *= COLOR.rgb;
+		}
+	} else if (proj_mode == 3) {
+		c = textured_ground(world_pos, use_vertex_color ? COLOR.a : 0.0);
+		if (use_vertex_color) {
+			c *= COLOR.rgb;
+		}
+	} else if (proj_mode == 4) {
+		c = textured_rock(world_pos, normalize(world_normal));
 		if (use_vertex_color) {
 			c *= COLOR.rgb;
 		}

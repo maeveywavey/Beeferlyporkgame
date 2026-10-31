@@ -144,16 +144,12 @@ static func char_body(u, amount: float) -> void:
 
 ## Flames that keep licking a burned body for a while.
 static func smoulder(battle, u) -> void:
-	# the dead burn on: a few small hand-inked flames and a thread of smoke
+	# the dead burn on: a few small hand-inked flames, bases buried in the ground and the body
 	var at: Vector3 = u.position
 	for k in 3:
 		var sz := randf_range(0.7, 1.0)
 		var f := FlameSprite.puff(battle, at + Vector3(randf_range(-0.5, 0.5), 0.1, randf_range(-0.5, 0.5)), Vector2(sz, sz * 1.3), randf_range(5.0, 7.0))
-		f.global_position.y = battle.ground_height(f.global_position.x, f.global_position.z) + 0.1
-	var sm := FlameSprite.make("smoke", Vector2(1.0, 1.0), false, 1)
-	battle.add_child(sm)
-	sm.global_position = at + Vector3(0, 1.0, 0)
-	battle.get_tree().create_timer(7.0).timeout.connect(func(): if is_instance_valid(sm): sm.queue_free())
+		f.global_position.y = battle.ground_height(f.global_position.x, f.global_position.z)
 
 ## A spray of blood and a pool, for wounds without a cut-off limb.
 static func bleed(battle, u, size: float) -> void:
