@@ -326,6 +326,71 @@ static func _house(parent: Node3D, pal: Dictionary, pos: Vector3, size: float, i
 		parent.add_child(box(Vector3(size, size * 0.7, size * 0.8), pal.house, pos + Vector3(0, size * 0.35, 0)))
 		parent.add_child(roof(size * 1.25, size * 1.0, size * 0.5, pal.roof, pos + Vector3(0, size * 0.95, 0)))
 
+## A ring of wall segments around the origin at height y.
+static func _wall_ring(Arch, culture: String, mini: Callable, k: float, r: float, n: int, h: float, y: float) -> void:
+	var chord := 2.0 * r * sin(PI / n) / k * 1.06
+	for i in n:
+		var a := TAU * (i + 0.5) / n
+		mini.call(Arch.wall(culture, chord, h, -a + PI / 2.0), Vector3(cos(a) * r, y, sin(a) * r), k)
+
+## Omashu: a mountain cut into four terraces with a spiralling delivery chute,
+## the palace on the summit.
+static func _omashu_model(root: Node3D, rng: RandomNumberGenerator, mini: Callable, house: Callable, Arch, culture: String, k: float) -> void:
+	var radii := [9.0, 7.2, 5.4, 3.6]
+	var tops := [1.2, 2.4, 3.6, 4.8]
+	var stone := Color(0.5, 0.47, 0.42)
+	root.add_child(cyl(3.0, 7.0, 10.0, Color(0.5, 0.5, 0.48), Vector3(0, 5.0, -8.0), 7))
+	for i in 4:
+		root.add_child(cyl(radii[i], radii[i] + 0.35, tops[i], stone * (0.92 + 0.05 * i), Vector3(0, tops[i] * 0.5, 0), 14))
+		root.add_child(cyl(radii[i] - 0.5, radii[i] - 0.5, 0.06, Color(0.42, 0.56, 0.3), Vector3(0, tops[i] + 0.01, 0), 14))
+	_wall_ring(Arch, culture, mini, k, 8.7, 10, 6.0, tops[0])
+	for i in 4:
+		var n: int = 8 - i
+		for j in n:
+			var a := TAU * (j + 0.5) / n + i * 0.3
+			var rr: float = radii[i] - 1.7
+			if i == 3:
+				rr = 1.6
+				if j > 3:
+					continue
+			house.call(Vector3(cos(a) * rr, tops[i], sin(a) * rr), rng.randf_range(5.5, 7.5), 5.0, 1 + int(rng.randf() < 0.3), round(a / (PI * 0.5)) * PI * 0.5)
+	house.call(Vector3(0, tops[3], -0.6), 12.0, 9.0, 3, 0.0)
+	# the chutes, spiralling down the flanks
+	for sgn in [0.0, PI]:
+		var prev := Vector3.ZERO
+		for j in 17:
+			var t: float = j / 16.0
+			var ang: float = sgn + 0.4 + t * 5.2
+			var rad: float = lerpf(3.9, 9.2, t)
+			var pt := Vector3(cos(ang) * rad, lerpf(5.4, 1.7, t), sin(ang) * rad)
+			if j > 0:
+				var seg := box(Vector3(0.55, 0.2, prev.distance_to(pt) + 0.05), Color(0.62, 0.52, 0.4), (prev + pt) * 0.5)
+				seg.basis = Basis.looking_at(pt - prev, Vector3.UP)
+				root.add_child(seg)
+			prev = pt
+
+## Ba Sing Se: three concentric walled rings, the palace at the heart.
+static func _ba_sing_se_model(root: Node3D, rng: RandomNumberGenerator, mini: Callable, house: Callable, Arch, culture: String, k: float) -> void:
+	var rings := [[9.0, 14, 6.5, 0.0], [6.1, 10, 5.5, 0.35], [3.4, 7, 4.5, 0.7]]
+	for ring in rings:
+		root.add_child(cyl(ring[0], ring[0] + 0.3, ring[3] + 0.04, Color(0.55, 0.62, 0.42) * (1.0 - ring[3] * 0.08), Vector3(0, (ring[3] + 0.04) * 0.5, 0), 24))
+		_wall_ring(Arch, culture, mini, k, ring[0], ring[1], ring[2], ring[3])
+	var lows := [[7.4, 10], [4.7, 7]]
+	for lw in lows:
+		for j in int(lw[1]):
+			var a := TAU * (j + 0.5) / float(lw[1])
+			house.call(Vector3(cos(a) * lw[0], 0.35 if lw[0] < 6.0 else 0.0, sin(a) * lw[0]), rng.randf_range(5.5, 7.0), 4.5, 1, round(a / (PI * 0.5)) * PI * 0.5)
+	house.call(Vector3(0, 0.7, 0), 12.0, 9.0, 3, 0.0)
+
+## Caldera: the city sits inside the rim of a volcano's crater.
+static func _crater_rim(root: Node3D, rng: RandomNumberGenerator) -> void:
+	root.add_child(cyl(9.5, 12.0, 0.8, Color(0.26, 0.22, 0.21), Vector3(0, 0.4, 0), 18))
+	for i in 18:
+		var a := TAU * i / 18.0 + rng.randf_range(-0.1, 0.1)
+		var h := rng.randf_range(2.2, 3.6)
+		root.add_child(cyl(0.5, 1.7, h, Color(0.3, 0.25, 0.24) * rng.randf_range(0.85, 1.1), Vector3(cos(a) * 9.4, h * 0.5, sin(a) * 9.4), 6))
+	root.add_child(cyl(1.6, 1.8, 0.1, Color(0.95, 0.35, 0.1), Vector3(0, 0.07, 6.2), 10))
+
 static func build_settlement(sid: String) -> Node3D:
 	var Arch = load("res://scripts/town/arch.gd")
 	var d: Dictionary = Data.settlements[sid]
@@ -353,15 +418,22 @@ static func build_settlement(sid: String) -> Node3D:
 		mini.call(n, pos, k)
 	match d.type:
 		"town":
-			var r := 6.5
-			for i in 8:
-				var a := TAU * i / 8.0
-				var wall = Arch.wall(culture, 17.0, 6.0, -a + PI / 2.0)
-				mini.call(wall, Vector3(cos(a + PI / 8.0) * r, 0, sin(a + PI / 8.0) * r), k)
-			house.call(Vector3(0, 0, -1.0), 14.0, 10.0, 3, 0.0)
-			for i in 6:
-				var a2 := TAU * (i + 0.5) / 6.0
-				house.call(Vector3(cos(a2) * 3.8, 0, sin(a2) * 3.8), rng.randf_range(6.0, 8.0), 5.5, 1 + int(rng.randf() < 0.3), round(a2 / (PI * 0.5)) * PI * 0.5)
+			if sid == "omashu":
+				_omashu_model(root, rng, mini, house, Arch, culture, k)
+			elif sid == "ba_sing_se":
+				_ba_sing_se_model(root, rng, mini, house, Arch, culture, k)
+			else:
+				var r := 6.5
+				for i in 8:
+					var a := TAU * i / 8.0
+					var wall = Arch.wall(culture, 17.0, 6.0, -a + PI / 2.0)
+					mini.call(wall, Vector3(cos(a + PI / 8.0) * r, 0, sin(a + PI / 8.0) * r), k)
+				house.call(Vector3(0, 0, -1.0), 14.0, 10.0, 3, 0.0)
+				for i in 6:
+					var a2 := TAU * (i + 0.5) / 6.0
+					house.call(Vector3(cos(a2) * 3.8, 0, sin(a2) * 3.8), rng.randf_range(6.0, 8.0), 5.5, 1 + int(rng.randf() < 0.3), round(a2 / (PI * 0.5)) * PI * 0.5)
+				if sid == "caldera":
+					_crater_rim(root, rng)
 		"castle":
 			for i in 4:
 				var a3 := TAU * i / 4.0 + PI / 4.0

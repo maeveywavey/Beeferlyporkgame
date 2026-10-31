@@ -12,6 +12,7 @@ var target := Vector3.ZERO
 var wait := 0.0
 var walk_speed := 1.25
 var home_rot := 0.0
+var height_fn := Callable()   # ground height under a point, for terraced cities
 var player: Node3D
 var talk_radius := 0.0
 var _turn := 0.0
@@ -59,5 +60,7 @@ func _wander(delta: float) -> void:
 		return
 	var dir := to.normalized()
 	position += dir * walk_speed * delta
+	if height_fn.is_valid():
+		position.y = height_fn.call(position.x, position.z)
 	rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), minf(1.0, delta * 6.0))
 	actor.speed = walk_speed

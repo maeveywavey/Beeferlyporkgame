@@ -256,6 +256,7 @@ func _spawn_people() -> void:
 		var lk: String = role.get("look", "")
 		n.setup(_role_look(lk, rng), sp.stance, sp.loop, "idle", [])
 		n.player = player
+		n.height_fn = layout.height_at
 		if role.has("action"):
 			n.talk_radius = 5.0
 			n.set_meta("label", role.label)
@@ -272,6 +273,7 @@ func _spawn_people() -> void:
 		var lk2 := "soldier" if Data.settlements[sid].type == "castle" else ("monk" if Data.settlements[sid].type == "temple" else "")
 		n2.setup(_role_look(lk2, rng), "", "", "wander", layout.waypoints)
 		n2.walk_speed = rng.randf_range(1.0, 1.45)
+		n2.height_fn = layout.height_at
 		npcs.append(n2)
 
 func _arm(n: Node3D, model: String) -> void:
@@ -342,7 +344,7 @@ func _move(n: Node3D, step: Vector3) -> void:
 	var gate_open := absf(q.x) < 6.0
 	q.x = clampf(q.x, -lim, lim)
 	q.y = clampf(q.y, -lim, lim + (4.0 if gate_open else 0.0))
-	n.position = Vector3(q.x, 0, q.y)
+	n.position = Vector3(q.x, layout.height_at(q.x, q.y), q.y)
 
 func _follow(delta: float) -> void:
 	var basis := Basis(Vector3.UP, player.rotation.y)

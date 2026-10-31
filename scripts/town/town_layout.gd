@@ -27,6 +27,11 @@ var ice := false
 ## have empty stalls, gaps where houses fell, mud, debris and beggars; rich
 ## ones taller houses, more lanterns, stocked stalls, gardens and crowds.
 var wealth := 1
+## Ground height by position: zero except in terraced cities (Omashu).
+var terraced := false
+const OM_EDGES := [20.0, -2.0, -24.0]   # tier boundaries along z, south to north
+const OM_STEP := 3.2                     # rise per tier
+const OM_STAIR := 3.8                    # half-width of the central stairs
 var _prop_cache := {}
 
 static func build(parent: Node3D, p_sid: String) -> RefCounted:
@@ -47,7 +52,7 @@ func _make() -> void:
 	if GS.settlements.get(sid, {}).get("looted_until", -1.0) > GS.hours:
 		wealth = 0
 	match kind:
-		"town": _town()
+		"town": _omashu() if sid == "omashu" else _town()
 		"castle": _castle()
 		"village": _village()
 		"temple": _temple()
@@ -58,7 +63,20 @@ func _make() -> void:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+func height_at(x: float, z: float) -> float:
+	if not terraced:
+		return 0.0
+	var h := 0.0
+	var on_stairs := absf(x) < OM_STAIR
+	for e in OM_EDGES:
+		if on_stairs:
+			h += OM_STEP * clampf((e + 3.0 - z) / 6.0, 0.0, 1.0)
+		elif z < e:
+			h += OM_STEP
+	return h
+
 func add(n: Node3D, pos: Vector3, rot_y: float = 0.0) -> Node3D:
+	pos.y += height_at(pos.x, pos.z)
 	n.position = pos
 	n.rotation.y = rot_y
 	root.add_child(n)
@@ -172,13 +190,15 @@ func street_lantern(pos: Vector3, rot: float) -> void:
 		col = Color(0.55, 0.75, 1.0)
 	add(Arch.lantern(col), pos, rot)
 	circle(pos, 0.25)
-	lights.append(pos + Vector3(0, 2.3, 0))
+	lights.append(pos + Vector3(0, 2.3 + height_at(pos.x, pos.z), 0))
 
 func npc_spot(pos: Vector3, rot: float, stance: String = "", loop: String = "", role: Dictionary = {}) -> void:
+	pos.y = height_at(pos.x, pos.z)
 	spots.append({"pos": pos, "rot": rot, "stance": stance, "loop": loop, "role": role})
 
 func interact(pos: Vector3, label: String, action: String, role_look: String = "", rot: float = 0.0, stance: String = "talk") -> void:
 	var r := {"label": label, "action": action, "look": role_look}
+	pos.y = height_at(pos.x, pos.z)
 	interacts.append({"pos": pos, "label": label, "action": action})
 	npc_spot(pos, rot, stance, "", r)
 
@@ -324,6 +344,186 @@ func _town() -> void:
 	npc_spot(Vector3(-2.6, 0, half - 3.0), PI, "folded", "", {"look": "guard"})
 	npc_spot(Vector3(2.6, 0, half - 3.0), PI, "folded", "", {"look": "guard"})
 	interact(Vector3(-4.0, 0, half - 6.0), "Talk to the gatekeeper (settlement menu)", "main", "guard", PI * 0.5, "folded")
+
+## Omashu: a city cut into a mountain in four terraces, joined by a central
+## stair, with the Courier Guild's delivery chutes running down the flanks.
+## Tiers rise to the north; the palace crowns the top.
+func _omashu() -> void:
+	terraced = true
+	var half := 46.0
+	bounds = half - 2.0
+	var stone := Color(0.48, 0.45, 0.4)
+	var lows := [20.0, -2.0, -24.0, -46.0]
+	var highs := [46.0, 20.0, -2.0, -24.0]
+	# terrace slabs and their retaining faces
+	var b = Arch.Builder.new()
+	for i in 4:
+		var top: float = OM_STEP * i
+		var zc: float = (lows[i] + highs[i]) * 0.5
+		b.box(Vector3(0, (top - 0.6) * 0.5, zc), Vector3(half * 2.0, top + 0.6, highs[i] - lows[i] - 0.2), stone * (0.9 + 0.04 * i))
+		# lawn over the terrace top, kept back from the retaining face
+		b.box(Vector3(0, top - 0.04, zc), Vector3(half * 2.0 - 1.0, 0.1, highs[i] - lows[i] - 1.4), Color(0.42, 0.56, 0.3) * (0.95 + 0.03 * i))
+	# the central stairs between tiers, with a parapet along each terrace lip
+	for i in OM_EDGES.size():
+		var e: float = OM_EDGES[i]
+		var base: float = OM_STEP * i
+		for j in 8:
+			var top2: float = base + OM_STEP * (j + 1) / 8.0
+			b.box(Vector3(0, (top2 - 0.6) * 0.5, e + 3.0 - (j + 0.5) * 0.75), Vector3(OM_STAIR * 2.0, top2 + 0.6, 0.78), stone * 1.08)
+		for sgn in [-1.0, 1.0]:
+			var pl: float = (half - OM_STAIR) * 0.5
+			b.box(Vector3(sgn * (OM_STAIR + pl), base + OM_STEP + 0.4, e - 0.5), Vector3(half - OM_STAIR, 0.8, 1.0), stone * 0.82)
+			b.box(Vector3(sgn * (OM_STAIR + 0.1), base + OM_STEP * 0.5 + 0.5, e), Vector3(0.3, OM_STEP + 0.9, 6.4), stone * 0.8, 0.0)
+			block(Vector3(sgn * (OM_STAIR + pl), 0, e), half - OM_STAIR, 2.0)
+	var mi := MeshInstance3D.new()
+	mi.mesh = b.commit()
+	mi.material_override = Arch.material(false)
+	root.add_child(mi)
+	# walls: each tier's stretch at its own height, the gate in the south
+	for i in 4:
+		var len: float = highs[i] - lows[i]
+		var zc2: float = (lows[i] + highs[i]) * 0.5
+		for sgn in [-1.0, 1.0]:
+			add(Arch.wall("omashu", len, 8.5, PI * 0.5), Vector3(sgn * half, 0, zc2))
+			block(Vector3(sgn * half, 0, zc2), 2.0, len)
+	for k in 7:
+		var cx: float = -half + (k + 0.5) * half * 2.0 / 7.0
+		add(Arch.wall("omashu", half * 2.0 / 7.0 + 0.05, 8.5, 0.0), Vector3(cx, 0, -half))
+	block(Vector3(0, 0, -half), half * 2.0 + 2.0, 2.0)
+	var gate_gap := 4.0
+	var left_len := half - gate_gap * 0.5 - 3.0
+	for sgn in [-1.0, 1.0]:
+		var gx: float = sgn * (gate_gap * 0.5 + 3.0 + left_len * 0.5)
+		add(Arch.wall("omashu", left_len, 8.5, 0.0), Vector3(gx, 0, half))
+		block(Vector3(gx, 0, half), left_len, 2.0)
+	add(Arch.gate("omashu", 8.5), Vector3(0, 0, half))
+	for x in [-3.6, 3.6]:
+		block(Vector3(x, 0, half), 3.2, 3.2)
+	spawn = Vector3(0, 0, half - 5.0)
+	# the main street, tier by tier, and the plazas
+	ground_patch(Vector3(0, 0, 33), 8.0, 24.0, paving() * 0.95)
+	ground_patch(Vector3(0, 0, 33), 24.0, 14.0, paving())
+	ground_patch(Vector3(0, 0, 9), 8.0, 16.0, paving() * 0.95)
+	ground_patch(Vector3(0, 0, 9), 22.0, 12.0, paving())
+	ground_patch(Vector3(0, 0, -13), 8.0, 16.0, paving() * 0.95)
+	ground_patch(Vector3(0, 0, -35), 30.0, 16.0, paving())
+	for z in [40.0, 30.0, 14.0, 4.0, -8.0, -18.0, -30.0]:
+		street_lantern(Vector3(-4.8, 0, z), 0.0)
+		street_lantern(Vector3(4.8, 0, z + 2.0), PI)
+	for z in range(40, -36, -6):
+		waypoints.append(Vector3(rng.randf_range(-2.0, 2.0), 0, z))
+	# the palace on the summit
+	var palace_door := building(Vector3(0, 0, -36), 20.0, 10.0, 3, 0.0, {"floor_h": 3.2})
+	interact(palace_door + Vector3(1.6, 0, 0.4), "Speak with the steward of the hall", "hall", "steward", PI)
+	npc_spot(palace_door + Vector3(-2.2, 0, 0.0), 0.0, "folded", "", {"look": "guard"})
+	npc_spot(palace_door + Vector3(3.8, 0, 0.0), 0.0, "folded", "", {"look": "guard"})
+	# market below, on the lowest tier
+	var stalls := [Vector3(-9, 0, 28), Vector3(-9, 0, 37), Vector3(9, 0, 28), Vector3(9, 0, 37)]
+	for i in stalls.size():
+		var sp: Vector3 = stalls[i]
+		if wealth == 0 and i % 2 == 1:
+			continue
+		prop("Stall_Empty" if i % 2 == 0 else "Stall_Cart_Empty", sp, PI * 0.5 if sp.x < 0 else -PI * 0.5, 1.0, 1.4)
+		var goods := ["FarmCrate_Apple", "FarmCrate_Carrot", "Barrel_Apples", "Vase_2", "Pot_1"]
+		for k in [0, 1, 2][wealth]:
+			prop(goods[(i + k) % goods.size()], sp + Vector3(signf(-sp.x) * 1.3, 0, 1.1 - k * 1.1), rng.randf() * TAU, 0.8, 0.4)
+	interact(Vector3(-7.2, 0, 28), "Browse the market", "trade", "merchant", PI * 0.5, "talk")
+	npc_spot(Vector3(7.2, 0, 37), -PI * 0.5, "talk")
+	# smithy on the second tier, tavern and guild by the gate
+	prop("Anvil", Vector3(10.5, 0, 9), 0.0, 1.0, 0.6)
+	prop("WeaponStand", Vector3(12.0, 0, 7.4), -PI * 0.5, 1.0, 0.6)
+	prop("Barrel", Vector3(12.2, 0, 10.6), 0.0, 1.0, 0.5)
+	interact(Vector3(9.0, 0, 9.3), "Visit the weaponsmith", "shop", "smith", -PI * 0.5, "work")
+	var tav_door := building(Vector3(-19, 0, 33), 10.0, 8.0, 2, PI * 0.5)
+	interact(tav_door + Vector3(0, 0, 1.6), "Enter the tavern", "tavern", "innkeeper", -PI * 0.5)
+	for k in 2:
+		add(Arch.lantern(Color(0.95, 0.3, 0.15)), tav_door + Vector3(0.2, 0, -1.8 + k * 3.6), PI)
+		lights.append(tav_door + Vector3(0.6, 2.3, -1.8 + k * 3.6))
+	var guild_door := building(Vector3(19, 0, 33), 10.0, 8.0, 1, -PI * 0.5)
+	interact(guild_door, "Ask the guild master for work", "work", "guildmaster", PI * 0.5)
+	# houses climb the flanks, tier by tier, facing the street
+	for i in 4:
+		var z0: float = lows[i] + 6.0
+		var z1: float = highs[i] - 6.0
+		var gz := z0
+		while gz <= z1:
+			for sgn in [-1.0, 1.0]:
+				for gx2 in [16.0, 27.0, 37.0]:
+					var p := Vector3(sgn * (gx2 + rng.randf_range(-1.2, 1.2)), 0, gz + rng.randf_range(-1.0, 1.0))
+					if absf(p.z - 33.0) < 8.0 and i == 0:
+						continue
+					if i == 3 and absf(p.x) < 14.0:
+						continue
+					if not free_at(p, 3.2):
+						continue
+					var w := rng.randf_range(6.0, 8.5)
+					var dd := rng.randf_range(5.0, 6.5)
+					if wealth == 0 and rng.randf() < 0.3:
+						_ruin(p, w, dd)
+						continue
+					var tall: float = [0.15, 0.35, 0.6][wealth]
+					building(p, w, dd, 2 if rng.randf() < tall else 1, -PI * 0.5 * sgn if gx2 < 30.0 else (PI if rng.randf() < 0.5 else 0.0))
+			gz += 11.0
+	for i in 8:
+		tree(Vector3(rng.randf_range(-40, 40), 0, rng.randf_range(-20, 40)))
+	for i in 6:
+		var sp2: Vector3 = waypoints[rng.randi() % waypoints.size()]
+		npc_spot(sp2 + Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)), rng.randf() * TAU, "talk")
+	npc_spot(Vector3(-2.6, 0, half - 3.0), PI, "folded", "", {"look": "guard"})
+	npc_spot(Vector3(2.6, 0, half - 3.0), PI, "folded", "", {"look": "guard"})
+	interact(Vector3(-4.0, 0, half - 6.0), "Talk to the gatekeeper (settlement menu)", "main", "guard", PI * 0.5, "folded")
+	_chutes(half)
+	_mountain()
+
+## The Courier Guild's delivery chutes: open stone troughs on pillars that run
+## from the palace down both flanks to the gate.
+func _chutes(half: float) -> void:
+	var col := Color(0.5, 0.46, 0.4)
+	var pb = Arch.Builder.new()
+	var tb = Arch.Builder.new()
+	var top_y := 12.4
+	var bot_y := 2.6
+	for sgn in [-1.0, 1.0]:
+		var pts: Array = []
+		for k in 5:
+			var t: float = k / 4.0
+			pts.append(Vector3(sgn * (half - 5.0 + (3.0 if k % 2 == 1 else 0.0)), lerpf(top_y, bot_y, t), lerpf(-36.0, 42.0, t)))
+		for k in pts.size():
+			var pp: Vector3 = pts[k]
+			pb.box(Vector3(pp.x, (pp.y - 0.4) * 0.5 - 0.1, pp.z), Vector3(0.9, pp.y - 0.4 + 0.2, 0.9), col * 0.85)
+			if k > 0:
+				var a: Vector3 = pts[k - 1]
+				var len := a.distance_to(pp)
+				var xf := Transform3D(Basis.looking_at(pp - a, Vector3.UP), (a + pp) * 0.5)
+				# trough in its own space, along Z
+				var tr = Arch.Builder.new()
+				tr.box(Vector3(0, 0, 0), Vector3(1.8, 0.22, len), col)
+				tr.box(Vector3(-0.85, 0.3, 0), Vector3(0.18, 0.55, len), col * 1.08)
+				tr.box(Vector3(0.85, 0.3, 0), Vector3(0.18, 0.55, len), col * 1.08)
+				var tmi := MeshInstance3D.new()
+				tmi.mesh = tr.commit()
+				tmi.material_override = Arch.material(false)
+				tmi.transform = xf
+				root.add_child(tmi)
+	var pmi := MeshInstance3D.new()
+	pmi.mesh = pb.commit()
+	pmi.material_override = Arch.material(false)
+	root.add_child(pmi)
+
+## The mountain the city is cut into, rising behind the palace.
+func _mountain() -> void:
+	var b = Arch.Builder.new()
+	for i in 9:
+		var x: float = -80.0 + i * 20.0 + rng.randf_range(-4, 4)
+		var h := rng.randf_range(48.0, 80.0) - absf(x) * 0.25
+		b.cyl(Vector3(x, -2.0, -78.0 + rng.randf_range(-6, 6)), rng.randf_range(26.0, 36.0), rng.randf_range(3.0, 9.0), h, Color(0.55, 0.53, 0.5) * rng.randf_range(0.85, 1.05), 7)
+	var mi := MeshInstance3D.new()
+	mi.mesh = b.commit()
+	var m: ShaderMaterial = Arch.material(false).duplicate()
+	m.set_shader_parameter("brush_scale", 0.05)
+	m.set_shader_parameter("brush_strength", 0.15)
+	mi.material_override = m
+	root.add_child(mi)
 
 func _castle() -> void:
 	var half := 30.0
