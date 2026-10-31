@@ -111,8 +111,8 @@ var settings := {
 ## grid and textures are not warped, so people and shapes stay clear.
 const RETRO := {
 	"off": {"snap": 0.0, "texel": 0.0, "affine": 0.0},
-	"light": {"snap": 0.0, "texel": 80.0, "affine": 0.0},
-	"heavy": {"snap": 0.0, "texel": 40.0, "affine": 0.0},
+	"light": {"snap": 480.0, "texel": 80.0, "affine": 0.0},
+	"heavy": {"snap": 260.0, "texel": 40.0, "affine": 0.0},
 }
 
 ## The PS1 look (shaders/ps1.gdshaderinc): vertex grid across the screen,
