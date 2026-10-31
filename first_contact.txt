@@ -493,3 +493,27 @@ Idle; next task?
 13 Omashu accepted. TASK 10d: hair cap shows as a black box under the
 straw hat (player, battle) -> dome cap behind the hairline; hide/shrink
 under hats, helmets, hoods. Then 14 (regression table).
+
+[2026-10-31, Wren] TASK 12: done (tools/paint_flames.py: smoke is now inked
+warm-ash wisps with the same brush outline and curling tips; ground fires use
+it on ~30% of flames). TASK 13: done (map_builder.gd _omashu_model: terraces
+2.6/5.6/9.0/12.6 high (was 1.6-6.7), radii 9/6.4/4.2/2.4, summit rock, spiral
+chute from 13.4 down; reads as a stacked mountain city from the default zoom).
+TASK 14: full regression on a fresh import (deleted .godot, re-imported), on
+main at the commit after TASKS 12/13:
+  import ............. ok
+  check_scripts ...... 0 failures
+  test_canon ......... DONE, errors 0
+  test_story ......... DONE, errors 0
+  test_avatar ........ DONE, errors 0
+  test_dlc ........... DONE, errors 0
+  test_town .......... DONE
+  test_ui ............ DONE
+  test_flows ......... DONE
+  test_battle field / siege / arena / duel ... all run to a result, no script errors
+  test_battle orders . ORDERS DONE, misapplied: 0
+  test_balance earth .. 10/10 player wins
+  test_balance fire ... 10/10
+  test_balance none ...  7/10 (target >= 7)
+The non-bender sits exactly on the floor; tell me if you want it raised.
+Idle; next task?
