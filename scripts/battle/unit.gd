@@ -9,7 +9,7 @@ const Looks = preload("res://scripts/actors/looks.gd")
 const Bending = preload("res://scripts/battle/bending.gd")
 const AvatarSys = preload("res://scripts/core/avatar.gd")
 const Techniques = preload("res://scripts/battle/techniques.gd")
-const FlameSprite = preload("res://scripts/battle/flame_sprite.gd")
+const FirePlaceholder = preload("res://scripts/battle/fire_placeholder.gd")
 const Gore = preload("res://scripts/battle/gore.gd")
 
 const DIRS := ["left", "right", "overhead", "thrust"]
@@ -90,7 +90,7 @@ var order := "charge"
 var hold_pos := Vector3.ZERO
 var slow_t := 0.0
 var burn_t := 0.0
-var _burn_fx: Node3D
+var _burn_fx: Node3D   # fire placeholder emitter while burning
 var burn_dps := 0.0
 ## Soaked by water or rain: burns briefly, conducts lightning.
 var wet_t := 0.0
@@ -412,19 +412,12 @@ func tick(delta: float) -> void:
 	if battle.field != null and battle.field.rain:
 		wet_t = maxf(wet_t, 1.0)
 	if burn_t <= 0.0 and _burn_fx != null:
-		_burn_fx.queue_free()
+		_burn_fx.stop()
 		_burn_fx = null
 	if burn_t > 0.0:
 		if _burn_fx == null:
-			# hand-inked flames cling to a burning fighter
-			_burn_fx = Node3D.new()
-			# flames rise from the body itself: narrow enough that each base sits
-			# inside the torso or legs, at the feet buried in the ground
-			for k in 3:
-				var f = FlameSprite.make("flame", Vector2(0.62, 0.9), false, 1)
-				f.position = Vector3(randf_range(-0.06, 0.06), 0.05 + k * 0.45, randf_range(-0.04, 0.04))
-				_burn_fx.add_child(f)
-			add_child(_burn_fx)
+			# placeholder squares rise from the feet and across the body
+			_burn_fx = FirePlaceholder.source(self, Vector3(0, 0.05, 0), 7.0, 0.36, 0.9, 1.5, 0.25)
 		if wet_t > 0.0:
 			burn_t = minf(burn_t, 0.4)
 		burn_t -= delta

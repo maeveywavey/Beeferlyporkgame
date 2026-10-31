@@ -16,7 +16,7 @@ extends Node3D
 const MB = preload("res://scripts/world/map_builder.gd")
 
 const CELL := 2.0
-const FlameSprite = preload("res://scripts/battle/flame_sprite.gd")
+const FirePlaceholder = preload("res://scripts/battle/fire_placeholder.gd")
 const MAX_FIRES := 36
 const MAX_ROCKS := 70
 const MAX_STRUCTURES := 24
@@ -30,7 +30,7 @@ var fire: PackedFloat32Array     # seconds of burning left
 var scorched: PackedByteArray
 var rain := false
 var wind := Vector2.ZERO
-var _fire_nodes := {}            # cell index -> flame node
+var _fire_nodes := {}            # cell index -> fire emitter
 var _puddles := {}               # cell index -> puddle node
 var _scorch_mm: MultiMesh
 var _rocks: Array = []
@@ -116,59 +116,9 @@ func _light(i: int, strength: float) -> bool:
 	if _fire_nodes.size() >= MAX_FIRES:
 		return false
 	fire[i] = randf_range(3.5, 6.0) * (0.7 + fuel[i] * 0.4)
-	var fl := _flame()
-	add_child(fl)
-	fl.position = _center(i) + Vector3(randf_range(-0.5, 0.5), 0.0, randf_range(-0.5, 0.5))
-	_fire_nodes[i] = fl
+	var at := _center(i) + Vector3(randf_range(-0.5, 0.5), 0.0, randf_range(-0.5, 0.5))
+	_fire_nodes[i] = FirePlaceholder.source(self, at, 12.0, 0.5, 0.8, 1.3, 0.55)
 	return true
-
-func _flame() -> Node3D:
-	var root := Node3D.new()
-	# two or three hand-inked tongues side by side, their bases buried in the ground
-	for k in 3:
-		var sz := randf_range(0.95, 1.25)
-		var f := FlameSprite.make("flame", Vector2(sz, sz * 1.25), false, 1)
-		f.position = Vector3(randf_range(-0.35, 0.35), 0, randf_range(-0.35, 0.35))
-		root.add_child(f)
-	var light := OmniLight3D.new()
-	light.light_color = Color(1.0, 0.55, 0.2)
-	light.light_energy = 0.6
-	light.omni_range = 4.0
-	light.position.y = 0.8
-	root.add_child(light)
-	return root
-
-static var _soft: StandardMaterial3D
-
-## A soft round sprite for flames and smoke, tinted by the particle colour.
-static func _soft_material() -> StandardMaterial3D:
-	if _soft != null:
-		return _soft
-	var g := Gradient.new()
-	g.set_color(0, Color(1, 1, 1, 1))
-	g.add_point(0.55, Color(1, 1, 1, 0.75))
-	g.set_color(g.get_point_count() - 1, Color(1, 1, 1, 0))
-	var gt := GradientTexture2D.new()
-	gt.gradient = g
-	gt.fill = GradientTexture2D.FILL_RADIAL
-	gt.fill_from = Vector2(0.5, 0.5)
-	gt.fill_to = Vector2(1.0, 0.5)
-	gt.width = 32
-	gt.height = 32
-	_soft = StandardMaterial3D.new()
-	_soft.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	# sprites fade out as the camera passes through them
-	_soft.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
-	_soft.distance_fade_min_distance = 1.0
-	_soft.distance_fade_max_distance = 3.2
-	_soft.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	_soft.vertex_color_use_as_albedo = true
-	_soft.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_soft.albedo_texture = gt
-	_soft.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
-	_soft.disable_receive_shadows = true
-	_soft.shadow_to_opacity = false
-	return _soft
 
 func extinguish(p: Vector3, radius: float) -> int:
 	var out := 0
@@ -183,9 +133,8 @@ func _put_out(i: int, burnt: bool) -> void:
 	if _fire_nodes.has(i):
 		var fl: Node3D = _fire_nodes[i]
 		_fire_nodes.erase(i)
-		var tw := fl.create_tween()
-		tw.tween_property(fl, "scale", Vector3(0.05, 0.05, 0.05), 0.6)
-		tw.tween_callback(fl.queue_free)
+		if is_instance_valid(fl):
+			fl.stop()
 	if burnt and scorched[i] == 0:
 		scorched[i] = 1
 		fuel[i] = 0.0
@@ -288,10 +237,6 @@ func _process(delta: float) -> void:
 	_tick = 0.0
 	for i in _fire_nodes.keys():
 		fire[i] -= dt * (2.0 if rain else 1.0)
-		# flames shrink away over their last seconds
-		var fnode: Node3D = _fire_nodes[i]
-		if is_instance_valid(fnode):
-			fnode.scale = Vector3.ONE * clampf(fire[i] / 1.5, 0.2, 1.0)
 		if fire[i] <= 0.0:
 			_put_out(i, true)
 			continue

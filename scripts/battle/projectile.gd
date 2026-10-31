@@ -3,7 +3,7 @@ extends Node3D
 ## Movement and collision are handled manually against units, walls and terrain.
 
 const Bending = preload("res://scripts/battle/bending.gd")
-const FlameSprite = preload("res://scripts/battle/flame_sprite.gd")
+const FirePlaceholder = preload("res://scripts/battle/fire_placeholder.gd")
 const MB = preload("res://scripts/world/map_builder.gd")
 
 var battle
@@ -67,14 +67,8 @@ func _build_visual() -> void:
 			sp.radial_segments = 10
 			sp.rings = 5
 			if fx in ["fire", "blue_fire"]:
-				# a hand-inked fireball: round head, curling tail trailing behind
-				var fb := FlameSprite.make("fireball", Vector2(radius * 4.6, radius * 4.6), fx == "blue_fire", 3)
-				add_child(fb)
-				var light0 := OmniLight3D.new()
-				light0.light_color = c
-				light0.omni_range = 4.0
-				light0.light_energy = 1.5
-				add_child(light0)
+				# fire placeholder: a cluster of squares held on the head of the shot
+				FirePlaceholder.source(self, Vector3.ZERO, 26.0, radius * 1.1, 0.3, 0.0, radius * 0.6)
 				return
 			var m5 := MeshInstance3D.new()
 			m5.mesh = sp
@@ -160,7 +154,7 @@ func _physics_process(delta: float) -> void:
 
 func _impact(_u) -> void:
 	if fx in ["fire", "blue_fire", "rock", "water", "sand", "ice"]:
-		battle.spawn_burst(position, Bending.fx_color(fx), 1.0 if fx != "rock" else 1.4)
+		battle.element_burst(fx, position, 1.0 if fx != "rock" else 1.4)
 	var field = battle.field
 	if field != null:
 		match fx:

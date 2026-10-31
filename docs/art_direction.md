@@ -44,9 +44,10 @@ overrides an earlier one.
 - **Skirts and robes move with the legs.** Lower garments are weighted to
   the legs (each side to its own thigh and shin, the middle shared) so they
   stretch and swing with the stride without clipping.
-- **Effects sit in the world.** Fire, smoke and dust are anchored into what
-  they come from (the bottom of a flame sprite is buried in the ground or the
-  burning body), never floating with a visible base.
+- **Effects sit in the world.** Dust and smoke are anchored into what they
+  come from, never floating with a visible base. Fire is a placeholder until
+  the owner approves a new design (TASK 16): unlit orange squares, 50% opacity,
+  born at the source and shrinking to nothing.
 
 ## How art is reviewed
 

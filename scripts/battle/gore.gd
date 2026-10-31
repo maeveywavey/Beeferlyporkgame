@@ -13,7 +13,7 @@ extends RefCounted
 ## Severed and broken bones are applied after animation by a skeleton modifier.
 
 const CB = preload("res://scripts/actors/character_builder.gd")
-const FlameSprite = preload("res://scripts/battle/flame_sprite.gd")
+const FirePlaceholder = preload("res://scripts/battle/fire_placeholder.gd")
 
 const LIMBS := {
 	"arm_l": ["upperarm_l", 0.55], "arm_r": ["upperarm_r", 0.55], "forearm_l": ["lowerarm_l", 0.4],
@@ -144,12 +144,10 @@ static func char_body(u, amount: float) -> void:
 
 ## Flames that keep licking a burned body for a while.
 static func smoulder(battle, u) -> void:
-	# the dead burn on: a few small hand-inked flames, bases buried in the ground and the body
+	# the dead burn on for a while: placeholder squares from the ground under the body
 	var at: Vector3 = u.position
-	for k in 3:
-		var sz := randf_range(0.7, 1.0)
-		var f := FlameSprite.puff(battle, at + Vector3(randf_range(-0.5, 0.5), 0.1, randf_range(-0.5, 0.5)), Vector2(sz, sz * 1.3), randf_range(5.0, 7.0))
-		f.global_position.y = battle.ground_height(f.global_position.x, f.global_position.z)
+	var y: float = battle.ground_height(at.x, at.z)
+	FirePlaceholder.source(battle, Vector3(at.x, y, at.z), 6.0, 0.4, 0.9, 1.2, 0.5, randf_range(5.0, 7.0))
 
 ## A spray of blood and a pool, for wounds without a cut-off limb.
 static func bleed(battle, u, size: float) -> void:

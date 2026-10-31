@@ -12,7 +12,7 @@ extends Node
 ## The Avatar rises into the air while it happens, and the camera shakes.
 
 const Gore = preload("res://scripts/battle/gore.gd")
-const FlameSprite = preload("res://scripts/battle/flame_sprite.gd")
+const FirePlaceholder = preload("res://scripts/battle/fire_placeholder.gd")
 
 var battle
 var avatar
@@ -151,7 +151,7 @@ func _roll_fire(delta: float) -> void:
 		var a := TAU * i / n
 		var p := c + Vector3(cos(a), 0, sin(a)) * _fire_r
 		if randf() < 0.18:
-			FlameSprite.puff(battle, Vector3(p.x, battle.ground_height(p.x, p.z), p.z), Vector2(2.0, 2.6), 1.6)
+			FirePlaceholder.burst(battle, Vector3(p.x, battle.ground_height(p.x, p.z), p.z), 0.9, 1.6, 4, 1.4, 0.8)
 		if battle.field != null and randf() < 0.3:
 			battle.field.ignite(p, 1.0, 3.0)
 	for u in _enemies():

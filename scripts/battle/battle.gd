@@ -6,7 +6,7 @@ const Unit = preload("res://scripts/battle/unit.gd")
 const Projectile = preload("res://scripts/battle/projectile.gd")
 const Bending = preload("res://scripts/battle/bending.gd")
 const UI = preload("res://scripts/ui/ui.gd")
-const FlameSprite = preload("res://scripts/battle/flame_sprite.gd")
+const FirePlaceholder = preload("res://scripts/battle/fire_placeholder.gd")
 const MB = preload("res://scripts/world/map_builder.gd")
 const Roster = preload("res://scripts/core/roster.gd")
 const SettingsWindow = preload("res://scripts/ui/settings_window.gd")
@@ -1270,7 +1270,7 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 							e.airborne = true
 							# wind throws people far higher than a shaking ground
 							e.y_vel = 12.0 + a.knock * 0.2 if a.fx == "air" else 4.0
-			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx))
+			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx), a.fx)
 			if field != null:
 				if a.fx == "rock":
 					for k in 5:
@@ -1282,7 +1282,7 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 			_raise_pillar(caster, a, point, dmg)
 		"buff":
 			caster.start_buff(a)
-			spawn_burst(caster.chest(), Bending.fx_color(a.fx), 1.2)
+			element_burst(a.fx, caster.chest(), 1.2)
 			if caster.is_player:
 				hud_note("%s (%ds)" % [a.name, int(a.get("dur", 8.0))])
 		"dash":
@@ -1302,13 +1302,13 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 					e.gore_hint = "fire" if a.fx in ["fire", "blue_fire"] else ""
 					e.apply_damage(dmg, caster, "fire" if a.fx == "fire" else "blunt", dir3.rotated(Vector3.UP, PI / 2.0 * signf(randf() - 0.5)), a.knock)
 					_apply_effect(e, a.get("effect", ""), dmg)
-			spawn_burst(start + Vector3(0, 0.6, 0), Bending.fx_color(a.fx), 1.0)
+			element_burst(a.fx, start + Vector3(0, 0.6, 0), 1.0)
 			if field != null and a.fx == "fire":
 				for k in int(float(a.dist) / 2.0):
 					field.ignite(start + dir3 * (1.0 + k * 2.0), 0.6, 0.7)
 			caster.position = end3
 			caster.hold_pos = end3
-			spawn_burst(end3 + Vector3(0, 0.6, 0), Bending.fx_color(a.fx), 1.2)
+			element_burst(a.fx, end3 + Vector3(0, 0.6, 0), 1.2)
 		"nova":
 			for e in team_units[1 - caster.team].duplicate():
 				var d5: Vector3 = e.position - caster.position
@@ -1318,8 +1318,8 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 					e.gore_hint = "fire" if a.fx in ["fire", "blue_fire"] else ""
 					e.apply_damage(dmg, caster, "fire" if a.fx == "fire" else "blunt", push5, a.knock)
 					_apply_effect(e, a.get("effect", ""), dmg)
-			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx))
-			spawn_burst(caster.chest(), Bending.fx_color(a.fx), 1.4)
+			_ring_fx(caster.position, a.range, Bending.fx_color(a.fx), a.fx)
+			element_burst(a.fx, caster.chest(), 1.4)
 			if field != null:
 				for k in 10:
 					var ang2 := TAU * k / 10.0
@@ -1353,7 +1353,7 @@ func execute_bending(caster, a: Dictionary, point: Vector3) -> void:
 				else:
 					leave_debris(pt)
 				if k % 2 == 0:
-					spawn_burst(pt, Bending.fx_color(a.fx), 0.7)
+					element_burst(a.fx, pt, 0.7)
 		"lightning":
 			var dir2 := (point - from).normalized()
 			var hit = null
@@ -1462,7 +1462,7 @@ func crumble_structure(rec: Dictionary) -> void:
 
 func _cone_fx(caster, a: Dictionary) -> void:
 	if a.fx in ["fire", "blue_fire"]:
-		FlameSprite.jet(self, caster.chest(), caster.facing, a.range, a.angle, a.fx == "blue_fire", 26 if a.get("breath", false) else 14, 0.8 if a.get("breath", false) else 0.55)
+		FirePlaceholder.spray(self, caster.chest(), caster.facing, a.range, a.angle, 26 if a.get("breath", false) else 14, 0.8 if a.get("breath", false) else 0.55)
 		return
 	var p := CPUParticles3D.new()
 	p.one_shot = true
@@ -1494,7 +1494,23 @@ func _cone_fx(caster, a: Dictionary) -> void:
 	p.rotation.y = caster.facing
 	get_tree().create_timer(1.2).timeout.connect(p.queue_free)
 
-func _ring_fx(center: Vector3, r: float, c: Color) -> void:
+## Impact burst in an element's colour. Fire is the TASK 16 placeholder.
+func element_burst(fx: String, pos: Vector3, size: float = 1.0) -> void:
+	if fx in ["fire", "blue_fire"]:
+		FirePlaceholder.burst(self, pos, 0.35 * size, 0.5, 6, 1.6, 0.3 * size)
+		return
+	spawn_burst(pos, Bending.fx_color(fx), size)
+
+func _ring_fx(center: Vector3, r: float, c: Color, fx: String = "") -> void:
+	if fx in ["fire", "blue_fire"]:
+		# a ring of placeholder squares at the edge of the nova, rising from the ground
+		for k in 24:
+			var ang := TAU * k / 24.0
+			var at := center + Vector3(cos(ang), 0, sin(ang)) * r * 0.6
+			at.y = ground_height(at.x, at.z)
+			FirePlaceholder.burst(self, at, 0.45, 0.8, 1, 1.2, 0.0)
+		element_burst(fx, center, 2.0)
+		return
 	var ring := MeshInstance3D.new()
 	var tm := TorusMesh.new()
 	tm.inner_radius = 0.3
