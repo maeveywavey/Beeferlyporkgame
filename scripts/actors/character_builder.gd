@@ -302,8 +302,8 @@ static func build(look: Dictionary) -> Dictionary:
 	for h in hair_list:
 		if GS.settings.get("lowpoly_outfits", true) and parts.has("head"):
 			# solid hand-built hair (scripts/actors/lowpoly_outfit.gd) in one flat colour
-			var hb: AABB = (parts.head.mesh as Mesh).get_aabb()
-			parts.meshes.append_array(LowpolyOutfit.hair(skel, h, hair_c * 1.25 + Color(0.03, 0.03, 0.03), hb))
+			var covered: bool = look.get("accessory", "") in ["fn_helmet", "fn_officer", "fn_cap", "ek_hat", "straw_hat", "ek_helm", "censor", "parka", "wt_helm", "wolf", "pirate_hat", "sand_wrap", "yuyan", "bandana"] or look.get("hood", false)
+			parts.meshes.append_array(LowpolyOutfit.hair(skel, h, hair_c * 1.25 + Color(0.03, 0.03, 0.03), sex, covered))
 			continue
 		for mi in _graft(HAIR_DIR + h + ".gltf", skel):
 			var hm := model_material(mi.mesh.surface_get_material(0), {"tint": hair_c * 2.4 + Color(0.04, 0.04, 0.04), "saturation": 1.0})

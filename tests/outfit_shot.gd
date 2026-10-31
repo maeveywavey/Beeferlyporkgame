@@ -23,19 +23,20 @@ func _ready() -> void:
 	add_child(sun)
 	var cams := Camera3D.new()
 	add_child(cams)
-	cams.position = Vector3(0, 1.2, 3.6)
-	var specs := [["m", "peasant", "fire", "Hair_SimpleParted", "fn_armor"], ["f", "peasant", "fire", "Hair_Buns", ""], ["m", "ranger", "water", "Hair_Long", ""], ["f", "ranger", "earth", "Hair_Long", "ek_armor"], ["m", "peasant", "earth", "Hair_Buzzed", ""], ["m", "peasant", "omashu", "Hair_SimpleParted", "sash"]]
+	cams.position = Vector3(0, 1.62 if OS.get_cmdline_user_args().size() > 1 else 1.2, 1.9 if OS.get_cmdline_user_args().size() > 1 else 3.6)
+	var heads := OS.get_cmdline_user_args().size() > 1
+	var specs := [["m", "peasant", "earth", "Hair_SimpleParted", "", "straw_hat"], ["m", "peasant", "fire", "Hair_SimpleParted", "fn_armor", "fn_helmet"], ["m", "peasant", "water", "Hair_Long", "", "bandana"], ["f", "peasant", "water", "Hair_Long", "water_fur", "parka"], ["m", "peasant", "earth", "Hair_SimpleParted", "", ""], ["f", "peasant", "fire", "Hair_Buns", "", ""]]
 	var i := 0
 	var tris := 0
 	for sp in specs:
-		var look := {"sex": sp[0], "outfit": sp[1], "culture": sp[2], "skin": 2, "hair": sp[3], "kit": sp[4], "beard": i == 4, "hair_color": Color(0.1, 0.07, 0.05), "height": 1.0}
+		var look := {"sex": sp[0], "outfit": sp[1], "culture": sp[2], "skin": 2, "hair": sp[3], "kit": sp[4], "accessory": sp[5], "beard": i == 4, "hair_color": Color(0.1, 0.07, 0.05), "height": 1.0}
 		var a = Actor.new()
 		add_child(a)
 		a.setup(look)
-		a.position = Vector3((i - 2.5) * 0.85, 0, 0)
+		a.position = Vector3((i - 2.5) * (0.5 if heads else 0.85), 0, 0)
 		i += 1
 	await get_tree().create_timer(0.8).timeout
-	cams.look_at(Vector3(0, 0.95, 0))
+	cams.look_at(Vector3(0, 1.62 if heads else 0.95, 0))
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(OS.get_cmdline_user_args()[0])
 	for mi in find_children("*", "MeshInstance3D", true, false):

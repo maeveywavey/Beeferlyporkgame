@@ -259,7 +259,7 @@ static func pauldrons(skel_: Skeleton3D, kit: String, sex: String, palette: Dict
 ## Hand-built hair: a solid cap with a few faceted pieces (tails, buns, a
 ## beard), 40-120 triangles, in one flat colour. `head` is the head mesh's
 ## bounds in rig space.
-static func hair(skel_: Skeleton3D, style: String, colour: Color, head: AABB) -> Array:
+static func hair(skel_: Skeleton3D, style: String, colour: Color, sex: String, covered: bool = false) -> Array:
 	var o = load("res://scripts/actors/lowpoly_outfit.gd").new()
 	o.skel = skel_
 	o.mesh_name = "LowpolyHair"
@@ -268,12 +268,13 @@ static func hair(skel_: Skeleton3D, style: String, colour: Color, head: AABB) ->
 	var Z := Vector3.BACK
 	var Y := Vector3.UP
 	var hb: int = o._bone("Head")
-	var top: float = head.end.y
-	var cz: float = head.get_center().z - 0.004
-	var rx: float = minf(head.size.x * 0.5, 0.1) + 0.006
-	var rz: float = minf(head.size.z * 0.5, 0.12) + 0.004
+	# the skull, from the same measurements the helmets use
+	var top: float = Accessories.head_y(sex) + 0.115
+	var cz := -0.014
+	var rx := 0.094
+	var rz := 0.1
 	var thick := 1.0 if style != "Hair_Beard" else 0.0
-	var cap_base := top - 0.085
+	var cap_base := top - 0.078
 	if style == "Hair_Beard":
 		var chin := top - 0.245
 		o.tube("hair", mat, [
@@ -282,12 +283,23 @@ static func hair(skel_: Skeleton3D, style: String, colour: Color, head: AABB) ->
 			o._ring(Vector3(0, chin, cz + rz * 0.5), X, Z, rx * 0.28, rz * 0.3, hb),
 		], 6, true)
 		return o._commit()
+	if covered:
+		# under a hat, helmet or hood only long hair shows, hanging down the back
+		if style == "Hair_Long":
+			o.tube("hair", mat, [
+				o._ring(Vector3(0, top - 0.12, cz - rz * 0.7), X, Z, rx * 0.9, 0.035, hb),
+				o._ring(Vector3(0, top - 0.3, cz - rz * 0.8 - 0.02), X, Z, rx * 0.85, 0.032, hb, o._bone("neck_01"), 0.5),
+				o._ring(Vector3(0, top - 0.43, cz - rz * 0.8 - 0.03), X, Z, rx * 0.65, 0.03, o._bone("neck_01"), o._bone("spine_03"), 0.6),
+			], 6)
+		return o._commit()
+	# a faceted dome just larger than the skull, set back from the brow so the
+	# hairline recedes at the front
 	var cap := [
-		o._ring(Vector3(0, cap_base, cz - 0.004), X, Z, rx * 1.0, rz * 1.0, hb),
-		o._ring(Vector3(0, top - 0.055, cz - 0.004), X, Z, rx * 1.02, rz * 1.02, hb),
-		o._ring(Vector3(0, top - 0.025, cz - 0.004), X, Z, rx * 0.9, rz * 0.92, hb),
-		o._ring(Vector3(0, top - 0.004, cz - 0.004), X, Z, rx * 0.6, rz * 0.62, hb),
-		o._ring(Vector3(0, top + 0.012, cz - 0.004), X, Z, rx * 0.25, rz * 0.27, hb),
+		o._ring(Vector3(0, cap_base, cz - 0.008), X, Z, rx * 1.0, rz * 0.96, hb),
+		o._ring(Vector3(0, top - 0.05, cz - 0.008), X, Z, rx * 1.03, rz * 1.0, hb),
+		o._ring(Vector3(0, top - 0.024, cz - 0.006), X, Z, rx * 0.92, rz * 0.9, hb),
+		o._ring(Vector3(0, top - 0.005, cz - 0.004), X, Z, rx * 0.62, rz * 0.6, hb),
+		o._ring(Vector3(0, top + 0.009, cz - 0.004), X, Z, rx * 0.26, rz * 0.26, hb),
 	]
 	o.tube("hair", mat, cap, 8, true)
 	match style:
