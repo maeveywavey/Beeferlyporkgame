@@ -274,3 +274,10 @@ the map half of TASK 2: Ba Sing Se = three walled rings, Caldera = crater
 rim. TASK 2 remainder (walkable Ba Sing Se rings, volcano-city walkable
 plan) stays queued after 3, 4, 5. TASK 3: started.
 Checks: check_scripts 0, test_town and test_canon DONE.
+
+[2026-10-31, Wren] TASK 3: done (gore.gd: tapered limbs with cut faces and
+bone ends, irregular drying blood pools). TASK 4: done (battle.gd/unit.gd/
+sfx.gd: arrow for chosen swing/guard direction, hit marker, red hurt flash +
+thud, pale block flash + clank, feed capped at 5 lines and banner moved
+down so they no longer overlap). Battle tests field/arena/duel run clean.
+TASK 5: started.
