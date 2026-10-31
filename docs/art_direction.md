@@ -129,6 +129,13 @@ overrides an earlier one.
     It bridges PS1 and the look of the show.
   - **Fire:** scrapped; placeholder of 50%-opacity orange squares that shrink
     to nothing as they rise.
+- 2026-10-31 (v3/v4 reviews): breasts higher, rounder, a little stylised
+  toward Fear Effect (not hypersexualised); references for thin, average,
+  curvy and heavy figures supplied by the owner. Hair streaks removed. Hard
+  cel shading reverted to soft painted light (it cut into the jaw and made
+  cloth jagged). Neck: a column distinct from the head, no trapezoid flare.
+  Hips: only a slight outward angle starting high, under the bust (Avatar
+  commoner sheet), not low and wide. Hair accepted for now.
 
 ### Hair physics (method)
 Long hair is one curtain in five strips, each on a chain of three bones

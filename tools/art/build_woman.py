@@ -31,7 +31,7 @@ os.makedirs(work, exist_ok=True)
 body = bpy.data.objects["Body"]
 rig = bpy.data.objects["Rig"]
 REGIONS = ["head", "torso", "upperarm", "forearm", "hand", "thigh", "shin", "foot"]
-PRESET = {"Feminine": 1.0, "Curvy": 0.5}
+PRESET = {"Feminine": 1.0, "Curvy": 0.2}
 for k in body.data.shape_keys.key_blocks:
     k.value = PRESET.get(k.name, 0.0)
 

@@ -118,9 +118,16 @@ for v in body.data.vertices:
     elif r == "torso":
         kx = 1.0 + 0.2 * (1 - 0.6 * C.smooth(1.25, 1.42, c.z))
         v.co = Vector((c.x * kx, c.y * 1.2, c.z))
+        # the base of the neck: the torso's top ring round the neck pulled
+        # in, so the neck does not flare into a trapezoid
+        if c.z > 1.40 and abs(c.x) < 0.11:
+            k = 1 - 0.25 * C.smooth(1.40, 1.45, c.z)
+            v.co = Vector((v.co.x * k, v.co.y * (1 - 0.15 * C.smooth(1.40, 1.45, c.z)), v.co.z))
     elif r == "head" and c.z < 1.53:
         # v2 review: the neck was too thick; slimmer than the source mesh
-        v.co = Vector((c.x * 0.9, c.y * 0.92, c.z))
+        # v4 review: still thick and trapezoid; a column, distinct from the
+        # head above and only slightly wider where it meets the shoulders
+        v.co = Vector((c.x * 0.74, c.y * 0.82, c.z))
     elif r == "head":
         # v2 review: the head slightly larger, from the jaw's underside up
         v.co = C.HEAD_PIVOT + (c - C.HEAD_PIVOT) * C.HEAD_SCALE
@@ -283,7 +290,10 @@ def k_feminine(p, reg):
         sh = C.smooth(1.25, 1.42, p.z)
         hips = 1 - C.smooth(1.0, 1.08, p.z)
         waist = C.smooth(1.0, 1.08, p.z) * (1 - C.smooth(1.14, 1.2, p.z))
-        q.x *= 1.0 - 0.10 * sh + 0.07 * hips - 0.06 * waist
+        # v4 review (Avatar reference): only a slight outward angle starting
+        # high, under the bust, down to the hips; no low, wide shelf
+        flare = C.smooth(1.18, 0.92, p.z)
+        q.x *= 1.0 - 0.10 * sh + 0.06 * flare - 0.03 * waist
         q += breast(p, 0.042)
     elif reg in ("upperarm", "forearm", "hand"):
         q = radial(p, reg, 0.88, 1, 1)
@@ -294,14 +304,14 @@ def k_feminine(p, reg):
     elif reg in ("thigh", "shin"):
         q = radial(p, reg, 0.94, 1, 1)
         if reg == "thigh":
-            q.x += (0.012 if p.x > 0 else -0.012) * C.smooth(0.6, 0.88, p.z)
+            q.x += (0.004 if p.x > 0 else -0.004) * C.smooth(0.6, 0.88, p.z)
     elif reg == "foot":
         a = C.side_joint("ankle", "L" if p.x > 0 else "R")
         q = Vector((a.x + (p.x - a.x) * 0.9, a.y + (p.y - a.y) * 0.9, p.z))
     elif reg == "head":
         if p.z < 1.53:
-            q.x *= 0.86
-            q.y *= 0.9
+            q.x *= 0.88
+            q.y *= 0.92
         elif p.z < 1.64:
             q.x *= 0.92
     return q

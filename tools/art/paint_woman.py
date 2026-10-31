@@ -110,14 +110,14 @@ FILL /= np.linalg.norm(FILL)
 
 
 def light(nrm, ao, warm=True):
-    """Fear Effect's look (owner, v2 review): shading in a few clean flat
-    tones, as an animation cel is painted, not a soft airbrushed gradient.
-    Three tones (shadow, base, light) with narrow edges, and occlusion only
-    deep in the folds."""
-    d = (nrm * KEY).sum(-1)
+    """Soft painted light (owner, v4 review: the hard cel bands made the robe
+    jagged and cut into the face): a warm key from the upper front, a cool
+    fill, a little sky from above, gentle occlusion."""
+    d = np.clip((nrm * KEY).sum(-1), 0, 1)
     f = np.clip((nrm * FILL).sum(-1), 0, 1)
-    lum = 0.74 + 0.24 * smooth(-0.05, 0.05, d) + 0.10 * smooth(0.72, 0.8, d) + 0.04 * f
-    occ = 0.75 + 0.25 * smooth(0.35, 0.6, np.clip(ao, 0, 1))
+    top = np.clip(nrm[..., 2], 0, 1)
+    lum = 0.66 + 0.36 * d + 0.10 * f + 0.06 * top
+    occ = 0.7 + 0.3 * np.clip(ao, 0, 1)
     lum = lum * occ
     # shadows lean cool, lights lean warm
     tint = mix(col(0.86, 0.90, 1.04), col(1.06, 1.0, 0.92), smooth(0.55, 1.05, lum))
