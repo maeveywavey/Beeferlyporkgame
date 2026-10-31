@@ -317,7 +317,7 @@ static func backdrop(biome: String, sky: Color) -> Node3D:
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
 		var radius := 200.0 + layer * 45.0
 		var height := 50.0 + layer * 22.0
-		var segs := 48
+		var segs := 64
 		for i in segs:
 			var a0 := TAU * i / segs
 			var a1 := TAU * (i + 1) / segs
@@ -345,30 +345,48 @@ static func _range_tex(biome: String, layer: int, col: Color, sky: Color) -> Ima
 	var key := "range_%s_%d" % [biome, layer]
 	if _cache.has(key):
 		return _cache[key]
-	var w := 512
-	var h := 160
+	var w := 1024
+	var h := 256
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 	var ridge := _noise(100 + layer * 13, 0.011 + layer * 0.004, 5)
-	var rock := _noise(7 + layer, 0.09, 3)
+	var peaks := _noise(300 + layer * 7, 0.03, 3)
+	var rock := _noise(7 + layer, 0.06, 3)
 	var snowy := biome in ["snow", "mountain", "highland"] or layer == 2
-	var snow_line := int(h * (0.42 if biome == "snow" else 0.26))
+	var snow_line := h * (0.5 if biome == "snow" else 0.38)
+	# each range hazier than the one before it
+	var haze := 0.12 + layer * 0.16
+	var tops := PackedFloat32Array()
+	tops.resize(w)
 	for x in w:
-		# seamless around the ring: sample the ridge on a circle
+		# seamless around the ring: sample on a circle
 		var a := TAU * x / w
 		var rv := ridge.get_noise_2d(cos(a) * 60.0, sin(a) * 60.0)
-		var top := int(h * (0.6 - rv * 0.75 - layer * 0.1))
-		top = clampi(top, 4, h - 6)
-		var prev_a := TAU * (x - 1) / w
-		var slope := rv - ridge.get_noise_2d(cos(prev_a) * 60.0, sin(prev_a) * 60.0)
-		for y in range(top, h):
-			var depth := float(y - top) / float(h - top)
-			var shade := 0.85 + rock.get_noise_2d(x * 1.6, y * 1.2) * 0.22 + rock.get_noise_2d(x * 0.2, y * 6.0) * 0.08 + clampf(slope * 30.0, -0.22, 0.22)
+		var pv := peaks.get_noise_2d(cos(a) * 60.0, sin(a) * 60.0)
+		var sharp := 1.0 - absf(rv)
+		tops[x] = h * (0.78 - layer * 0.07 - (sharp * 0.42 + (rv * 0.5 + 0.5) * 0.2 + pv * 0.08))
+	for x in w:
+		var top: float = clampf(tops[x], 6.0, h - 8.0)
+		# the lit side faces the light: shade by the slope of the skyline
+		var slope: float = (tops[(x + 3) % w] - tops[(x - 3 + w) % w]) / 6.0
+		var lit := clampf(-slope * 0.12, -0.28, 0.28)
+		var yi := int(top)
+		for y in range(yi, h):
+			var depth := float(y) - top
+			var rel := depth / float(h - top)
+			var blotch := rock.get_noise_2d(x * 1.0, y * 1.0) * 0.14
+			var gully := rock.get_noise_2d(x * 2.4 + y * 0.8, y * 0.5) * 0.08
+			var shade := 0.92 + blotch + gully + lit * (1.0 - rel * 0.6)
 			var cc := col * shade
-			if snowy and top < snow_line and y < snow_line + int(rock.get_noise_2d(x * 3.0, 0.0) * 4.0):
-				cc = Color(0.88, 0.9, 0.93) * (0.9 + shade * 0.1)
-			cc = cc.lerp(sky, clampf(0.12 + depth * 0.2, 0.0, 0.3))
+			if snowy and top < snow_line:
+				var snow_depth := (snow_line - top) * 0.55 + rock.get_noise_2d(x * 2.0, 31.0) * 6.0
+				if depth < snow_depth:
+					cc = Color(0.9, 0.92, 0.96) * (0.88 + shade * 0.14)
+			# valley haze thickens toward the foot of each range
+			cc = cc.lerp(sky, clampf(haze + rel * 0.4, 0.0, 0.85))
 			cc.a = 1.0
+			if y == yi:
+				cc.a = 1.0 - (top - float(yi))
 			img.set_pixel(x, y, cc)
 	img.generate_mipmaps()
 	var t := ImageTexture.create_from_image(img)
