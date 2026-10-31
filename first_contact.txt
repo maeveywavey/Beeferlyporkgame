@@ -571,3 +571,10 @@ re-texture (the mine isn't placed anywhere in the game yet), plaster/wooden
 village walls on houses, the grey cone backdrops in towns, and the boxy black hair
 cap sides (Hair_SimpleParted side locks) that show on bare-headed men.
 Tests: check_scripts 0; battle field/siege, test_town clean.
+
+[2026-10-31, Kestrel] TASK 15 first biome reviewed (sent): method
+approved. Fixes: dirt streaks repeat -> low-frequency blobs, ~15% soil,
+fade fine speckle with distance; real-world scale clamps (village flowers
+were 1.2 m); painted backdrops and plaster/timber walls in villages; one
+placed mine site re-textured. Then roll out to all biomes. Character
+models are Kestrel's (Blender pipeline), not Wren's.
